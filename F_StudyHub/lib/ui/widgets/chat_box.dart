@@ -55,8 +55,10 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
       _autoScroll();
     }
 
+    final double padding = MediaQuery.sizeOf(context).width < 600 ? 16 : 24;
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: kColorSurfaceWhite,
         borderRadius: BorderRadius.circular(32),
@@ -90,57 +92,58 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                 child: Text(
                   'Chat',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: kColorOffBlack,
-                        fontWeight: AppType.weightSemiBold,
-                      ),
+                    color: kColorOffBlack,
+                    fontWeight: AppType.weightSemiBold,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
 
-          Container(
-            height: 240,
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            decoration: BoxDecoration(
-              color: kColorSurfaceSoft,
-              borderRadius: BorderRadius.circular(24),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              decoration: BoxDecoration(
+                color: kColorSurfaceSoft,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: messages.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 40,
+                            color: kColorTeal,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Todavía no hay mensajes.\n¡Inicia la conversación!',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: kColorTextSecondary,
+                                  height: 1.4,
+                                ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) => _MessageBubble(
+                        message: messages[index],
+                        isOwn: messages[index].isOwn(localUserId),
+                      ),
+                    ),
             ),
-            child: messages.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.chat_bubble_outline_rounded,
-                          size: 40,
-                          color: kColorTeal,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Todavía no hay mensajes.\n¡Inicia la conversación!',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: kColorTextSecondary,
-                                height: 1.4,
-                              ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) =>
-                        _MessageBubble(
-                      message: messages[index],
-                      isOwn: messages[index].isOwn(localUserId),
-                    ),
-                  ),
           ),
           const SizedBox(height: 16),
 
@@ -173,16 +176,21 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide:
-                            const BorderSide(color: kColorTeal, width: 1.5),
+                        borderSide: const BorderSide(
+                          color: kColorTeal,
+                          width: 1.5,
+                        ),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide:
-                            BorderSide(color: kColorErrorBorder, width: 1.5),
+                        borderSide: BorderSide(
+                          color: kColorErrorBorder,
+                          width: 1.5,
+                        ),
                       ),
                     ),
-                    validator: (value) => (value == null || value.trim().isEmpty)
+                    validator: (value) =>
+                        (value == null || value.trim().isEmpty)
                         ? 'Requerido'
                         : null,
                     onFieldSubmitted: (_) => _send(),
