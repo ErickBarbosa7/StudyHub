@@ -1,4 +1,4 @@
 [build]
   base = "F_StudyHub"
-  command = "flutter build web --dart-define=API_URL=https://studyhub-api.onrender.com --dart-define=SOCKET_URL=https://studyhub-api.onrender.com"
+  command = "flutter build web --dart-define=API_URL=https://studyhub-rl5b.onrender.com --dart-define=SOCKET_URL=https://studyhub-rl5b.onrender.com"
   publish = "build/web"
