@@ -1,4 +1,9 @@
 [build]
   base = "F_StudyHub"
-  command = "flutter build web --dart-define=API_URL=https://studyhub-rl5b.onrender.com --dart-define=SOCKET_URL=https://studyhub-rl5b.onrender.com"
   publish = "build/web"
+  command = """
+git clone https://github.com/flutter/flutter.git --branch stable --depth 1 $HOME/flutter && \
+export PATH="$PATH:$HOME/flutter/bin" && \
+flutter precache --web && \
+flutter build web --dart-define=API_URL=https://studyhub-rl5b.onrender.com --dart-define=SOCKET_URL=https://studyhub-rl5b.onrender.com
+"""
