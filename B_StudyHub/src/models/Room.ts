@@ -3,7 +3,7 @@ import { model, Schema, type InferSchemaType } from 'mongoose';
 
 export const TaskSubSchema = new Schema(
   {
-    taskId: { type: String, required: true, unique: true },
+    taskId: { type: String, required: true },
     title: { type: String, required: true },
     stateRef: {
       type: Schema.Types.ObjectId,
