@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../core/theme.dart';
+import '../../logic/room_provider.dart';
 import '../../logic/socket_provider.dart';
 import 'create_room_screen.dart';
 
@@ -17,9 +18,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Inicializa la conexión en segundo plano sin bloquear la UI
       ref.read(socketServiceProvider).connect();
+      // Si quedó una sala abierta (F5), vuelve a ella automáticamente
+      final restored =
+          await ref.read(roomProvider.notifier).restoreSavedSession();
+      if (restored && mounted) {
+        Navigator.of(context).pushNamed(CreateRoomScreen.routeName);
+      }
     });
   }
 

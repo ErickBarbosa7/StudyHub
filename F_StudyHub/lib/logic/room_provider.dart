@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:flutter_riverpod/legacy.dart' show StateNotifier, StateNotifierProvider;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/models/room_model.dart';
 import '../data/models/user_model.dart';
@@ -15,24 +16,28 @@ class RoomState {
     this.localUser,
     this.users = const [],
     this.isCreating = false,
+    this.isRestoring = false,
   });
 
   final Room? room;
   final User? localUser;
   final List<User> users;
   final bool isCreating;
+  final bool isRestoring;
 
   RoomState copyWith({
     Room? room,
     User? localUser,
     List<User>? users,
     bool? isCreating,
+    bool? isRestoring,
   }) {
     return RoomState(
       room: room ?? this.room,
       localUser: localUser ?? this.localUser,
       users: users ?? this.users,
       isCreating: isCreating ?? this.isCreating,
+      isRestoring: isRestoring ?? this.isRestoring,
     );
   }
 }
@@ -58,6 +63,56 @@ class RoomNotifier extends StateNotifier<RoomState> {
     _joinRoom(room.roomId, user);
   }
 
+  Future<SharedPreferences> _getPrefs() => SharedPreferences.getInstance();
+
+  Future<void> _saveSession(Room room, User user) async {
+    final prefs = await _getPrefs();
+    await prefs.setString('session_room_id', room.roomId);
+    await prefs.setString('session_user_id', user.id);
+    await prefs.setString('session_user_name', user.name);
+  }
+
+  Future<void> _clearSession() async {
+    final prefs = await _getPrefs();
+    await prefs.remove('session_room_id');
+    await prefs.remove('session_user_id');
+    await prefs.remove('session_user_name');
+  }
+
+  /// Restaura la sesión guardada tras recargar la página (F5).
+  /// Devuelve true si había una sala y se logró volver a entrar.
+  Future<bool> restoreSavedSession() async {
+    final prefs = await _getPrefs();
+    final roomId = prefs.getString('session_room_id');
+    final userId = prefs.getString('session_user_id');
+    final userName = prefs.getString('session_user_name');
+
+    if (roomId == null || userId == null || userName == null) {
+      return false;
+    }
+
+    if (state.room != null) {
+      return true;
+    }
+
+    state = state.copyWith(isRestoring: true);
+    try {
+      final room = await _apiService.getRoom(roomId);
+      final user = User(id: userId, name: userName);
+      state = state.copyWith(room: room, localUser: user, isRestoring: false);
+      if (_socketService.isConnected) {
+        _joinRoom(room.roomId, user);
+      }
+      debugPrint('[room] Sesión restaurada en ${room.roomId}');
+      return true;
+    } catch (error) {
+      debugPrint('[room] No se pudo restaurar la sesión: $error');
+      await _clearSession();
+      state = state.copyWith(isRestoring: false);
+      return false;
+    }
+  }
+
   final riverpod.Ref _ref;
   final ApiService _apiService;
   final WebSocketService _socketService;
@@ -72,6 +127,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
     try {
       final room = await _apiService.createRoom(name: roomName, hostId: user.id);
       state = state.copyWith(room: room);
+      await _saveSession(room, user);
       _joinRoom(room.roomId, user);
       return true;
     } catch (error) {
@@ -84,6 +140,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
 
   void joinRoom(Room room, User user) {
     state = state.copyWith(room: room, localUser: user);
+    _saveSession(room, user);
     _joinRoom(room.roomId, user);
   }
 
@@ -97,6 +154,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
     try {
       final room = await _apiService.getRoom(roomCode.trim());
       state = state.copyWith(room: room);
+      await _saveSession(room, user);
       _joinRoom(room.roomId, user);
       return true;
     } catch (error) {
@@ -125,6 +183,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
         'userId': user.id,
       });
     }
+    _clearSession();
     state = const RoomState();
   }
 }

@@ -38,6 +38,7 @@ dependencies:
   flutter_riverpod: ^3.4.2
   http: ^1.6.0
   lottie: ^3.5.1
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
