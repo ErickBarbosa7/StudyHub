@@ -243,10 +243,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                   Text(
                     'Sin tareas todavía.\nAñade la primera para empezar.',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: kColorTextSecondary,
-                          height: 1.4,
-                        ),
+                    style: AppType.secondaryItalic(),
                   ),
                 ],
               ),

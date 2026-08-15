@@ -95,6 +95,10 @@ function startTimer(io: Server, roomId: string, duration?: number): void {
     if (current.timeRemaining <= 0) {
       clearSessionTimer(roomId);
       current.status = 'PAUSED';
+      io.to(roomId).emit('pomodoro_finished', {
+        roomId,
+        totalSeconds: current.totalSeconds,
+      });
     }
 
     emitTick(io, roomId);

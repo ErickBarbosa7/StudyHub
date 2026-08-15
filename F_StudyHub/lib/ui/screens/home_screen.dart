@@ -78,9 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Text(
                   'Crea una sala o únete con un código.',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: kColorTextSecondary,
-                      ),
+                  style: AppType.secondaryItalic(),
                 ),
                 
                 const SizedBox(height: 48), // Mucho espacio en blanco (Organic Minimal)
@@ -93,7 +91,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       CreateRoomScreen.routeName,
                     ),
                     icon: const Icon(Icons.add_rounded),
-                    label: const Text('Crear sala de estudio'),
+                    label: const Text('Crear o unirse a una sala'),
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -219,10 +217,7 @@ class _HelpFeature extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: kColorTextSecondary,
-                        height: 1.3,
-                      ),
+                  style: AppType.secondaryItalic(),
                 ),
               ],
             ),

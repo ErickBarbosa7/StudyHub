@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../core/theme.dart';
 import '../../logic/pomodoro_provider.dart';
@@ -21,6 +22,25 @@ class PomodoroTimer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(pomodoroProvider);
+    final bool finished = state.isFinished;
+
+    ref.listen<PomodoroState>(pomodoroProvider, (previous, next) {
+      if (next.isFinished && !(previous?.isFinished ?? false)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('¡Tiempo completado! Tómate un descanso.'),
+              backgroundColor: kColorOffBlack,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          );
+        });
+      }
+    });
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -38,32 +58,41 @@ class PomodoroTimer extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: kColorOlive.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.timer_rounded,
-                  color: kColorDarkGreen,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  'Pomodoro',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: kColorOffBlack,
-                        fontWeight: AppType.weightSemiBold,
-                      ),
-                ),
-              ),
-              _StatusPill(isRunning: state.isRunning),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final bool compact = constraints.maxWidth < 310;
+              return Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(compact ? 8 : 10),
+                    decoration: BoxDecoration(
+                      color: kColorOlive.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.timer_rounded,
+                      color: kColorDarkGreen,
+                      size: 24,
+                    ),
+                  ),
+                  SizedBox(width: compact ? 12 : 16),
+                  Expanded(
+                    child: Text(
+                      'Pomodoro',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: kColorOffBlack,
+                            fontWeight: AppType.weightSemiBold,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _StatusPill(
+                    isRunning: state.isRunning,
+                    compact: compact,
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 24),
 
@@ -81,28 +110,33 @@ class PomodoroTimer extends ConsumerWidget {
             decoration: BoxDecoration(
               color: state.isRunning
                   ? kColorOlive.withValues(alpha: 0.3)
-                  : kColorSurfaceSoft,
+                  : finished
+                      ? kColorSoftGreen.withValues(alpha: 0.2)
+                      : kColorSurfaceSoft,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
               children: [
                 Text(
                   _formatTime(state.timeRemaining),
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                        color: kColorDarkGreen,
-                        fontWeight: AppType.weightSemiBold,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
+                  style: AppType.monoTimer(
+                    color: finished ? kColorSoftGreen : kColorDarkGreen,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  state.isRunning ? 'En progreso' : 'En pausa',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: state.isRunning
+                  finished
+                      ? '¡Tiempo completado!'
+                      : state.isRunning
+                          ? 'En progreso'
+                          : 'En pausa',
+                  style: AppType.secondaryItalic(
+                    color: finished
+                        ? kColorSoftGreen
+                        : state.isRunning
                             ? kColorDarkGreen
                             : kColorTextSecondary,
-                        fontWeight: AppType.weightSemiBold,
-                      ),
+                  ).copyWith(fontWeight: AppType.weightSemiBold),
                 ),
               ],
             ),
@@ -286,9 +320,10 @@ class _DurationPills extends StatelessWidget {
 }
 
 class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.isRunning});
+  const _StatusPill({required this.isRunning, this.compact = false});
 
   final bool isRunning;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -303,23 +338,44 @@ class _StatusPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isRunning ? kColorDarkGreen : kColorTextSecondary,
+          if (isRunning)
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: Lottie.asset(
+                'assets/Lottie/Loading.json',
+                repeat: true,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: kColorDarkGreen.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+            )
+          else
+            Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.symmetric(vertical: 5),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: kColorTextSecondary,
+              ),
             ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            isRunning ? 'Activo' : 'En pausa',
-            style: TextStyle(
-              color: isRunning ? kColorDarkGreen : kColorTextSecondary,
-              fontWeight: AppType.weightSemiBold,
-              fontSize: AppType.sizeCaption,
+          if (!compact) ...[
+            const SizedBox(width: 6),
+            Text(
+              isRunning ? 'Activo' : 'En pausa',
+              style: TextStyle(
+                color: isRunning ? kColorDarkGreen : kColorTextSecondary,
+                fontWeight: AppType.weightSemiBold,
+                fontSize: AppType.sizeCaption,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

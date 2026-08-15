@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:flutter_riverpod/legacy.dart'
     show StateNotifier, StateNotifierProvider;
@@ -13,19 +14,27 @@ class PomodoroState {
     this.timeRemaining = kDefaultPomodoroSeconds,
     this.totalSeconds = kDefaultPomodoroSeconds,
     this.status = 'PAUSED',
+    this.isFinished = false,
   });
 
   final int timeRemaining;
   final int totalSeconds;
   final String status;
+  final bool isFinished;
 
   bool get isRunning => status == 'RUNNING';
 
-  PomodoroState copyWith({int? timeRemaining, int? totalSeconds, String? status}) {
+  PomodoroState copyWith({
+    int? timeRemaining,
+    int? totalSeconds,
+    String? status,
+    bool? isFinished,
+  }) {
     return PomodoroState(
       timeRemaining: timeRemaining ?? this.timeRemaining,
       totalSeconds: totalSeconds ?? this.totalSeconds,
       status: status ?? this.status,
+      isFinished: isFinished ?? this.isFinished,
     );
   }
 }
@@ -42,6 +51,21 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
       state = state.copyWith(
         timeRemaining: timeRemaining,
         status: status,
+        totalSeconds: totalSeconds ?? state.totalSeconds,
+        // Nueva sesión en curso: descarta un 'completado' previo.
+        isFinished: status == 'RUNNING' ? false : state.isFinished,
+      );
+    });
+
+    _socketService.on('pomodoro_finished', (data) {
+      final map = data as Map<String, dynamic>;
+      final totalSeconds =
+          map.containsKey('totalSeconds') ? (map['totalSeconds'] as num).round() : null;
+      debugPrint('[pomodoro] Sesión completada');
+      state = state.copyWith(
+        timeRemaining: 0,
+        status: 'PAUSED',
+        isFinished: true,
         totalSeconds: totalSeconds ?? state.totalSeconds,
       );
     });
@@ -63,9 +87,17 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
     });
   }
 
-  void start([int? durationSeconds]) => _action('START', durationSeconds);
+  void start([int? durationSeconds]) {
+    state = state.copyWith(isFinished: false);
+    _action('START', durationSeconds);
+  }
+
   void pause() => _action('PAUSE');
-  void reset([int? durationSeconds]) => _action('RESET', durationSeconds);
+
+  void reset([int? durationSeconds]) {
+    state = state.copyWith(isFinished: false);
+    _action('RESET', durationSeconds);
+  }
 }
 
 final pomodoroProvider =

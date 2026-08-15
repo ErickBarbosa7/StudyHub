@@ -86,7 +86,7 @@ Estas reglas son globales y aplican a cualquier pantalla, widget o componente:
 
 ### 3.4. Píldoras de Estado (Status Pills)
 Cualquier indicador de estado de la app (estado de tarea, usuario conectado, contadores) respeta este patrón de contraste sobre fondo Crema o Blanco:
-
+a
 *   **Activo / En Progreso:** Fondo `kColorOlive` con `alpha: 0.3`, texto/ícono `kColorDarkGreen`.
 *   **Completado / Éxito:** Fondo `kColorSoftGreen` con `alpha: 0.2`, texto/ícono `kColorDarkGreen` con `alpha: 0.6`.
 *   **Pendiente / Inactivo:** Fondo transparente, texto/ícono `kColorTextSecondary`.

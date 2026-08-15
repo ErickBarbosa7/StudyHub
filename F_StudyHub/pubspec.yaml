@@ -65,11 +65,46 @@ flutter:
   assets:
     - assets/fonts/
     - assets/Lottie/STUDENT.json
+    - assets/Lottie/Loading.json
 
+  # Recursive es una variable font para texto (ejes wght/CASL/slnt/MONO).
+  # Cascadia Code es una variable font para las cifras mono (eje wght 200-700).
+  # Se declaran en varios pesos para que `fontWeight` funcione de forma predecible.
   fonts:
-    - family: Sora
+    - family: Recursive
       fonts:
-        - asset: assets/fonts/Sora.ttf
+        - asset: assets/fonts/Recursive-VF.ttf
+          weight: 100
+        - asset: assets/fonts/Recursive-VF.ttf
+          weight: 200
+        - asset: assets/fonts/Recursive-VF.ttf
+          weight: 300
+        - asset: assets/fonts/Recursive-VF.ttf
+          weight: 400
+        - asset: assets/fonts/Recursive-VF.ttf
+          weight: 500
+        - asset: assets/fonts/Recursive-VF.ttf
+          weight: 600
+        - asset: assets/fonts/Recursive-VF.ttf
+          weight: 700
+        - asset: assets/fonts/Recursive-VF.ttf
+          weight: 800
+        - asset: assets/fonts/Recursive-VF.ttf
+          weight: 900
+    - family: Cascadia Code
+      fonts:
+        - asset: assets/fonts/CascadiaCode.ttf
+          weight: 200
+        - asset: assets/fonts/CascadiaCode.ttf
+          weight: 300
+        - asset: assets/fonts/CascadiaCode.ttf
+          weight: 400
+        - asset: assets/fonts/CascadiaCode.ttf
+          weight: 500
+        - asset: assets/fonts/CascadiaCode.ttf
+          weight: 600
+        - asset: assets/fonts/CascadiaCode.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

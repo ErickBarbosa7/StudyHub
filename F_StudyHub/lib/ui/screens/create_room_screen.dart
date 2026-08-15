@@ -132,10 +132,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               Text(
                 'Crea tu sala y coordina a tu equipo en tiempo real.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: kColorTextSecondary,
-                      height: 1.3,
-                    ),
+                style: AppType.secondaryItalic(),
               ),
               const SizedBox(height: 48),
 
@@ -422,9 +419,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           if (roomState.users.isEmpty)
             Text(
               'Esperando a que tu equipo se una...',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: kColorTextSecondary,
-                  ),
+              style: AppType.secondaryItalic(size: AppType.sizeBodyMedium),
             )
           else
             Wrap(

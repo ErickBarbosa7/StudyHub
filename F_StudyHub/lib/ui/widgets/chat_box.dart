@@ -122,11 +122,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                           Text(
                             'Todavía no hay mensajes.\n¡Inicia la conversación!',
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: kColorTextSecondary,
-                                  height: 1.4,
-                                ),
+                            style: AppType.secondaryItalic(),
                           ),
                         ],
                       ),
@@ -278,6 +274,8 @@ class _MessageBubble extends StatelessWidget {
                       ? kColorCream.withValues(alpha: 0.7)
                       : kColorTextSecondary,
                   fontSize: AppType.sizeMicro,
+                  fontFamily: kFontFamilyMono,
+                  fontVariations: const [AppType.italicSlant],
                 ),
               ),
             ),
