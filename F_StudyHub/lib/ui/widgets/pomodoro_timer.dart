@@ -119,40 +119,62 @@ class PomodoroTimer extends ConsumerWidget {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      _formatTime(state.timeRemaining),
-                      style: AppType.monoTimer(
-                        color: finished ? kColorSoftGreen : kColorOffBlack,
+                    Flexible(
+                      child: Text(
+                        _formatTime(state.timeRemaining),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppType.monoTimer(
+                          color: finished ? kColorSoftGreen : kColorOffBlack,
+                        ),
                       ),
                     ),
-                    // Hueco reservado para que el contador no brinque al activarse
+                    // Marca siempre visible al lado del contador, en pausa o en marcha
                     SizedBox(
-                      width: 56,
+                      width: 64,
                       height: 56,
-                      child: state.isRunning
-                          ? Lottie.asset(
-                              'assets/Lottie/Loading.json',
-                              repeat: true,
-                            )
-                          : null,
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: Lottie.asset(
+                          'assets/Lottie/claude.json',
+                          repeat: true,
+                          width: 84,
+                          height: 56,
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  finished
-                      ? '¡Tiempo completado!'
-                      : state.isRunning
-                          ? 'En progreso'
-                          : 'En pausa',
-                  style: AppType.secondaryItalic(
-                    color: finished
-                        ? kColorSoftGreen
+                // Área de estado: "En pausa" detenido, loading cuando se inicia
+                SizedBox(
+                  height: 44,
+                  child: Center(
+                    child: finished
+                        ? Text(
+                            '¡Tiempo completado!',
+                            style: AppType.secondaryItalic(
+                              color: kColorSoftGreen,
+                            ).copyWith(fontWeight: AppType.weightSemiBold),
+                          )
                         : state.isRunning
-                            ? kColorOffBlack
-                            : kColorTextSecondary,
-                  ).copyWith(fontWeight: AppType.weightSemiBold),
+                            ? Lottie.asset(
+                                'assets/Lottie/Loading.json',
+                                repeat: true,
+                                width: 40,
+                                height: 40,
+                              )
+                            : Text(
+                                'En pausa',
+                                style: AppType.secondaryItalic(
+                                  color: kColorTextSecondary,
+                                ).copyWith(
+                                  fontWeight: AppType.weightSemiBold,
+                                ),
+                              ),
+                  ),
                 ),
               ],
             ),

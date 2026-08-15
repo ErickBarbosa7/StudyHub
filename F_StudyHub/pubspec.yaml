@@ -66,6 +66,7 @@ flutter:
     - assets/fonts/
     - assets/Lottie/STUDENT.json
     - assets/Lottie/Loading.json
+    - assets/Lottie/claude.json
 
   # Recursive es una variable font para texto (ejes wght/CASL/slnt/MONO).
   # Cascadia Code es una variable font para las cifras mono (eje wght 200-700).
