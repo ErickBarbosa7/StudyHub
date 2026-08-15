@@ -204,7 +204,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                         borderRadius: BorderRadius.circular(24),
                       ),
                       backgroundColor: kColorDarkGreen,
-                      foregroundColor: kColorCream,
+                      foregroundColor: kColorOffBlack,
                       elevation: 0,
                     ),
                     child: const Icon(Icons.send_rounded, size: 24),
@@ -260,7 +260,7 @@ class _MessageBubble extends StatelessWidget {
             Text(
               message.text,
               style: TextStyle(
-                color: isOwn ? kColorCream : kColorOffBlack,
+                color: kColorOffBlack,
                 height: 1.3,
               ),
             ),
@@ -271,7 +271,7 @@ class _MessageBubble extends StatelessWidget {
                 _formatHour(message.timestamp),
                 style: TextStyle(
                   color: isOwn
-                      ? kColorCream.withValues(alpha: 0.7)
+                      ? kColorOffBlack.withValues(alpha: 0.7)
                       : kColorTextSecondary,
                   fontSize: AppType.sizeMicro,
                   fontFamily: kFontFamilyMono,

@@ -106,10 +106,10 @@ class PomodoroTimer extends ConsumerWidget {
           ],
 
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             decoration: BoxDecoration(
               color: state.isRunning
-                  ? kColorOlive.withValues(alpha: 0.3)
+                  ? kColorAnimationSoft
                   : finished
                       ? kColorSoftGreen.withValues(alpha: 0.2)
                       : kColorSurfaceSoft,
@@ -117,11 +117,27 @@ class PomodoroTimer extends ConsumerWidget {
             ),
             child: Column(
               children: [
-                Text(
-                  _formatTime(state.timeRemaining),
-                  style: AppType.monoTimer(
-                    color: finished ? kColorSoftGreen : kColorDarkGreen,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _formatTime(state.timeRemaining),
+                      style: AppType.monoTimer(
+                        color: finished ? kColorSoftGreen : kColorOffBlack,
+                      ),
+                    ),
+                    // Hueco reservado para que el contador no brinque al activarse
+                    SizedBox(
+                      width: 56,
+                      height: 56,
+                      child: state.isRunning
+                          ? Lottie.asset(
+                              'assets/Lottie/Loading.json',
+                              repeat: true,
+                            )
+                          : null,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -134,7 +150,7 @@ class PomodoroTimer extends ConsumerWidget {
                     color: finished
                         ? kColorSoftGreen
                         : state.isRunning
-                            ? kColorDarkGreen
+                            ? kColorOffBlack
                             : kColorTextSecondary,
                   ).copyWith(fontWeight: AppType.weightSemiBold),
                 ),
@@ -221,7 +237,7 @@ class _DurationPills extends StatelessWidget {
                   child: Text(
                     _formatMinutes(seconds),
                     style: TextStyle(
-                      color: selected ? kColorCream : kColorDarkGreen,
+                      color: selected ? kColorOffBlack : kColorTextSecondary,
                       fontWeight: AppType.weightSemiBold,
                       fontSize: AppType.sizeLabel,
                     ),
@@ -255,13 +271,13 @@ class _DurationPills extends StatelessWidget {
             Icon(
               Icons.tune_rounded,
               size: 16,
-              color: selected ? kColorCream : kColorDarkGreen,
+              color: selected ? kColorOffBlack : kColorTextSecondary,
             ),
             const SizedBox(width: 6),
             Text(
               'Personalizado',
               style: TextStyle(
-                color: selected ? kColorCream : kColorDarkGreen,
+                color: selected ? kColorOffBlack : kColorTextSecondary,
                 fontWeight: AppType.weightSemiBold,
                 fontSize: AppType.sizeLabel,
               ),
@@ -306,7 +322,7 @@ class _DurationPills extends StatelessWidget {
               if (value == null) return;
               Navigator.of(dialogContext).pop(value);
             },
-            style: TextButton.styleFrom(foregroundColor: kColorDarkGreen),
+            style: TextButton.styleFrom(foregroundColor: kColorOffBlack),
             child: const Text('Aceptar', style: TextStyle(fontWeight: AppType.weightSemiBold)),
           ),
         ],
@@ -339,20 +355,13 @@ class _StatusPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (isRunning)
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: Lottie.asset(
-                'assets/Lottie/Loading.json',
-                repeat: true,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: kColorDarkGreen.withValues(alpha: 0.6),
-                  ),
-                ),
+            Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.symmetric(vertical: 5),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: kColorDarkGreen,
               ),
             )
           else
@@ -370,7 +379,7 @@ class _StatusPill extends StatelessWidget {
             Text(
               isRunning ? 'Activo' : 'En pausa',
               style: TextStyle(
-                color: isRunning ? kColorDarkGreen : kColorTextSecondary,
+                color: isRunning ? kColorOffBlack : kColorTextSecondary,
                 fontWeight: AppType.weightSemiBold,
                 fontSize: AppType.sizeCaption,
               ),

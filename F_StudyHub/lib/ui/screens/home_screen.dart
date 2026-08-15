@@ -47,7 +47,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: kColorBackground, // Reforzando el fondo orgánico
       appBar: AppBar(
-        title: const Text('StudyHub'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -59,6 +58,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [kColorDarkGreen, kColorSoftGreen],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+                  child: const Text(
+                    'StudyHub',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1,
+                      height: 1.1,
+                      color: kColorOffBlack,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
                 Lottie.asset(
                   'assets/Lottie/STUDENT.json',
                   height: 240,
@@ -69,7 +87,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   'Estudia en equipo,\na tu ritmo',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: kColorDarkGreen,
+                        color: kColorOffBlack,
                         fontWeight: AppType.weightSemiBold,
                         height: 1.2,
                       ),
@@ -161,7 +179,7 @@ class _HowItWorksModal extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               style: TextButton.styleFrom(
-                foregroundColor: kColorDarkGreen,
+                foregroundColor: kColorOffBlack,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),

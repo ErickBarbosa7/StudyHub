@@ -1,0 +1,10 @@
+import mongoose from 'mongoose';
+const uri = process.env.MURI;
+await mongoose.connect(uri, { serverSelectionTimeoutMS: 15000 });
+const names = await mongoose.connection.db.listCollections().toArray();
+console.log('COLLECTIONS:', names.map(c => c.name).join(', '));
+const count = await mongoose.connection.db.collection('Rooms').countDocuments();
+console.log('ROOMS COUNT:', count);
+const sample = await mongoose.connection.db.collection('Rooms').findOne();
+console.log('SAMPLE ROOM:', JSON.stringify(sample));
+await mongoose.disconnect();

@@ -124,8 +124,9 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 'StudyHub',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: kColorDarkGreen,
-                      fontWeight: AppType.weightSemiBold,
+                      color: kColorOffBlack,
+                      fontWeight: AppType.weightBold,
+                      fontSize: 40,
                     ),
               ),
               const SizedBox(height: 12),
@@ -200,7 +201,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                                   height: 24,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: kColorCream,
+                                    color: kColorOffBlack,
                                   ),
                                 )
                               : Text(
@@ -271,7 +272,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: selected ? kColorCream : kColorTextSecondary,
+              color: selected ? kColorOffBlack : kColorTextSecondary,
               fontWeight: AppType.weightSemiBold,
               fontSize: AppType.sizeBody,
             ),
@@ -293,7 +294,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               children: [
                 const TabBar(
                   indicatorColor: kColorDarkGreen,
-                  labelColor: kColorDarkGreen,
+                  labelColor: kColorOffBlack,
                   unselectedLabelColor: kColorTextSecondary,
                   indicatorSize: TabBarIndicatorSize.label,
                   tabs: [
@@ -364,7 +365,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           Text(
             roomId,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: kColorDarkGreen,
+                  color: kColorOffBlack,
                   fontWeight: AppType.weightBold,
                   letterSpacing: 1.2,
                 ),
@@ -432,7 +433,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 avatar: const Icon(Icons.circle, size: 10, color: kColorDarkGreen),
                 label: Text(
                   user.name,
-                  style: const TextStyle(color: kColorDarkGreen, fontWeight: AppType.weightSemiBold),
+                  style: const TextStyle(color: kColorOffBlack, fontWeight: AppType.weightSemiBold),
                 ),
               )).toList(),
             ),

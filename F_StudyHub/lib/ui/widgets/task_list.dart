@@ -218,7 +218,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                         borderRadius: BorderRadius.circular(24),
                       ),
                       backgroundColor: kColorDarkGreen,
-                      foregroundColor: kColorCream,
+                      foregroundColor: kColorOffBlack,
                       elevation: 0,
                     ),
                     child: const Icon(Icons.add_rounded, size: 28),
@@ -307,7 +307,7 @@ class _TaskTile extends StatelessWidget {
                   child: done
                       ? const Icon(
                           Icons.check_rounded,
-                          color: kColorCream,
+                          color: kColorOffBlack,
                           size: 18,
                         )
                       : null,
@@ -375,7 +375,7 @@ class _TaskTile extends StatelessWidget {
       case 'COMPLETED':
         return (
           background: kColorSoftGreen.withValues(alpha: 0.2),
-          foreground: kColorDarkGreen.withValues(alpha: 0.7),
+          foreground: kColorSoftGreen,
         );
       case 'PENDING':
       default:
@@ -426,19 +426,19 @@ class _StateOption extends StatelessWidget {
                     : code == 'IN_PROGRESS'
                         ? Icons.play_circle_outline_rounded
                         : Icons.schedule_rounded,
-                color: selected ? kColorCream : kColorDarkGreen,
+                color: selected ? kColorOffBlack : kColorTextSecondary,
               ),
               const SizedBox(width: 14),
               Text(
                 label,
                 style: TextStyle(
-                  color: selected ? kColorCream : kColorOffBlack,
+                  color: kColorOffBlack,
                   fontWeight: AppType.weightSemiBold,
                 ),
               ),
               const Spacer(),
               if (selected)
-                const Icon(Icons.check_rounded, color: kColorCream, size: 20),
+                const Icon(Icons.check_rounded, color: kColorOffBlack, size: 20),
             ],
           ),
         ),

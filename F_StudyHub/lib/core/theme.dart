@@ -1,57 +1,59 @@
 import 'package:flutter/material.dart';
 
 // ─────────────────────────────────────────────────────────────
-// PALETA DE COLOR — "Sinergia Creativa" (Concentración & Equipo)
-// #4F46E5 (Índigo Vibrante) es el color principal (foco).
-// El Menta rompe la monotonía del azul y se usa para éxito/secundarios.
-// El Naranja aporta la energía humana del "trabajo en equipo".
+// PALETA DE COLOR — "Marigold & Índigo" (Basada en Ilustraciones)
+// #FFC436 (Naranja Claro/Marigold) es el color principal.
+// Sintoniza con las animaciones Lottie (dorado #FFC627/#FBC830) y con
+// los grises pizarra de la ilustración (#253138, #455A63, #37464F).
+// El Índigo contrasta perfectamente y el Gris Pizarra ancla el diseño.
 // Los nombres de variables se mantienen intactos.
 // ─────────────────────────────────────────────────────────────
 
-const Color kColorBackground = Color(0xFFF8FAFC); // Blanco perla muy limpio
-const Color kColorCream = Color(0xFFF8FAFC);
+const Color kColorBackground = Color(0xFFF4F5F8); // Gris perla muy claro (fondo de la imagen)
+const Color kColorCream = Color(0xFFF4F5F8);
 
-// EL TRÍO PROTAGONISTA (Se reparten el peso visual para que el azul no ahogue la UI)
-const Color kColorDarkGreen = Color(0xFF4F46E5); // ÍNDIGO VIBRANTE (Color principal: concentración, acciones primarias)
-const Color kColorSoftGreen = Color(0xFF0D9488); // MENTA / TEAL OSCURO (Secundario: botones outline, éxito/completado)
-const Color kColorAmber = Color(0xFFF97316); // NARANJA CÁLIDO (Acentos: energía de equipo, notificaciones, badges)
+// EL TRÍO PROTAGONISTA
+const Color kColorDarkGreen = Color(0xFFFFC436); // NARANJA CLARO (Color principal: focos, acciones, luz de la ilustración)
+const Color kColorSoftGreen = Color(0xFF5A55D2); // ÍNDIGO SUAVE (Secundario: botones outline, texto de la ilustración)
+const Color kColorAmber = Color(0xFF434B54); // GRIS PIZARRA (Acentos: engranajes, libros, detalles de tareas)
 
 // COLORES DE APOYO
-const Color kColorOlive = Color(0xFFE2E8F0); // Gris-pizarra suave (Para bordes y chips neutrales)
-const Color kColorOffBlack = Color(0xFF0F172A); // Azul marino casi negro para textos legibles
-const Color kColorTextSecondary = Color(0xFF64748B); // Gris azulado para textos secundarios
+const Color kColorOlive = Color(0xFFE2E6EA); // Gris neutro suave (Para bordes y chips)
+const Color kColorOffBlack = Color(0xFF2C3137); // Pizarra casi negro para textos (combinado con los engranajes)
+const Color kColorTextSecondary = Color(0xFF717983); // Gris medio para textos secundarios
 
-const Color kColorAmberSoft = Color(0xFFFFEDD5); // Fondo suave para el Naranja
-const Color kColorTeal = Color(0xFF0D9488); // Menta para el chat (iconos y nombres)
-const Color kColorTealSoft = Color(0xFFCCFBF1); // Fondo suave para el chat
+const Color kColorAmberSoft = Color(0xFFFFF4D6); // Fondo suave para el Naranja Claro
+const Color kColorAnimationSoft = Color(0xFFFFF4D6); // Fondo suave del dial activo (empata con el dorado del loading)
+const Color kColorTeal = Color(0xFF5A55D2); // Índigo para el chat (iconos y nombres)
+const Color kColorTealSoft = Color(0xFFEEEDFB); // Fondo suave para el chat
 
-const Color kColorError = Color(0xFFEF4444);
+const Color kColorError = Color(0xFFE63946);
 const Color kColorErrorBorder = Color(0xFFFCA5A5);
 
 // SUPERFICIES Y SOMBRAS
 const Color kColorSurfaceWhite = Color(0xFFFFFFFF);
 const Color kColorSurfaceSoft = Color(0xB3FFFFFF);
-// Sombra teñida de Índigo para armonizar con la app
-final Color kColorTintedShadow = kColorDarkGreen.withValues(alpha: 0.08);
+// Sombra teñida del Índigo secundario para no ensuciar el naranja
+final Color kColorTintedShadow = kColorSoftGreen.withValues(alpha: 0.06);
 
 // ─────────────────────────────────────────────────────────────
 // ANILLO DE PRESENCIA — elemento de firma
-// Mismo trío de color, usado siempre con el mismo significado:
-// índigo = sesión activa, menta = completado, gris = inactivo.
+// naranja claro = sesión activa, índigo = completado, gris = inactivo.
 // Se aplica en 4 lugares: dial del pomodoro, anillo del avatar en
 // las tarjetas de sala, checkbox de tarea y estado de presencia en el chat.
 // No usar este set fuera de esos 4 contextos.
 // ─────────────────────────────────────────────────────────────
 
-const Color kColorRingActive = kColorDarkGreen; // Sesión de foco en curso (Índigo)
-const Color kColorRingComplete = kColorSoftGreen; // Tarea completada (Menta)
-const Color kColorRingInactive = kColorOlive; // Sala/tarea sin actividad (Gris)
+const Color kColorRingActive = kColorDarkGreen; // Sesión de foco en curso
+const Color kColorRingComplete = kColorSoftGreen; // Tarea o pomodoro completado
+const Color kColorRingInactive = kColorOlive; // Sala/tarea sin actividad
 
 // ─────────────────────────────────────────────────────────────
 // TIPOGRAFÍA
 // Recursive para todo lo editorial (títulos, cuerpo, botones).
 // Cascadia Code (mono) con cifras tabulares para lo que cambia número a número:
 // el conteo del pomodoro, timestamps del chat, contadores de tareas.
+// Los nombres de variables se mantienen intactos.
 // ─────────────────────────────────────────────────────────────
 
 const String kFontFamily = 'Recursive';
@@ -81,7 +83,7 @@ abstract final class AppType {
     fontFeatures: [FontFeature.tabularFigures()],
   );
 
-  static TextStyle monoTimer({Color color = kColorDarkGreen}) => TextStyle(
+  static TextStyle monoTimer({Color color = kColorOffBlack}) => TextStyle(
         fontFamily: kFontFamilyMono,
         fontWeight: weightSemiBold,
         fontSize: sizeTimerDisplay,
@@ -90,7 +92,7 @@ abstract final class AppType {
       );
 
   // Cursiva nativa de Recursive (eje slnt) para texto de apoyo,
-  // acento tipográfico al estilo de las interfaces de Claude Code.
+  // acento tipográfico de las interfaces estilo Claude Code.
   static const FontVariation italicSlant = FontVariation('slnt', -14);
 
   static TextStyle secondaryItalic({
@@ -110,11 +112,11 @@ abstract final class AppType {
 ThemeData buildTheme() {
   final ColorScheme colorScheme = ColorScheme(
     brightness: Brightness.light,
-    primary: kColorDarkGreen, // Índigo
-    onPrimary: kColorSurfaceWhite,
-    secondary: kColorSoftGreen, // Menta
+    primary: kColorDarkGreen, // Naranja Claro
+    onPrimary: kColorOffBlack, // TEXTO OSCURO para contrastar con el fondo claro
+    secondary: kColorSoftGreen, // Índigo
     onSecondary: kColorSurfaceWhite,
-    tertiary: kColorAmber, // Naranja Cálido
+    tertiary: kColorAmber, // Gris Pizarra
     onTertiary: kColorSurfaceWhite,
     tertiaryContainer: kColorAmberSoft,
     onTertiaryContainer: kColorOffBlack,
@@ -151,8 +153,8 @@ ThemeData buildTheme() {
 
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: kColorDarkGreen, // Botones principales en Índigo
-        foregroundColor: kColorSurfaceWhite,
+        backgroundColor: kColorDarkGreen, // Botones principales en Naranja Claro
+        foregroundColor: kColorOffBlack, // Texto oscuro para legibilidad
         minimumSize: const Size.fromHeight(56),
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -169,7 +171,7 @@ ThemeData buildTheme() {
 
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: kColorSoftGreen, // Botones secundarios rompen el patrón usando Menta
+        foregroundColor: kColorSoftGreen, // Botones secundarios en Índigo
         side: const BorderSide(color: kColorSoftGreen, width: 1.5),
         minimumSize: const Size.fromHeight(56),
         shape: RoundedRectangleBorder(
@@ -201,7 +203,7 @@ ThemeData buildTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: kColorDarkGreen, width: 2), // Índigo al escribir
+        borderSide: const BorderSide(color: kColorDarkGreen, width: 2), // Naranja al escribir
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
