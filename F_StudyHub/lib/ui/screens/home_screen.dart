@@ -33,7 +33,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showHowItWorks() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: kColorCream,
+      backgroundColor: kColorPaper,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -45,7 +45,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kColorBackground, // Reforzando el fondo orgánico
+      backgroundColor: kColorPaper,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -60,7 +60,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 ShaderMask(
                   shaderCallback: (bounds) => const LinearGradient(
-                    colors: [kColorDarkGreen, kColorSoftGreen],
+                    colors: [kColorSage, kColorDeepSage],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ).createShader(bounds),
@@ -72,7 +72,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       fontWeight: FontWeight.w800,
                       letterSpacing: -1,
                       height: 1.1,
-                      color: kColorOffBlack,
+                      color: kColorInk,
                     ),
                   ),
                 ),
@@ -87,7 +87,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   'Estudia en equipo,\na tu ritmo',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: kColorOffBlack,
+                        color: kColorInk,
                         fontWeight: AppType.weightSemiBold,
                         height: 1.2,
                       ),
@@ -152,7 +152,7 @@ class _HowItWorksModal extends StatelessWidget {
               'Tu espacio de enfoque',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: kColorOffBlack,
+                    color: kColorInk,
                     fontWeight: AppType.weightSemiBold,
                   ),
             ),
@@ -179,7 +179,7 @@ class _HowItWorksModal extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               style: TextButton.styleFrom(
-                foregroundColor: kColorOffBlack,
+                foregroundColor: kColorInk,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
@@ -215,10 +215,10 @@ class _HelpFeature extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: kColorOlive.withValues(alpha: 0.3), // Fondo muy suave
+              color: kColorSageSoft, // Salvia lavada, muy suave
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: kColorDarkGreen, size: 28),
+            child: Icon(icon, color: kColorDeepSage, size: 28),
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -228,7 +228,7 @@ class _HelpFeature extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: kColorOffBlack,
+                        color: kColorInk,
                         fontWeight: AppType.weightSemiBold,
                       ),
                 ),

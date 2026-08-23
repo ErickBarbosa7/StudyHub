@@ -29,13 +29,8 @@ class PomodoroTimer extends ConsumerWidget {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('¡Tiempo completado! Tómate un descanso.'),
-              backgroundColor: kColorOffBlack,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+            const SnackBar(
+              content: Text('¡Tiempo completado! Tómate un descanso.'),
             ),
           );
         });
@@ -45,7 +40,7 @@ class PomodoroTimer extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: kColorSurfaceWhite,
+        color: kColorCard, // Asegúrate de que esta variable exista en tu theme
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
@@ -66,12 +61,12 @@ class PomodoroTimer extends ConsumerWidget {
                   Container(
                     padding: EdgeInsets.all(compact ? 8 : 10),
                     decoration: BoxDecoration(
-                      color: kColorOlive.withValues(alpha: 0.3),
+                      color: kColorSageSoft, // Asegúrate de que exista
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
                       Icons.timer_rounded,
-                      color: kColorDarkGreen,
+                      color: kColorDeepSage, // Asegúrate de que exista
                       size: 24,
                     ),
                   ),
@@ -80,7 +75,7 @@ class PomodoroTimer extends ConsumerWidget {
                     child: Text(
                       'Pomodoro',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: kColorOffBlack,
+                            color: kColorInk,
                             fontWeight: AppType.weightSemiBold,
                           ),
                     ),
@@ -105,66 +100,72 @@ class PomodoroTimer extends ConsumerWidget {
             const SizedBox(height: 24),
           ],
 
+          // ─────────────────────────────────────────────────────────
+          // ÁREA DEL TEMPORIZADOR Y LA ANIMACIÓN (REDISEÑADA)
+          // ─────────────────────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            padding: const EdgeInsets.only(top: 16, bottom: 24, left: 24, right: 24),
             decoration: BoxDecoration(
               color: state.isRunning
-                  ? kColorAnimationSoft
+                  ? kColorSageSoft
                   : finished
-                      ? kColorSoftGreen.withValues(alpha: 0.2)
-                      : kColorSurfaceSoft,
+                      ? kColorGoldSoft 
+                      : kColorPaper,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        _formatTime(state.timeRemaining),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppType.monoTimer(
-                          color: finished ? kColorSoftGreen : kColorOffBlack,
-                        ),
-                      ),
-                    ),
-                    // Marca siempre visible al lado del contador, en pausa o en marcha
-                    SizedBox(
-                      width: 64,
-                      height: 56,
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: Lottie.asset(
-                          'assets/Lottie/claude.json',
-                          repeat: true,
-                          width: 84,
-                          height: 56,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Área de estado: "En pausa" detenido, loading cuando se inicia
+                // 1. ANIMACIÓN DE CLAUDE (Centrada, tamaño real de layout)
+                // La caja mide lo que el dibujo ocupa: sin hacks de escala
                 SizedBox(
-                  height: 44,
+                  width: 224,
+                  height: 150,
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: Lottie.asset(
+                      'assets/Lottie/claude.json',
+                      repeat: true,
+                      width: 224,
+                      height: 150,
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // 2. CONTADOR DE TIEMPO GIGANTE
+                Text(
+                  _formatTime(state.timeRemaining),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppType.monoTimer(
+                    color: finished ? kColorDeepSage : kColorInk,
+                  ).copyWith(fontSize: 56), // Fuente un poco más grande
+                  textAlign: TextAlign.center,
+                ),
+                
+                const SizedBox(height: 4),
+                
+                // 3. INDICADOR DE ESTADO (Loading dot o Texto)
+                SizedBox(
+                  height: 32,
                   child: Center(
                     child: finished
                         ? Text(
                             '¡Tiempo completado!',
                             style: AppType.secondaryItalic(
-                              color: kColorSoftGreen,
+                              color: kColorInk,
                             ).copyWith(fontWeight: AppType.weightSemiBold),
+                            textAlign: TextAlign.center,
                           )
                         : state.isRunning
-                            ? Lottie.asset(
-                                'assets/Lottie/Loading.json',
-                                repeat: true,
-                                width: 40,
-                                height: 40,
+                            ? Transform.scale(
+                                scale: 1.5, // Hacemos el puntito amarillo de loading un poco más grande
+                                child: Lottie.asset(
+                                  'assets/Lottie/Loading.json',
+                                  repeat: true,
+                                ),
                               )
                             : Text(
                                 'En pausa',
@@ -173,12 +174,15 @@ class PomodoroTimer extends ConsumerWidget {
                                 ).copyWith(
                                   fontWeight: AppType.weightSemiBold,
                                 ),
+                                textAlign: TextAlign.center,
                               ),
                   ),
                 ),
               ],
             ),
           ),
+          // ─────────────────────────────────────────────────────────
+
           const SizedBox(height: 24),
 
           if (state.isRunning)
@@ -252,14 +256,14 @@ class _DurationPills extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     color: selected
-                        ? kColorDarkGreen
-                        : kColorOlive.withValues(alpha: 0.3),
+                        ? kColorDeepSage
+                        : kColorSageSoft,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     _formatMinutes(seconds),
                     style: TextStyle(
-                      color: selected ? kColorOffBlack : kColorTextSecondary,
+                      color: selected ? kColorPaper : kColorTextSecondary,
                       fontWeight: AppType.weightSemiBold,
                       fontSize: AppType.sizeLabel,
                     ),
@@ -283,9 +287,12 @@ class _DurationPills extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? kColorDarkGreen : Colors.transparent,
+          color: selected ? kColorDeepSage : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: kColorDarkGreen, width: 1.2),
+          border: Border.all(
+            color: selected ? kColorDeepSage : kColorBorder,
+            width: 1.2,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -293,13 +300,13 @@ class _DurationPills extends StatelessWidget {
             Icon(
               Icons.tune_rounded,
               size: 16,
-              color: selected ? kColorOffBlack : kColorTextSecondary,
+              color: selected ? kColorPaper : kColorTextSecondary,
             ),
             const SizedBox(width: 6),
             Text(
               'Personalizado',
               style: TextStyle(
-                color: selected ? kColorOffBlack : kColorTextSecondary,
+                color: selected ? kColorPaper : kColorTextSecondary,
                 fontWeight: AppType.weightSemiBold,
                 fontSize: AppType.sizeLabel,
               ),
@@ -315,17 +322,17 @@ class _DurationPills extends StatelessWidget {
     final minutes = await showDialog<int>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: kColorSurfaceWhite,
+        backgroundColor: kColorPaper,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text(
           'Duración personalizada',
-          style: TextStyle(color: kColorOffBlack, fontWeight: AppType.weightSemiBold),
+          style: TextStyle(color: kColorInk, fontWeight: AppType.weightSemiBold),
         ),
         content: TextField(
           controller: controller,
           autofocus: true,
           keyboardType: TextInputType.number,
-          style: const TextStyle(color: kColorOffBlack),
+          style: const TextStyle(color: kColorInk),
           decoration: const InputDecoration(
             labelText: 'Minutos',
             hintText: 'ej. 20',
@@ -344,7 +351,7 @@ class _DurationPills extends StatelessWidget {
               if (value == null) return;
               Navigator.of(dialogContext).pop(value);
             },
-            style: TextButton.styleFrom(foregroundColor: kColorOffBlack),
+            style: TextButton.styleFrom(foregroundColor: kColorDeepSage),
             child: const Text('Aceptar', style: TextStyle(fontWeight: AppType.weightSemiBold)),
           ),
         ],
@@ -369,7 +376,7 @@ class _StatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: isRunning
-            ? kColorOlive.withValues(alpha: 0.3)
+            ? kColorSageSoft
             : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
       ),
@@ -383,7 +390,7 @@ class _StatusPill extends StatelessWidget {
               margin: const EdgeInsets.symmetric(vertical: 5),
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: kColorDarkGreen,
+                color: kColorDeepSage,
               ),
             )
           else
@@ -401,7 +408,7 @@ class _StatusPill extends StatelessWidget {
             Text(
               isRunning ? 'Activo' : 'En pausa',
               style: TextStyle(
-                color: isRunning ? kColorOffBlack : kColorTextSecondary,
+                color: isRunning ? kColorInk : kColorTextSecondary,
                 fontWeight: AppType.weightSemiBold,
                 fontSize: AppType.sizeCaption,
               ),

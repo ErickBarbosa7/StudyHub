@@ -63,9 +63,6 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 ? 'No se pudo crear la sala'
                 : 'No se encontró la sala con ese código',
           ),
-          backgroundColor: kColorOffBlack,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       );
     }
@@ -81,16 +78,16 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     final bool inRoom = roomState.room != null;
 
     return Scaffold(
-      backgroundColor: kColorCream,
+      backgroundColor: kColorPaper,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: kColorOffBlack),
+        iconTheme: const IconThemeData(color: kColorInk),
         title: inRoom
             ? Text(
                 roomState.room!.name,
                 style: const TextStyle(
-                  color: kColorOffBlack,
+                  color: kColorInk,
                   fontWeight: AppType.weightSemiBold,
                 ),
               )
@@ -124,7 +121,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 'StudyHub',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: kColorOffBlack,
+                      color: kColorInk,
                       fontWeight: AppType.weightBold,
                       fontSize: 40,
                     ),
@@ -140,7 +137,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               Container(
                 padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
-                  color: kColorSurfaceWhite,
+                  color: kColorCard,
                   borderRadius: BorderRadius.circular(32),
                   boxShadow: [
                     BoxShadow(
@@ -201,7 +198,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                                   height: 24,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: kColorOffBlack,
+                                    color: kColorInk,
                                   ),
                                 )
                               : Text(
@@ -226,7 +223,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: kColorCream,
+        color: kColorPaper,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -265,14 +262,14 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? kColorDarkGreen : Colors.transparent,
+            color: selected ? kColorDeepSage : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: selected ? kColorOffBlack : kColorTextSecondary,
+              color: selected ? kColorPaper : kColorTextSecondary,
               fontWeight: AppType.weightSemiBold,
               fontSize: AppType.sizeBody,
             ),
@@ -290,18 +287,14 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         Expanded(
           child: DefaultTabController(
             length: 2,
-            child: Column(
-              children: [
-                const TabBar(
-                  indicatorColor: kColorDarkGreen,
-                  labelColor: kColorOffBlack,
-                  unselectedLabelColor: kColorTextSecondary,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  tabs: [
-                    Tab(icon: Icon(Icons.timer_rounded), text: 'Estudio'),
-                    Tab(icon: Icon(Icons.chat_bubble_rounded), text: 'Chat'),
-                  ],
-                ),
+          child: Column(
+            children: [
+              const TabBar(
+                tabs: [
+                  Tab(icon: Icon(Icons.timer_rounded), text: 'Estudio'),
+                  Tab(icon: Icon(Icons.chat_bubble_rounded), text: 'Chat'),
+                ],
+              ),
                 Expanded(
                   child: TabBarView(
                     children: [
@@ -337,7 +330,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: kColorSurfaceWhite,
+        color: kColorCard,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -350,7 +343,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.key_rounded, size: 18, color: kColorDarkGreen),
+          const Icon(Icons.key_rounded, size: 18, color: kColorGold),
           const SizedBox(width: 8),
           Text(
             'Código de sala',
@@ -360,12 +353,12 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 ),
           ),
           const SizedBox(width: 8),
-          Container(width: 1, height: 18, color: kColorCream),
+          Container(width: 1, height: 18, color: kColorBorder),
           const SizedBox(width: 8),
           Text(
             roomId,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: kColorOffBlack,
+                  color: kColorInk,
                   fontWeight: AppType.weightBold,
                   letterSpacing: 1.2,
                 ),
@@ -378,11 +371,6 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Código $roomId copiado'),
-                  backgroundColor: kColorOffBlack,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
                 ),
               );
             },
@@ -412,7 +400,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           Text(
             'Conectados (${roomState.users.length})',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: kColorOffBlack,
+                  color: kColorInk,
                   fontWeight: AppType.weightSemiBold,
                 ),
           ),
@@ -427,13 +415,13 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               spacing: 8,
               runSpacing: 12,
               children: roomState.users.map((user) => Chip(
-                backgroundColor: kColorOlive.withValues(alpha: 0.3),
+                backgroundColor: kColorSageSoft,
                 side: BorderSide.none,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                avatar: const Icon(Icons.circle, size: 10, color: kColorDarkGreen),
+                avatar: const Icon(Icons.circle, size: 10, color: kColorDeepSage),
                 label: Text(
                   user.name,
-                  style: const TextStyle(color: kColorOffBlack, fontWeight: AppType.weightSemiBold),
+                  style: const TextStyle(color: kColorInk, fontWeight: AppType.weightSemiBold),
                 ),
               )).toList(),
             ),
@@ -457,15 +445,15 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       autofillHints: keyboardType == TextInputType.visiblePassword
           ? const [AutofillHints.oneTimeCode]
           : null,
-      style: const TextStyle(color: kColorOffBlack),
+      style: const TextStyle(color: kColorInk),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         labelStyle: const TextStyle(color: kColorTextSecondary),
         hintStyle: TextStyle(color: kColorTextSecondary.withValues(alpha: 0.5)),
-        prefixIcon: Icon(icon, color: kColorDarkGreen),
+        prefixIcon: Icon(icon, color: kColorDeepSage),
         filled: true,
-        fillColor: kColorCream,
+        fillColor: kColorPaper,
         contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(24),
@@ -473,7 +461,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(24),
-          borderSide: const BorderSide(color: kColorDarkGreen, width: 1.5),
+          borderSide: const BorderSide(color: kColorDeepSage, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(24),

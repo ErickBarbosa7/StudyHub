@@ -43,7 +43,7 @@ class _TaskListState extends ConsumerState<TaskList> {
   void _changeState(Task task) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: kColorCream,
+      backgroundColor: kColorPaper,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -59,7 +59,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                 'Cambiar estado',
                 textAlign: TextAlign.center,
                 style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
-                      color: kColorOffBlack,
+                      color: kColorInk,
                       fontWeight: AppType.weightSemiBold,
                     ),
               ),
@@ -106,7 +106,7 @@ class _TaskListState extends ConsumerState<TaskList> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: kColorSurfaceWhite,
+        color: kColorCard,
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
@@ -124,12 +124,12 @@ class _TaskListState extends ConsumerState<TaskList> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: kColorAmberSoft,
+                  color: kColorGoldSoft, // Arena dorada
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(
                   Icons.checklist_rounded,
-                  color: kColorAmber,
+                  color: kColorGold, // El hilo de oro del módulo
                   size: 24,
                 ),
               ),
@@ -138,7 +138,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                 child: Text(
                   'Tareas',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: kColorOffBlack,
+                        color: kColorInk,
                         fontWeight: AppType.weightSemiBold,
                       ),
                 ),
@@ -146,13 +146,13 @@ class _TaskListState extends ConsumerState<TaskList> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: kColorAmberSoft,
+                  color: kColorGoldSoft,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
                   '${tasks.length}',
                   style: const TextStyle(
-                    color: kColorAmber,
+                    color: kColorInk,
                     fontWeight: AppType.weightSemiBold,
                   ),
                 ),
@@ -170,7 +170,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                   child: TextFormField(
                     controller: _taskController,
                     textCapitalization: TextCapitalization.sentences,
-                    style: const TextStyle(color: kColorOffBlack),
+                    style: const TextStyle(color: kColorInk),
                     decoration: InputDecoration(
                       labelText: 'Nueva tarea',
                       hintText: 'ej. Terminar ejercicios',
@@ -179,9 +179,9 @@ class _TaskListState extends ConsumerState<TaskList> {
                         color: kColorTextSecondary.withValues(alpha: 0.5),
                       ),
                       prefixIcon:
-                          const Icon(Icons.add_task_rounded, color: kColorDarkGreen),
+                          const Icon(Icons.add_task_rounded, color: kColorDeepSage),
                       filled: true,
-                      fillColor: kColorSurfaceSoft,
+                      fillColor: kColorPaper,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 18,
@@ -193,7 +193,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide:
-                            const BorderSide(color: kColorDarkGreen, width: 1.5),
+                            const BorderSide(color: kColorDeepSage, width: 1.5),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -217,8 +217,8 @@ class _TaskListState extends ConsumerState<TaskList> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      backgroundColor: kColorDarkGreen,
-                      foregroundColor: kColorOffBlack,
+                      backgroundColor: kColorDeepSage,
+                      foregroundColor: kColorPaper,
                       elevation: 0,
                     ),
                     child: const Icon(Icons.add_rounded, size: 28),
@@ -237,7 +237,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                   const Icon(
                     Icons.fact_check_outlined,
                     size: 40,
-                    color: kColorAmber,
+                    color: kColorGold,
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -280,7 +280,7 @@ class _TaskTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
       decoration: BoxDecoration(
-        color: kColorSurfaceSoft,
+        color: kColorPaper,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -297,17 +297,17 @@ class _TaskTile extends StatelessWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: done ? kColorDarkGreen : Colors.transparent,
+                    color: done ? kColorDeepSage : Colors.transparent,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: done ? kColorDarkGreen : kColorAmber,
+                      color: done ? kColorDeepSage : kColorGold, // Ornamento dorado al pendiente
                       width: 2,
                     ),
                   ),
                   child: done
                       ? const Icon(
                           Icons.check_rounded,
-                          color: kColorOffBlack,
+                          color: kColorPaper,
                           size: 18,
                         )
                       : null,
@@ -322,7 +322,7 @@ class _TaskTile extends StatelessWidget {
               child: Text(
                 task.title,
                 style: TextStyle(
-                  color: kColorOffBlack,
+                  color: kColorInk,
                   fontWeight: AppType.weightMedium,
                   decoration: done ? TextDecoration.lineThrough : null,
                   decorationColor: kColorTextSecondary,
@@ -369,13 +369,13 @@ class _TaskTile extends StatelessWidget {
     switch (code) {
       case 'IN_PROGRESS':
         return (
-          background: kColorAmberSoft,
-          foreground: kColorOffBlack,
+          background: kColorGoldSoft,
+          foreground: kColorInk,
         );
       case 'COMPLETED':
         return (
-          background: kColorSoftGreen.withValues(alpha: 0.2),
-          foreground: kColorSoftGreen,
+          background: kColorSageSoft,
+          foreground: kColorDeepSage,
         );
       case 'PENDING':
       default:
@@ -409,12 +409,12 @@ class _StateOption extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
-            color: selected ? kColorDarkGreen : Colors.transparent,
+            color: selected ? kColorDeepSage : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
             border: selected
                 ? null
                 : Border.all(
-                    color: kColorAmber.withValues(alpha: 0.5),
+                    color: kColorBorder,
                     width: 1.5,
                   ),
           ),
@@ -426,19 +426,19 @@ class _StateOption extends StatelessWidget {
                     : code == 'IN_PROGRESS'
                         ? Icons.play_circle_outline_rounded
                         : Icons.schedule_rounded,
-                color: selected ? kColorOffBlack : kColorTextSecondary,
+                color: selected ? kColorPaper : kColorTextSecondary,
               ),
               const SizedBox(width: 14),
               Text(
                 label,
                 style: TextStyle(
-                  color: kColorOffBlack,
+                  color: selected ? kColorPaper : kColorInk,
                   fontWeight: AppType.weightSemiBold,
                 ),
               ),
               const Spacer(),
               if (selected)
-                const Icon(Icons.check_rounded, color: kColorOffBlack, size: 20),
+                const Icon(Icons.check_rounded, color: kColorPaper, size: 20),
             ],
           ),
         ),

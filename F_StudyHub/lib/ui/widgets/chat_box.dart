@@ -60,7 +60,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: kColorSurfaceWhite,
+        color: kColorCard,
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
@@ -78,12 +78,12 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: kColorTealSoft,
+                  color: kColorSageSoft,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(
                   Icons.forum_rounded,
-                  color: kColorTeal,
+                  color: kColorDeepSage,
                   size: 24,
                 ),
               ),
@@ -92,7 +92,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                 child: Text(
                   'Chat',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: kColorOffBlack,
+                    color: kColorInk,
                     fontWeight: AppType.weightSemiBold,
                   ),
                 ),
@@ -105,7 +105,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 4),
               decoration: BoxDecoration(
-                color: kColorSurfaceSoft,
+                color: kColorPaper,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: messages.isEmpty
@@ -116,7 +116,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                           const Icon(
                             Icons.chat_bubble_outline_rounded,
                             size: 40,
-                            color: kColorTeal,
+                            color: kColorSage,
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -152,7 +152,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                   child: TextFormField(
                     controller: _messageController,
                     textCapitalization: TextCapitalization.sentences,
-                    style: const TextStyle(color: kColorOffBlack),
+                    style: const TextStyle(color: kColorInk),
                     decoration: InputDecoration(
                       labelText: 'Escribe un mensaje',
                       hintText: 'ej. ¿Vamos por el capítulo 3?',
@@ -161,7 +161,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                         color: kColorTextSecondary.withValues(alpha: 0.5),
                       ),
                       filled: true,
-                      fillColor: kColorSurfaceSoft,
+                      fillColor: kColorPaper,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 18,
@@ -173,7 +173,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: const BorderSide(
-                          color: kColorTeal,
+                          color: kColorDeepSage,
                           width: 1.5,
                         ),
                       ),
@@ -203,8 +203,8 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      backgroundColor: kColorDarkGreen,
-                      foregroundColor: kColorOffBlack,
+                      backgroundColor: kColorDeepSage,
+                      foregroundColor: kColorPaper,
                       elevation: 0,
                     ),
                     child: const Icon(Icons.send_rounded, size: 24),
@@ -234,7 +234,7 @@ class _MessageBubble extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
         constraints: const BoxConstraints(maxWidth: 280),
         decoration: BoxDecoration(
-          color: isOwn ? kColorDarkGreen : kColorTealSoft,
+          color: isOwn ? kColorDeepSage : kColorSageSoft,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(isOwn ? 20 : 4),
             topRight: Radius.circular(isOwn ? 4 : 20),
@@ -251,7 +251,7 @@ class _MessageBubble extends StatelessWidget {
                 child: Text(
                   message.senderName,
                   style: const TextStyle(
-                    color: kColorTeal,
+                    color: kColorDeepSage,
                     fontWeight: AppType.weightBold,
                     fontSize: AppType.sizeCaption,
                   ),
@@ -260,7 +260,7 @@ class _MessageBubble extends StatelessWidget {
             Text(
               message.text,
               style: TextStyle(
-                color: kColorOffBlack,
+                color: isOwn ? kColorPaper : kColorInk,
                 height: 1.3,
               ),
             ),
@@ -271,7 +271,7 @@ class _MessageBubble extends StatelessWidget {
                 _formatHour(message.timestamp),
                 style: TextStyle(
                   color: isOwn
-                      ? kColorOffBlack.withValues(alpha: 0.7)
+                      ? kColorPaper.withValues(alpha: 0.75)
                       : kColorTextSecondary,
                   fontSize: AppType.sizeMicro,
                   fontFamily: kFontFamilyMono,
