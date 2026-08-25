@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../core/theme.dart';
+import '../../data/services/sound_service.dart';
 import '../../logic/pomodoro_provider.dart';
 
 const _durationPresets = [5 * 60, 10 * 60, 15 * 60, 30 * 60];
@@ -22,10 +23,14 @@ class PomodoroTimer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(pomodoroProvider);
+    final soundState = ref.watch(soundProvider);
     final bool finished = state.isFinished;
 
     ref.listen<PomodoroState>(pomodoroProvider, (previous, next) {
       if (next.isFinished && !(previous?.isFinished ?? false)) {
+        // Reproducir sonido al terminar el pomodoro
+        ref.read(soundProvider.notifier).playPomodoroFinishedSound();
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -81,6 +86,25 @@ class PomodoroTimer extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(
+                      soundState.isEnabled
+                          ? Icons.volume_up_rounded
+                          : Icons.volume_off_rounded,
+                      color: soundState.isEnabled
+                          ? kColorDeepSage
+                          : kColorTextSecondary,
+                      size: 20,
+                    ),
+                    tooltip: soundState.isEnabled
+                        ? 'Sonido activado'
+                        : 'Sonido silenciado',
+                    onPressed: () =>
+                        ref.read(soundProvider.notifier).toggleSound(),
+                    visualDensity: VisualDensity.compact,
+                    splashRadius: 18,
+                  ),
+                  const SizedBox(width: 4),
                   _StatusPill(
                     isRunning: state.isRunning,
                     compact: compact,
