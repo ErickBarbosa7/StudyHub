@@ -20,6 +20,7 @@ class SoundNotifier extends StateNotifier<SoundState> {
   }
 
   final AudioPlayer _player = AudioPlayer();
+  bool _unlocked = false;
 
   Future<void> _init() async {
     try {
@@ -28,6 +29,24 @@ class SoundNotifier extends StateNotifier<SoundState> {
       state = state.copyWith(isEnabled: enabled);
     } catch (e) {
       debugPrint('[SoundNotifier] Error cargando preferencias de sonido: $e');
+    }
+  }
+
+  Future<void> unlock() async {
+    if (_unlocked) return;
+    _unlocked = true;
+    try {
+      if (kIsWeb) {
+        final unlocker = AudioPlayer();
+        await unlocker.setSource(AssetSource('audio/pomodoro_bell.mp3'));
+        await unlocker.setVolume(0);
+        await unlocker.resume();
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        await unlocker.stop();
+        await unlocker.dispose();
+      }
+    } catch (e) {
+      debugPrint('[SoundNotifier] Error desbloqueando audio: $e');
     }
   }
 

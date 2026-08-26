@@ -56,6 +56,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
     }
 
     final double padding = MediaQuery.sizeOf(context).width < 600 ? 16 : 24;
+    final bool compact = MediaQuery.sizeOf(context).width < 600;
     final double bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -77,30 +78,31 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(compact ? 8 : 10),
                 decoration: BoxDecoration(
                   color: kColorSageSoft,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.forum_rounded,
                   color: kColorDeepSage,
-                  size: 24,
+                  size: compact ? 20 : 24,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: compact ? 12 : 16),
               Expanded(
                 child: Text(
                   'Chat',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: kColorInk,
                     fontWeight: AppType.weightSemiBold,
+                    fontSize: compact ? AppType.sizeTitle : null,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: compact ? 16 : 24),
 
           Expanded(
             child: Container(
@@ -114,16 +116,18 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.chat_bubble_outline_rounded,
-                            size: 40,
+                            size: compact ? 32 : 40,
                             color: kColorSage,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: compact ? 8 : 12),
                           Text(
                             'Todavía no hay mensajes.\n¡Inicia la conversación!',
                             textAlign: TextAlign.center,
-                            style: AppType.secondaryItalic(),
+                            style: AppType.secondaryItalic(
+                              size: compact ? AppType.sizeBody : AppType.sizeBodyMedium,
+                            ),
                           ),
                         ],
                       ),
@@ -142,7 +146,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                     ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: compact ? 12 : 16),
 
           Form(
             key: _formKey,
@@ -163,9 +167,9 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                       ),
                       filled: true,
                       fillColor: kColorPaper,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 18,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: compact ? 16 : 24,
+                        vertical: compact ? 14 : 18,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -193,10 +197,10 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                     onFieldSubmitted: (_) => _send(),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: compact ? 8 : 12),
                 SizedBox(
-                  height: 56,
-                  width: 56,
+                  height: compact ? 48 : 56,
+                  width: compact ? 48 : 56,
                   child: ElevatedButton(
                     onPressed: _send,
                     style: ElevatedButton.styleFrom(
@@ -208,7 +212,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                       foregroundColor: kColorPaper,
                       elevation: 0,
                     ),
-                    child: const Icon(Icons.send_rounded, size: 24),
+                    child: Icon(Icons.send_rounded, size: compact ? 20 : 24),
                   ),
                 ),
               ],
@@ -246,18 +250,19 @@ class _MessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!isOwn)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Text(
-                  message.senderName,
-                  style: const TextStyle(
-                    color: kColorDeepSage,
-                    fontWeight: AppType.weightBold,
-                    fontSize: AppType.sizeCaption,
-                  ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                isOwn ? 'Tú' : message.senderName,
+                style: TextStyle(
+                  color: isOwn
+                      ? kColorPaper.withValues(alpha: 0.75)
+                      : kColorDeepSage,
+                  fontWeight: AppType.weightBold,
+                  fontSize: AppType.sizeCaption,
                 ),
               ),
+            ),
             Text(
               message.text,
               style: TextStyle(

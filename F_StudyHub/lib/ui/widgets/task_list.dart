@@ -102,9 +102,10 @@ class _TaskListState extends ConsumerState<TaskList> {
   @override
   Widget build(BuildContext context) {
     final tasks = ref.watch(taskProvider).tasks;
+    final bool compact = MediaQuery.sizeOf(context).width < 600;
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(compact ? 16 : 24),
       decoration: BoxDecoration(
         color: kColorCard,
         borderRadius: BorderRadius.circular(32),
@@ -122,29 +123,30 @@ class _TaskListState extends ConsumerState<TaskList> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(compact ? 8 : 10),
                 decoration: BoxDecoration(
                   color: kColorGoldSoft, // Arena dorada
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.checklist_rounded,
                   color: kColorGold, // El hilo de oro del módulo
-                  size: 24,
+                  size: compact ? 20 : 24,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: compact ? 12 : 16),
               Expanded(
                 child: Text(
                   'Tareas',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: kColorInk,
                         fontWeight: AppType.weightSemiBold,
+                        fontSize: compact ? AppType.sizeTitle : null,
                       ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12, vertical: compact ? 4 : 6),
                 decoration: BoxDecoration(
                   color: kColorGoldSoft,
                   borderRadius: BorderRadius.circular(16),
@@ -159,7 +161,7 @@ class _TaskListState extends ConsumerState<TaskList> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: compact ? 16 : 24),
 
           Form(
             key: _formKey,
@@ -182,9 +184,9 @@ class _TaskListState extends ConsumerState<TaskList> {
                           const Icon(Icons.add_task_rounded, color: kColorDeepSage),
                       filled: true,
                       fillColor: kColorPaper,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 18,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: compact ? 16 : 24,
+                        vertical: compact ? 14 : 18,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -206,10 +208,10 @@ class _TaskListState extends ConsumerState<TaskList> {
                     onFieldSubmitted: (_) => _addTask(),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: compact ? 8 : 12),
                 SizedBox(
-                  height: 56,
-                  width: 56,
+                  height: compact ? 48 : 56,
+                  width: compact ? 48 : 56,
                   child: ElevatedButton(
                     onPressed: _addTask,
                     style: ElevatedButton.styleFrom(
@@ -227,7 +229,7 @@ class _TaskListState extends ConsumerState<TaskList> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: compact ? 16 : 24),
 
           if (tasks.isEmpty)
             Padding(

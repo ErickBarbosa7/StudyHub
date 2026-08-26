@@ -1,11 +1,11 @@
 {
-    "name": "studyhub_frontend",
-    "short_name": "studyhub_frontend",
+    "name": "StudyHub",
+    "short_name": "StudyHub",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FDFCF8",
     "theme_color": "#FDFCF8",
-    "description": "A new Flutter project.",
+    "description": "Salas de estudio colaborativas en tiempo real.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

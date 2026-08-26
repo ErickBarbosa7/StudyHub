@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../core/theme.dart';
+import '../../data/services/sound_service.dart';
 import '../../logic/room_provider.dart';
 import '../../logic/socket_provider.dart';
 import 'create_room_screen.dart';
@@ -105,9 +106,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   width: double.infinity,
                   height: 56, // Botón más amplio y táctil
                   child: ElevatedButton.icon(
-                    onPressed: () => Navigator.of(context).pushNamed(
-                      CreateRoomScreen.routeName,
-                    ),
+                    onPressed: () {
+                      ref.read(soundProvider.notifier).unlock();
+                      Navigator.of(context).pushNamed(
+                        CreateRoomScreen.routeName,
+                      );
+                    },
                     icon: const Icon(Icons.add_rounded),
                     label: const Text('Crear o unirse a una sala'),
                     style: ElevatedButton.styleFrom(

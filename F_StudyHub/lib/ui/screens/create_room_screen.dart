@@ -281,6 +281,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
   // 2. EL ESPACIO DE TRABAJO (Diseño de Dashboard, sin límite de ancho)
   Widget _buildWorkspace(RoomState roomState) {
+    final bool compact = MediaQuery.sizeOf(context).width < 600;
     return Column(
       children: [
         _buildUsersHeader(roomState),
@@ -300,7 +301,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                     children: [
                       // PESTAÑA 1: Temporizador y Tareas
                       SingleChildScrollView(
-                        padding: const EdgeInsets.all(24),
+                        padding: EdgeInsets.all(compact ? 16 : 24),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: const [
@@ -315,7 +316,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                         builder: (context) {
                           final bottomInset = MediaQuery.of(context).viewInsets.bottom;
                           return Padding(
-                            padding: EdgeInsets.fromLTRB(24, 24, 24, bottomInset > 0 ? 8 : 24),
+                            padding: EdgeInsets.fromLTRB(compact ? 16 : 24, compact ? 16 : 24, compact ? 16 : 24, bottomInset > 0 ? 8 : (compact ? 16 : 24)),
                             child: const ChatBox(),
                           );
                         },
@@ -332,8 +333,9 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   }
 
   Widget _buildRoomCodePill(String roomId) {
+    final bool compact = MediaQuery.sizeOf(context).width < 600;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14, vertical: compact ? 6 : 8),
       decoration: BoxDecoration(
         color: kColorCard,
         borderRadius: BorderRadius.circular(20),
@@ -348,27 +350,17 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.key_rounded, size: 18, color: kColorGold),
-          const SizedBox(width: 8),
-          Text(
-            'Código de sala',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: kColorTextSecondary,
-                  fontWeight: AppType.weightSemiBold,
-                ),
-          ),
-          const SizedBox(width: 8),
-          Container(width: 1, height: 18, color: kColorBorder),
-          const SizedBox(width: 8),
+          Icon(Icons.key_rounded, size: compact ? 14 : 16, color: kColorGold),
+          SizedBox(width: compact ? 6 : 8),
           Text(
             roomId,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: kColorInk,
                   fontWeight: AppType.weightBold,
                   letterSpacing: 1.2,
                 ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: compact ? 6 : 8),
           GestureDetector(
             onTap: () async {
               await Clipboard.setData(ClipboardData(text: roomId));
@@ -379,9 +371,9 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 ),
               );
             },
-            child: const Icon(
+            child: Icon(
               Icons.copy_rounded,
-              size: 18,
+              size: compact ? 14 : 16,
               color: kColorTextSecondary,
             ),
           ),
@@ -392,43 +384,87 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
   Widget _buildUsersHeader(RoomState roomState) {
     final room = roomState.room;
+    final bool compact = MediaQuery.sizeOf(context).width < 600;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+      padding: EdgeInsets.fromLTRB(compact ? 16 : 24, compact ? 6 : 8, compact ? 16 : 24, compact ? 8 : 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (room != null) ...[
-            _buildRoomCodePill(room.roomId),
-            const SizedBox(height: 16),
-          ],
-          Text(
-            'Conectados (${roomState.users.length})',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: kColorInk,
-                  fontWeight: AppType.weightSemiBold,
+          Row(
+            children: [
+              if (room != null) _buildRoomCodePill(room.roomId),
+              const Spacer(),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12, vertical: compact ? 4 : 6),
+                decoration: BoxDecoration(
+                  color: kColorSageSoft,
+                  borderRadius: BorderRadius.circular(16),
                 ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.people_rounded, size: compact ? 14 : 16, color: kColorDeepSage),
+                    SizedBox(width: compact ? 4 : 6),
+                    Text(
+                      '${roomState.users.length}',
+                      style: TextStyle(
+                        color: kColorInk,
+                        fontWeight: AppType.weightSemiBold,
+                        fontSize: compact ? AppType.sizeCaption : AppType.sizeBody,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: compact ? 8 : 12),
           if (roomState.users.isEmpty)
             Text(
               'Esperando a que tu equipo se una...',
-              style: AppType.secondaryItalic(size: AppType.sizeBodyMedium),
+              style: AppType.secondaryItalic(size: AppType.sizeCaption),
             )
           else
-            Wrap(
-              spacing: 8,
-              runSpacing: 12,
-              children: roomState.users.map((user) => Chip(
-                backgroundColor: kColorSageSoft,
-                side: BorderSide.none,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                avatar: const Icon(Icons.circle, size: 10, color: kColorDeepSage),
-                label: Text(
-                  user.name,
-                  style: const TextStyle(color: kColorInk, fontWeight: AppType.weightSemiBold),
-                ),
-              )).toList(),
+            SizedBox(
+              height: 32,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: roomState.users.length,
+                separatorBuilder: (context, index) => SizedBox(width: compact ? 6 : 8),
+                itemBuilder: (context, index) {
+                  final user = roomState.users[index];
+                  return Container(
+                    padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14, vertical: compact ? 6 : 8),
+                    decoration: BoxDecoration(
+                      color: kColorSageSoft,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: kColorDeepSage,
+                          ),
+                        ),
+                        SizedBox(width: compact ? 6 : 8),
+                        Text(
+                          user.name,
+                          style: TextStyle(
+                            color: kColorInk,
+                            fontWeight: AppType.weightSemiBold,
+                            fontSize: compact ? AppType.sizeCaption : AppType.sizeBody,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
         ],
       ),
