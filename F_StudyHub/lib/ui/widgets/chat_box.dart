@@ -56,9 +56,10 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
     }
 
     final double padding = MediaQuery.sizeOf(context).width < 600 ? 16 : 24;
+    final double bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
-      padding: EdgeInsets.all(padding),
+      padding: EdgeInsets.fromLTRB(padding, padding, padding, padding + bottomInset),
       decoration: BoxDecoration(
         color: kColorCard,
         borderRadius: BorderRadius.circular(32),

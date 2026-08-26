@@ -311,9 +311,14 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                         ),
                       ),
                       // PESTAÑA 2: Chat (con espacio propio para el teclado)
-                      const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: ChatBox(),
+                      Builder(
+                        builder: (context) {
+                          final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+                          return Padding(
+                            padding: EdgeInsets.fromLTRB(24, 24, 24, bottomInset > 0 ? 8 : 24),
+                            child: const ChatBox(),
+                          );
+                        },
                       ),
                     ],
                   ),
