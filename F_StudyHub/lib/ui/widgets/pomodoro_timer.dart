@@ -369,24 +369,37 @@ class _DurationPills extends StatelessWidget {
   Future<void> _promptCustomDuration(BuildContext context) async {
     final controller = TextEditingController();
 
-    final minutes = await showDialog<int>(
+    final minutes = await showModalBottomSheet<int>(
       context: context,
-      useSafeArea: true,
-      builder: (dialogContext) {
-        return Dialog(
-          backgroundColor: kColorPaper,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 360),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      isScrollControlled: true,
+      backgroundColor: kColorPaper,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        final bottomInset = MediaQuery.viewInsetsOf(sheetContext).bottom;
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: bottomInset),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: kColorBorder,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
                   Row(
                     children: [
                       Container(
@@ -405,7 +418,7 @@ class _DurationPills extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'Duración personalizada',
-                          style: Theme.of(dialogContext).textTheme.titleMedium?.copyWith(
+                          style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
                                 color: kColorInk,
                                 fontWeight: AppType.weightSemiBold,
                               ),
@@ -444,49 +457,49 @@ class _DurationPills extends StatelessWidget {
                     onSubmitted: (val) {
                       final value = int.tryParse(val.trim());
                       if (value == null) return;
-                      Navigator.of(dialogContext).pop(value);
+                      Navigator.of(sheetContext).pop(value);
                     },
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(),
-                        style: TextButton.styleFrom(
-                          foregroundColor: kColorTextSecondary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                        ),
-                        child: const Text('Cancelar'),
+                  ElevatedButton(
+                    onPressed: () {
+                      final value = int.tryParse(controller.text.trim());
+                      if (value == null) return;
+                      Navigator.of(sheetContext).pop(value);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kColorDeepSage,
+                      foregroundColor: kColorPaper,
+                      minimumSize: const Size(double.infinity, 46),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          final value = int.tryParse(controller.text.trim());
-                          if (value == null) return;
-                          Navigator.of(dialogContext).pop(value);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kColorDeepSage,
-                          foregroundColor: kColorPaper,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 10,
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Aceptar',
-                          style: TextStyle(fontWeight: AppType.weightSemiBold),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Aceptar',
+                      style: TextStyle(
+                        fontWeight: AppType.weightSemiBold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      style: TextButton.styleFrom(
+                        foregroundColor: kColorTextSecondary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 8,
                         ),
                       ),
-                    ],
+                      child: const Text(
+                        'Cancelar',
+                        style: TextStyle(fontWeight: AppType.weightMedium),
+                      ),
+                    ),
                   ),
                 ],
               ),
