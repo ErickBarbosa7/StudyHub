@@ -388,11 +388,11 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
   Widget _buildCodeInputFields() {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final double availableWidth = (screenWidth - 64).clamp(200.0, 360.0);
-    final double gap = (availableWidth * 0.025).clamp(4.0, 10.0);
-    final double boxWidth = ((availableWidth - gap * 5) / 6).clamp(28.0, 46.0);
+    final bool compact = screenWidth < 400;
+    final double boxWidth = compact ? 38 : 46;
     final double boxHeight = boxWidth * 1.2;
-    final double fontSize = boxWidth * 0.46;
+    final double gap = compact ? 8 : 10;
+    final double fontSize = compact ? 16 : 20;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,7 +407,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         ),
         SizedBox(height: boxWidth < 40 ? 8 : 12),
         SizedBox(
-          width: availableWidth,
+          width: screenWidth - 64,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(_codeLength, (index) {
