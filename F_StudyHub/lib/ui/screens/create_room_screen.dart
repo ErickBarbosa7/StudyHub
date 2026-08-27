@@ -37,6 +37,11 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   final _formKey = GlobalKey<FormState>();
 
   static const int _codeLength = 6;
+  
+  // --- LÍMITES DE CARACTERES PARA PRODUCCIÓN ---
+  static const int _maxUserNameLength = 20;
+  static const int _maxRoomNameLength = 50;
+
   late final List<TextEditingController> _codeControllers;
   late final List<FocusNode> _codeFocusNodes;
   bool _showCodeError = false;
@@ -364,32 +369,32 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         _leaveRoom();
       },
       child: Scaffold(
-      backgroundColor: kColorPaper,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: kColorInk),
-        title: inRoom
-            ? Text(
-                roomState.room!.name,
-                style: const TextStyle(
-                  color: kColorInk,
-                  fontWeight: AppType.weightSemiBold,
-                ),
-              )
-            : const Text(''),
-        actions: inRoom
-            ? [
-                IconButton(
-                  onPressed: _leaveRoom,
-                  icon: const Icon(Icons.logout_rounded, color: kColorTextSecondary),
-                  tooltip: 'Salir de la sala',
-                ),
-              ]
-            : null,
+        backgroundColor: kColorPaper,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: kColorInk),
+          title: inRoom
+              ? Text(
+                  roomState.room!.name,
+                  style: const TextStyle(
+                    color: kColorInk,
+                    fontWeight: AppType.weightSemiBold,
+                  ),
+                )
+              : const Text(''),
+          actions: inRoom
+              ? [
+                  IconButton(
+                    onPressed: _leaveRoom,
+                    icon: const Icon(Icons.logout_rounded, color: kColorTextSecondary),
+                    tooltip: 'Salir de la sala',
+                  ),
+                ]
+              : null,
+        ),
+        body: inRoom ? _buildWorkspace(roomState) : _buildCreateForm(roomState),
       ),
-      body: inRoom ? _buildWorkspace(roomState) : _buildCreateForm(roomState),
-    ),
     );
   }
 
@@ -442,14 +447,20 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                       const SizedBox(height: 8),
                       _buildModeHelpText(),
                       const SizedBox(height: 20),
+                      
+                      // --- CAMPO: NOMBRE DE USUARIO ---
                       _buildOrganicTextField(
                         controller: _userNameController,
                         label: 'Tu nombre',
                         hint: 'ej. Ana',
                         icon: Icons.person_outline_rounded,
+                        maxLength: _maxUserNameLength,
                       ),
+                      
                       const SizedBox(height: 24),
                       if (_mode == _FormMode.create)
+                      
+                        // --- CAMPO: NOMBRE DE SALA ---
                         _buildOrganicTextField(
                           controller: _roomNameController,
                           label: 'Nombre de la sala',
@@ -457,6 +468,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                           icon: Icons.meeting_room_rounded,
                           textCapitalization: TextCapitalization.sentences,
                           keyboardType: TextInputType.text,
+                          maxLength: _maxRoomNameLength,
                         )
                       else ...[
                         _buildCodeInputFields(),
@@ -976,6 +988,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     );
   }
 
+  // --- WIDGET ACTUALIZADO ---
   Widget _buildOrganicTextField({
     required TextEditingController controller,
     required String label,
@@ -983,10 +996,16 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     required IconData icon,
     TextCapitalization textCapitalization = TextCapitalization.sentences,
     TextInputType? keyboardType,
+    int? maxLength,
   }) {
     return TextFormField(
       controller: controller,
       textCapitalization: textCapitalization,
+      
+      // Bloqueo de entrada
+      maxLength: maxLength,
+      maxLengthEnforcement: maxLength != null ? MaxLengthEnforcement.enforced : null,
+      
       autofillHints: keyboardType == TextInputType.visiblePassword
           ? const [AutofillHints.oneTimeCode]
           : null,
@@ -994,6 +1013,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
+        
+        // Ocultar el contador "0/20" para mantener el diseño limpio
+        counterText: '',
+        
         labelStyle: const TextStyle(color: kColorTextSecondary),
         hintStyle: TextStyle(color: kColorTextSecondary.withValues(alpha: 0.5)),
         prefixIcon: Icon(icon, color: kColorDeepSage),
@@ -1013,7 +1036,12 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           borderSide: BorderSide(color: kColorErrorBorder, width: 1.5),
         ),
       ),
-      validator: (value) => (value == null || value.trim().isEmpty) ? 'Requerido' : null,
+      validator: (value) {
+        final text = value?.trim() ?? '';
+        if (text.isEmpty) return 'Requerido';
+        if (maxLength != null && text.length > maxLength) return 'Excede el límite';
+        return null;
+      },
     );
   }
 }
