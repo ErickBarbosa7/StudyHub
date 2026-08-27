@@ -370,79 +370,132 @@ class _DurationPills extends StatelessWidget {
     final controller = TextEditingController();
     final editFormKey = GlobalKey<FormState>();
 
-    final minutes = await showDialog<int>(
+    final minutes = await showGeneralDialog<int>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        alignment: Alignment.bottomCenter,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        backgroundColor: kColorPaper,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'Duración personalizada',
-          style: TextStyle(
-            color: kColorInk,
-            fontWeight: AppType.weightSemiBold,
-          ),
-        ),
-        content: Form(
-          key: editFormKey,
-          child: TextFormField(
-            controller: controller,
-            autofocus: true,
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.done,
-            maxLength: 3,
-            maxLengthEnforcement: MaxLengthEnforcement.enforced,
-            scrollPadding: const EdgeInsets.only(bottom: 20),
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(3),
-            ],
-            style: const TextStyle(color: kColorInk),
-            decoration: const InputDecoration(
-              labelText: 'Minutos',
-              hintText: 'ej. 25',
-              labelStyle: TextStyle(color: kColorTextSecondary),
-              counterText: '',
+      barrierDismissible: true,
+      barrierLabel: 'Cerrar',
+      barrierColor: Colors.black45,
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        final bottomInset = MediaQuery.viewInsetsOf(dialogContext).bottom;
+
+        return Material(
+          type: MaterialType.transparency,
+          child: SafeArea(
+            child: Center(
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOut,
+                padding: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  bottom: bottomInset > 0 ? (bottomInset * 0.35) : 0,
+                ),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 340),
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                  decoration: BoxDecoration(
+                    color: kColorPaper,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Duración personalizada',
+                        style: Theme.of(dialogContext).textTheme.titleLarge?.copyWith(
+                              color: kColorInk,
+                              fontWeight: AppType.weightSemiBold,
+                            ),
+                      ),
+                      const SizedBox(height: 20),
+                      Form(
+                        key: editFormKey,
+                        child: TextFormField(
+                          controller: controller,
+                          autofocus: true,
+                          keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.done,
+                          maxLength: 3,
+                          maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                          scrollPadding: EdgeInsets.zero,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(3),
+                          ],
+                          style: const TextStyle(color: kColorInk),
+                          decoration: const InputDecoration(
+                            labelText: 'Minutos',
+                            hintText: 'ej. 25',
+                            labelStyle: TextStyle(color: kColorTextSecondary),
+                            counterText: '',
+                          ),
+                          validator: (value) {
+                            final text = value?.trim() ?? '';
+                            if (text.isEmpty) return 'Requerido';
+                            final parsed = int.tryParse(text);
+                            if (parsed == null ||
+                                parsed < _kMinCustomMinutes ||
+                                parsed > _kMaxCustomMinutes) {
+                              return 'Entre $_kMinCustomMinutes y $_kMaxCustomMinutes min';
+                            }
+                            return null;
+                          },
+                          onFieldSubmitted: (_) {
+                            if (!editFormKey.currentState!.validate()) return;
+                            final value = int.tryParse(controller.text.trim());
+                            if (value == null) return;
+                            Navigator.of(dialogContext).pop(value);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            style: TextButton.styleFrom(
+                              foregroundColor: kColorTextSecondary,
+                            ),
+                            child: const Text('Cancelar'),
+                          ),
+                          const SizedBox(width: 8),
+                          TextButton(
+                            onPressed: () {
+                              if (!editFormKey.currentState!.validate()) return;
+                              final value = int.tryParse(controller.text.trim());
+                              if (value == null) return;
+                              Navigator.of(dialogContext).pop(value);
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: kColorDeepSage,
+                            ),
+                            child: const Text(
+                              'Aceptar',
+                              style: TextStyle(
+                                fontWeight: AppType.weightSemiBold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            validator: (value) {
-              final text = value?.trim() ?? '';
-              if (text.isEmpty) return 'Requerido';
-              final parsed = int.tryParse(text);
-              if (parsed == null || parsed < _kMinCustomMinutes || parsed > _kMaxCustomMinutes) {
-                return 'Entre $_kMinCustomMinutes y $_kMaxCustomMinutes min';
-              }
-              return null;
-            },
-            onFieldSubmitted: (_) {
-              if (!editFormKey.currentState!.validate()) return;
-              final value = int.tryParse(controller.text.trim());
-              if (value == null) return;
-              Navigator.of(dialogContext).pop(value);
-            },
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            style: TextButton.styleFrom(foregroundColor: kColorTextSecondary),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (!editFormKey.currentState!.validate()) return;
-              final value = int.tryParse(controller.text.trim());
-              if (value == null) return;
-              Navigator.of(dialogContext).pop(value);
-            },
-            style: TextButton.styleFrom(foregroundColor: kColorDeepSage),
-            child: const Text(
-              'Aceptar',
-              style: TextStyle(fontWeight: AppType.weightSemiBold),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
 
     final clamped = minutes
