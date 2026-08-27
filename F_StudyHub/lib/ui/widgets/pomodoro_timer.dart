@@ -5,6 +5,7 @@ import 'package:lottie/lottie.dart';
 import '../../core/theme.dart';
 import '../../data/services/sound_service.dart';
 import '../../logic/pomodoro_provider.dart';
+import 'help_icon.dart';
 
 const _durationPresets = [5 * 60, 10 * 60, 15 * 60, 30 * 60];
 
@@ -29,7 +30,6 @@ class PomodoroTimer extends ConsumerWidget {
 
     ref.listen<PomodoroState>(pomodoroProvider, (previous, next) {
       if (next.isFinished && !(previous?.isFinished ?? false)) {
-        // Reproducir sonido al terminar el pomodoro
         ref.read(soundProvider.notifier).playPomodoroFinishedSound();
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -46,7 +46,7 @@ class PomodoroTimer extends ConsumerWidget {
     return Container(
       padding: EdgeInsets.all(compact ? 16 : 24),
       decoration: BoxDecoration(
-        color: kColorCard, // Asegúrate de que esta variable exista en tu theme
+        color: kColorCard,
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
@@ -67,12 +67,12 @@ class PomodoroTimer extends ConsumerWidget {
                   Container(
                     padding: EdgeInsets.all(layoutCompact ? 8 : 10),
                     decoration: BoxDecoration(
-                      color: kColorSageSoft, // Asegúrate de que exista
+                      color: kColorSageSoft,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
                       Icons.timer_rounded,
-                      color: kColorDeepSage, // Asegúrate de que exista
+                      color: kColorDeepSage,
                       size: compact ? 20 : 24,
                     ),
                   ),
@@ -87,7 +87,16 @@ class PomodoroTimer extends ConsumerWidget {
                           ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
+                  HelpIcon(
+                    title: 'Temporizador Pomodoro',
+                    description:
+                        'Cronómetro compartido para que todo el equipo se concentre al mismo tiempo. '
+                        'Elige una duración, inicia, y todos verán el mismo conteo. '
+                        'Al terminar, sonará una campana para que descanses.',
+                    compact: compact,
+                  ),
+                  const SizedBox(width: 4),
                   if (!compact)
                     IconButton(
                       icon: Icon(
@@ -141,9 +150,6 @@ class PomodoroTimer extends ConsumerWidget {
             SizedBox(height: compact ? 16 : 24),
           ],
 
-          // ─────────────────────────────────────────────────────────
-          // ÁREA DEL TEMPORIZADOR Y LA ANIMACIÓN (REDISEÑADA)
-          // ─────────────────────────────────────────────────────────
           Container(
             padding: EdgeInsets.only(
               top: compact ? 10 : 16,
@@ -155,14 +161,13 @@ class PomodoroTimer extends ConsumerWidget {
               color: state.isRunning
                   ? kColorSageSoft
                   : finished
-                      ? kColorGoldSoft 
+                      ? kColorGoldSoft
                       : kColorPaper,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 1. ANIMACIÓN DE CLAUDE (Centrada, tamaño real de layout)
                 SizedBox(
                   width: compact ? 140 : 224,
                   height: compact ? 100 : 150,
@@ -176,23 +181,22 @@ class PomodoroTimer extends ConsumerWidget {
                     ),
                   ),
                 ),
-                
+
                 SizedBox(height: compact ? 2 : 8),
-                
-                // 2. CONTADOR DE TIEMPO GIGANTE
+
                 Text(
                   _formatTime(state.timeRemaining),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppType.monoTimer(
                     color: finished ? kColorDeepSage : kColorInk,
-                  ).copyWith(fontSize: compact ? 38 : 56),
+                    fontSize: compact ? AppType.sizeTimerCompact : AppType.sizeTimerLarge,
+                  ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 4),
-                
-                // 3. INDICADOR DE ESTADO (Loading dot o Texto)
+
                 SizedBox(
                   height: compact ? 24 : 32,
                   child: Center(
@@ -207,7 +211,7 @@ class PomodoroTimer extends ConsumerWidget {
                           )
                         : state.isRunning
                             ? Transform.scale(
-                                scale: 1.5, // Hacemos el puntito amarillo de loading un poco más grande
+                                scale: 1.5,
                                 child: Lottie.asset(
                                   'assets/Lottie/Loading.json',
                                   repeat: true,
@@ -228,7 +232,6 @@ class PomodoroTimer extends ConsumerWidget {
               ],
             ),
           ),
-          // ─────────────────────────────────────────────────────────
 
           SizedBox(height: compact ? 16 : 24),
 
@@ -297,7 +300,8 @@ class _DurationPills extends StatelessWidget {
           spacing: compact ? 6 : 8,
           runSpacing: compact ? 6 : 8,
           children: [
-            ..._durationPresets.map((seconds) {              final bool selected = seconds == selectedSeconds;
+            ..._durationPresets.map((seconds) {
+              final bool selected = seconds == selectedSeconds;
               return GestureDetector(
                 onTap: () => onSelected(seconds),
                 child: AnimatedContainer(

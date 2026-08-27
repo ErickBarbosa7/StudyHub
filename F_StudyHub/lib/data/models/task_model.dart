@@ -20,7 +20,7 @@ class Task {
       stateCode: json['stateCode'] as String,
       stateLabel: json['stateLabel'] as String,
       createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'] as String)
+          ? DateTime.tryParse(json['createdAt'] as String)?.toLocal()
           : null,
     );
   }

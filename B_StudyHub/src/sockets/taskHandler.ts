@@ -17,6 +17,17 @@ interface UpdateTaskStatusPayload {
   newStateRef: CatalogTaskStateCode;
 }
 
+interface DeleteTaskPayload {
+  roomId: string;
+  taskId: string;
+}
+
+interface EditTaskPayload {
+  roomId: string;
+  taskId: string;
+  title: string;
+}
+
 const STATE_ORDER = ['PENDING', 'IN_PROGRESS', 'COMPLETED'] as const;
 
 async function getRoomTasks(roomId: string): Promise<Array<TaskSubDoc & {
@@ -98,6 +109,46 @@ export function registerTaskHandler(io: Server, socket: Socket): void {
     await room.save();
 
     console.log(`[tasks] Estado actualizado en ${roomId}`);
+    await sendTaskSync(io, roomId);
+  });
+
+  socket.on('delete_task', async (payload: DeleteTaskPayload) => {
+    const { roomId, taskId } = payload;
+
+    if (!roomId || !taskId) {
+      return;
+    }
+
+    const room = await RoomModel.findOne({ roomId });
+    if (!room) return;
+
+    const target = room.tasks.find((item) => item.taskId === taskId);
+    if (!target) return;
+
+    room.tasks.pull({ taskId });
+    await room.save();
+
+    console.log(`[tasks] Tarea eliminada en ${roomId}`);
+    await sendTaskSync(io, roomId);
+  });
+
+  socket.on('edit_task', async (payload: EditTaskPayload) => {
+    const { roomId, taskId, title } = payload;
+
+    if (!roomId || !taskId || typeof title !== 'string' || title.trim() === '') {
+      return;
+    }
+
+    const room = await RoomModel.findOne({ roomId });
+    if (!room) return;
+
+    const task = room.tasks.find((item) => item.taskId === taskId);
+    if (!task) return;
+
+    task.title = title.trim();
+    await room.save();
+
+    console.log(`[tasks] Tarea editada en ${roomId}`);
     await sendTaskSync(io, roomId);
   });
 

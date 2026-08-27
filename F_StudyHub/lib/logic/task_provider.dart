@@ -8,12 +8,23 @@ import 'room_provider.dart';
 import 'socket_provider.dart';
 
 class TaskState {
-  const TaskState({this.tasks = const []});
+  const TaskState({
+    this.tasks = const [],
+    this.error,
+  });
 
   final List<Task> tasks;
+  final String? error;
 
-  TaskState copyWith({List<Task>? tasks}) {
-    return TaskState(tasks: tasks ?? this.tasks);
+  TaskState copyWith({
+    List<Task>? tasks,
+    String? error,
+    bool clearError = false,
+  }) {
+    return TaskState(
+      tasks: tasks ?? this.tasks,
+      error: clearError ? null : (error ?? this.error),
+    );
   }
 }
 
@@ -24,7 +35,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
       final tasks = (data as List)
           .map((item) => Task.fromJson(item as Map<String, dynamic>))
           .toList();
-      state = state.copyWith(tasks: tasks);
+      state = state.copyWith(tasks: tasks, clearError: true);
     });
   }
 
@@ -33,9 +44,16 @@ class TaskNotifier extends StateNotifier<TaskState> {
 
   String? get _roomId => _roomProvider.read(roomProvider).room?.roomId;
 
+  void clearError() {
+    state = state.copyWith(clearError: true);
+  }
+
   void addTask(String title) {
     final roomId = _roomId;
-    if (roomId == null || title.trim().isEmpty) return;
+    if (roomId == null || title.trim().isEmpty) {
+      state = state.copyWith(error: 'No se pudo agregar la tarea. Asegúrate de estar dentro de una sala.');
+      return;
+    }
 
     _socketService.emit('add_task', {
       'roomId': roomId,
@@ -45,12 +63,42 @@ class TaskNotifier extends StateNotifier<TaskState> {
 
   void updateTaskStatus(String taskId, String newStateRef) {
     final roomId = _roomId;
-    if (roomId == null) return;
+    if (roomId == null) {
+      state = state.copyWith(error: 'No se pudo actualizar la tarea. Asegúrate de estar dentro de una sala.');
+      return;
+    }
 
     _socketService.emit('update_task_status', {
       'roomId': roomId,
       'taskId': taskId,
       'newStateRef': newStateRef,
+    });
+  }
+
+  void deleteTask(String taskId) {
+    final roomId = _roomId;
+    if (roomId == null) {
+      state = state.copyWith(error: 'No se pudo eliminar la tarea.');
+      return;
+    }
+
+    _socketService.emit('delete_task', {
+      'roomId': roomId,
+      'taskId': taskId,
+    });
+  }
+
+  void editTask(String taskId, String newTitle) {
+    final roomId = _roomId;
+    if (roomId == null || newTitle.trim().isEmpty) {
+      state = state.copyWith(error: 'No se pudo editar la tarea.');
+      return;
+    }
+
+    _socketService.emit('edit_task', {
+      'roomId': roomId,
+      'taskId': taskId,
+      'title': newTitle.trim(),
     });
   }
 }

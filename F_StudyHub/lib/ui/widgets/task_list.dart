@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../data/models/task_model.dart';
 import '../../logic/task_provider.dart';
+import 'help_icon.dart';
 
 const _kTaskStates = <String, String>{
   'PENDING': 'Pendiente',
@@ -40,7 +41,7 @@ class _TaskListState extends ConsumerState<TaskList> {
     ref.read(taskProvider.notifier).updateTaskStatus(task.taskId, target);
   }
 
-  void _changeState(Task task) {
+  void _showTaskActions(Task task) {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: kColorPaper,
@@ -56,22 +57,49 @@ class _TaskListState extends ConsumerState<TaskList> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Cambiar estado',
+                task.title,
                 textAlign: TextAlign.center,
                 style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
                       color: kColorInk,
                       fontWeight: AppType.weightSemiBold,
                     ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 28),
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _editTask(task);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: kColorSageSoft,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_rounded, color: kColorDeepSage, size: 20),
+                      const SizedBox(width: 14),
+                      Text(
+                        'Editar nombre',
+                        style: TextStyle(
+                          color: kColorInk,
+                          fontWeight: AppType.weightSemiBold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
               Text(
-                task.title,
-                textAlign: TextAlign.center,
-                style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                'Cambiar estado',
+                style: Theme.of(sheetContext).textTheme.labelLarge?.copyWith(
                       color: kColorTextSecondary,
+                      fontWeight: AppType.weightSemiBold,
                     ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 12),
               ..._kTaskStates.entries.map((entry) => _StateOption(
                     code: entry.key,
                     label: entry.value,
@@ -83,6 +111,33 @@ class _TaskListState extends ConsumerState<TaskList> {
                       Navigator.of(sheetContext).pop();
                     },
                   )),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _confirmDelete(task);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: kColorError.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline_rounded, color: kColorError, size: 20),
+                      const SizedBox(width: 14),
+                      Text(
+                        'Eliminar esta tarea',
+                        style: TextStyle(
+                          color: kColorError,
+                          fontWeight: AppType.weightSemiBold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => Navigator.of(sheetContext).pop(),
@@ -99,10 +154,116 @@ class _TaskListState extends ConsumerState<TaskList> {
     );
   }
 
+  void _editTask(Task task) {
+    final controller = TextEditingController(text: task.title);
+    final editFormKey = GlobalKey<FormState>();
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: kColorPaper,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text(
+          'Editar tarea',
+          style: TextStyle(
+            color: kColorInk,
+            fontWeight: AppType.weightSemiBold,
+          ),
+        ),
+        content: Form(
+          key: editFormKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+            style: const TextStyle(color: kColorInk),
+            decoration: const InputDecoration(
+              labelText: 'Nombre de la tarea',
+              labelStyle: TextStyle(color: kColorTextSecondary),
+            ),
+            validator: (value) =>
+                (value == null || value.trim().isEmpty) ? 'Requerido' : null,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            style: TextButton.styleFrom(foregroundColor: kColorTextSecondary),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (!editFormKey.currentState!.validate()) return;
+              ref.read(taskProvider.notifier).editTask(task.taskId, controller.text);
+              Navigator.of(dialogContext).pop();
+            },
+            style: TextButton.styleFrom(foregroundColor: kColorDeepSage),
+            child: const Text(
+              'Guardar',
+              style: TextStyle(fontWeight: AppType.weightSemiBold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete(Task task) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: kColorPaper,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text(
+          '¿Eliminar tarea?',
+          style: TextStyle(
+            color: kColorInk,
+            fontWeight: AppType.weightSemiBold,
+          ),
+        ),
+        content: Text(
+          '"${task.title}" se eliminará permanentemente. Esta acción no se puede deshacer.',
+          style: AppType.secondaryItalic(color: kColorInk),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            style: TextButton.styleFrom(foregroundColor: kColorTextSecondary),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(taskProvider.notifier).deleteTask(task.taskId);
+              Navigator.of(dialogContext).pop();
+            },
+            style: TextButton.styleFrom(foregroundColor: kColorError),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(fontWeight: AppType.weightSemiBold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final tasks = ref.watch(taskProvider).tasks;
+    final taskState = ref.watch(taskProvider);
+    final tasks = taskState.tasks;
     final bool compact = MediaQuery.sizeOf(context).width < 600;
+
+    ref.listen<TaskState>(taskProvider, (previous, next) {
+      if (next.error != null && next.error != previous?.error) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(next.error!)),
+          );
+          ref.read(taskProvider.notifier).clearError();
+        });
+      }
+    });
 
     return Container(
       padding: EdgeInsets.all(compact ? 16 : 24),
@@ -125,12 +286,12 @@ class _TaskListState extends ConsumerState<TaskList> {
               Container(
                 padding: EdgeInsets.all(compact ? 8 : 10),
                 decoration: BoxDecoration(
-                  color: kColorGoldSoft, // Arena dorada
+                  color: kColorGoldSoft,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
                   Icons.checklist_rounded,
-                  color: kColorGold, // El hilo de oro del módulo
+                  color: kColorGold,
                   size: compact ? 20 : 24,
                 ),
               ),
@@ -145,6 +306,15 @@ class _TaskListState extends ConsumerState<TaskList> {
                       ),
                 ),
               ),
+              HelpIcon(
+                title: 'Tareas colaborativas',
+                description:
+                    'Lista de tareas que todos pueden ver y actualizar en tiempo real. '
+                    'Agrega tareas, márcalas como pendientes, en progreso o completadas. '
+                    'Todo se sincroniza automáticamente entre todos los miembros de la sala.',
+                compact: compact,
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12, vertical: compact ? 4 : 6),
                 decoration: BoxDecoration(
@@ -254,7 +424,7 @@ class _TaskListState extends ConsumerState<TaskList> {
             ...tasks.map((task) => _TaskTile(
                   task: task,
                   onToggleComplete: () => _toggleComplete(task),
-                  onOpenMenu: () => _changeState(task),
+                  onOpenMenu: () => _showTaskActions(task),
                 )),
         ],
       ),
@@ -302,7 +472,7 @@ class _TaskTile extends StatelessWidget {
                     color: done ? kColorDeepSage : Colors.transparent,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: done ? kColorDeepSage : kColorGold, // Ornamento dorado al pendiente
+                      color: done ? kColorDeepSage : kColorGold,
                       width: 2,
                     ),
                   ),

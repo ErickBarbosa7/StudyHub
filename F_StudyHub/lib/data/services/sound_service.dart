@@ -17,10 +17,25 @@ class SoundState {
 class SoundNotifier extends StateNotifier<SoundState> {
   SoundNotifier() : super(const SoundState()) {
     _init();
+    _configureAudioContext();
   }
 
   final AudioPlayer _player = AudioPlayer();
   bool _unlocked = false;
+
+  Future<void> _configureAudioContext() async {
+    try {
+      await _player.setAudioContext(
+        AudioContext(
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.playback,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('[SoundNotifier] Error configurando AudioContext: $e');
+    }
+  }
 
   Future<void> _init() async {
     try {
@@ -44,6 +59,8 @@ class SoundNotifier extends StateNotifier<SoundState> {
         await Future<void>.delayed(const Duration(milliseconds: 100));
         await unlocker.stop();
         await unlocker.dispose();
+      } else {
+        await _configureAudioContext();
       }
     } catch (e) {
       debugPrint('[SoundNotifier] Error desbloqueando audio: $e');
@@ -64,6 +81,7 @@ class SoundNotifier extends StateNotifier<SoundState> {
   Future<void> playPomodoroFinishedSound() async {
     if (!state.isEnabled) return;
     try {
+      await _configureAudioContext();
       await _player.stop();
       await _player.play(AssetSource('audio/pomodoro_bell.mp3'));
     } catch (e) {

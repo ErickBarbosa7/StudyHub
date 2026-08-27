@@ -20,9 +20,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Inicializa la conexión en segundo plano sin bloquear la UI
       ref.read(socketServiceProvider).connect();
-      // Si quedó una sala abierta (F5), vuelve a ella automáticamente
       final restored =
           await ref.read(roomProvider.notifier).restoreSavedSession();
       if (restored && mounted) {
@@ -45,6 +43,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final roomState = ref.watch(roomProvider);
+
+    ref.listen<RoomState>(roomProvider, (previous, next) {
+      if (next.error != null && next.error != previous?.error) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(next.error!)),
+          );
+          ref.read(roomProvider.notifier).clearError();
+        });
+      }
+    });
+
     return Scaffold(
       backgroundColor: kColorPaper,
       appBar: AppBar(
@@ -69,8 +81,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     'StudyHub',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w800,
+                      fontSize: AppType.sizeGiant,
+                      fontWeight: AppType.weightBold,
                       letterSpacing: -1,
                       height: 1.1,
                       color: kColorInk,
@@ -99,19 +111,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   textAlign: TextAlign.center,
                   style: AppType.secondaryItalic(),
                 ),
-                
-                const SizedBox(height: 48), // Mucho espacio en blanco (Organic Minimal)
-                
+
+                const SizedBox(height: 48),
+
+                if (roomState.isRestoring) ...[
+                  const SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: kColorDeepSage,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Restaurando tu sesión anterior...',
+                    textAlign: TextAlign.center,
+                    style: AppType.secondaryItalic(
+                      color: kColorTextSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
                 SizedBox(
                   width: double.infinity,
-                  height: 56, // Botón más amplio y táctil
+                  height: 56,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      ref.read(soundProvider.notifier).unlock();
-                      Navigator.of(context).pushNamed(
-                        CreateRoomScreen.routeName,
-                      );
-                    },
+                    onPressed: roomState.isRestoring
+                        ? null
+                        : () {
+                            ref.read(soundProvider.notifier).unlock();
+                            Navigator.of(context).pushNamed(
+                              CreateRoomScreen.routeName,
+                            );
+                          },
                     icon: const Icon(Icons.add_rounded),
                     label: const Text('Crear o unirse a una sala'),
                     style: ElevatedButton.styleFrom(
@@ -139,7 +173,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-/// Extraemos el Modal a su propio Widget para mantener el código limpio
 class _HowItWorksModal extends StatelessWidget {
   const _HowItWorksModal();
 
@@ -161,8 +194,7 @@ class _HowItWorksModal extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 32),
-            
-            // Textos más cortos, scaneables y directos
+
             const _HelpFeature(
               icon: Icons.meeting_room_rounded,
               title: 'Salas Privadas',
@@ -178,7 +210,7 @@ class _HowItWorksModal extends StatelessWidget {
               title: 'Reloj Pomodoro',
               subtitle: 'Un solo temporizador para concentrarse juntos.',
             ),
-            
+
             const SizedBox(height: 32),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -198,7 +230,6 @@ class _HowItWorksModal extends StatelessWidget {
   }
 }
 
-/// Componente visual simplificado, sin "Cards" rígidas
 class _HelpFeature extends StatelessWidget {
   const _HelpFeature({
     required this.icon,
@@ -219,7 +250,7 @@ class _HelpFeature extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: kColorSageSoft, // Salvia lavada, muy suave
+              color: kColorSageSoft,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: kColorDeepSage, size: 28),

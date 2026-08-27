@@ -17,6 +17,7 @@ class RoomState {
     this.users = const [],
     this.isCreating = false,
     this.isRestoring = false,
+    this.error,
   });
 
   final Room? room;
@@ -24,6 +25,7 @@ class RoomState {
   final List<User> users;
   final bool isCreating;
   final bool isRestoring;
+  final String? error;
 
   RoomState copyWith({
     Room? room,
@@ -31,6 +33,8 @@ class RoomState {
     List<User>? users,
     bool? isCreating,
     bool? isRestoring,
+    String? error,
+    bool clearError = false,
   }) {
     return RoomState(
       room: room ?? this.room,
@@ -38,8 +42,29 @@ class RoomState {
       users: users ?? this.users,
       isCreating: isCreating ?? this.isCreating,
       isRestoring: isRestoring ?? this.isRestoring,
+      error: clearError ? null : (error ?? this.error),
     );
   }
+}
+
+String _translateError(Object error) {
+  final msg = error.toString().toLowerCase();
+  if (msg.contains('socket') || msg.contains('connection') || msg.contains('network') || msg.contains('failed to host') || msg.contains('connecting')) {
+    return 'No se pudo conectar al servidor. Verifica tu conexión a internet e intenta de nuevo.';
+  }
+  if (msg.contains('timeout')) {
+    return 'La conexión está tardando demasiado. Verifica tu internet e intenta de nuevo.';
+  }
+  if (msg.contains('404') || msg.contains('not found') || msg.contains('no encontr')) {
+    return 'No se encontró una sala con ese código. Verifica el código e intenta de nuevo.';
+  }
+  if (msg.contains('400') || msg.contains('bad request') || msg.contains('invalid')) {
+    return 'Los datos enviados no son válidos. Revisa la información e intenta de nuevo.';
+  }
+  if (msg.contains('500') || msg.contains('server') || msg.contains('internal')) {
+    return 'El servidor no está disponible en este momento. Intenta de nuevo en unos segundos.';
+  }
+  return 'Ocurrió un error inesperado. Intenta de nuevo.';
 }
 
 class RoomNotifier extends StateNotifier<RoomState> {
@@ -79,8 +104,10 @@ class RoomNotifier extends StateNotifier<RoomState> {
     await prefs.remove('session_user_name');
   }
 
-  /// Restaura la sesión guardada tras recargar la página (F5).
-  /// Devuelve true si había una sala y se logró volver a entrar.
+  void clearError() {
+    state = state.copyWith(clearError: true);
+  }
+
   Future<bool> restoreSavedSession() async {
     final prefs = await _getPrefs();
     final roomId = prefs.getString('session_room_id');
@@ -95,7 +122,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
       return true;
     }
 
-    state = state.copyWith(isRestoring: true);
+    state = state.copyWith(isRestoring: true, clearError: true);
     try {
       final room = await _apiService.getRoom(roomId);
       final user = User(id: userId, name: userName);
@@ -108,7 +135,10 @@ class RoomNotifier extends StateNotifier<RoomState> {
     } catch (error) {
       debugPrint('[room] No se pudo restaurar la sesión: $error');
       await _clearSession();
-      state = state.copyWith(isRestoring: false);
+      state = state.copyWith(
+        isRestoring: false,
+        error: 'No se pudo recuperar tu sesión anterior. Puedes crear o unirte a una sala nuevamente.',
+      );
       return false;
     }
   }
@@ -122,7 +152,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
     required String userName,
   }) async {
     final user = User.generateLocal(userName);
-    state = state.copyWith(localUser: user, isCreating: true);
+    state = state.copyWith(localUser: user, isCreating: true, clearError: true);
 
     try {
       final room = await _apiService.createRoom(name: roomName, hostId: user.id);
@@ -132,6 +162,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
       return true;
     } catch (error) {
       debugPrint('[room] Error al crear la sala: $error');
+      state = state.copyWith(error: _translateError(error));
       return false;
     } finally {
       state = state.copyWith(isCreating: false);
@@ -139,7 +170,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
   }
 
   void joinRoom(Room room, User user) {
-    state = state.copyWith(room: room, localUser: user);
+    state = state.copyWith(room: room, localUser: user, clearError: true);
     _saveSession(room, user);
     _joinRoom(room.roomId, user);
   }
@@ -149,7 +180,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
     required String userName,
   }) async {
     final user = User.generateLocal(userName);
-    state = state.copyWith(localUser: user, isCreating: true);
+    state = state.copyWith(localUser: user, isCreating: true, clearError: true);
 
     try {
       final room = await _apiService.getRoom(roomCode.trim());
@@ -159,6 +190,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
       return true;
     } catch (error) {
       debugPrint('[room] Error al unirse a la sala: $error');
+      state = state.copyWith(error: _translateError(error));
       return false;
     } finally {
       state = state.copyWith(isCreating: false);

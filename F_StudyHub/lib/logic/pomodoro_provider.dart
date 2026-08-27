@@ -7,7 +7,7 @@ import '../data/services/websocket_service.dart';
 import 'room_provider.dart';
 import 'socket_provider.dart';
 
-const int kDefaultPomodoroSeconds = 25 * 60;
+const int kDefaultPomodoroSeconds = 30 * 60;
 
 class PomodoroState {
   const PomodoroState({

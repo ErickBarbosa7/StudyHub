@@ -47,13 +47,27 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
 
   @override
   Widget build(BuildContext context) {
-    final messages = ref.watch(chatProvider).messages;
+    final chatState = ref.watch(chatProvider);
+    final messages = chatState.messages;
+    final isLoadingHistory = chatState.isLoadingHistory;
     final localUserId = ref.watch(roomProvider).localUser?.id ?? '';
 
     if (messages.length != _lastMessageCount) {
       _lastMessageCount = messages.length;
       _autoScroll();
     }
+
+    ref.listen<ChatState>(chatProvider, (previous, next) {
+      if (next.error != null && next.error != previous?.error) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(next.error!)),
+          );
+          ref.read(chatProvider.notifier).clearError();
+        });
+      }
+    });
 
     final double padding = MediaQuery.sizeOf(context).width < 600 ? 16 : 24;
     final bool compact = MediaQuery.sizeOf(context).width < 600;
@@ -111,20 +125,22 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                 color: kColorPaper,
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: messages.isEmpty
+              child: isLoadingHistory
                   ? Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.chat_bubble_outline_rounded,
-                            size: compact ? 32 : 40,
-                            color: kColorSage,
+                          const SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: kColorDeepSage,
+                            ),
                           ),
-                          SizedBox(height: compact ? 8 : 12),
+                          SizedBox(height: compact ? 10 : 14),
                           Text(
-                            'Todavía no hay mensajes.\n¡Inicia la conversación!',
-                            textAlign: TextAlign.center,
+                            'Cargando historial del chat...',
                             style: AppType.secondaryItalic(
                               size: compact ? AppType.sizeBody : AppType.sizeBodyMedium,
                             ),
@@ -132,18 +148,39 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                         ],
                       ),
                     )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) => _MessageBubble(
-                        message: messages[index],
-                        isOwn: messages[index].isOwn(localUserId),
-                      ),
-                    ),
+                  : messages.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.chat_bubble_outline_rounded,
+                                size: compact ? 32 : 40,
+                                color: kColorSage,
+                              ),
+                              SizedBox(height: compact ? 8 : 12),
+                              Text(
+                                'Todavía no hay mensajes.\n¡Inicia la conversación!',
+                                textAlign: TextAlign.center,
+                                style: AppType.secondaryItalic(
+                                  size: compact ? AppType.sizeBody : AppType.sizeBodyMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) => _MessageBubble(
+                            message: messages[index],
+                            isOwn: messages[index].isOwn(localUserId),
+                          ),
+                        ),
             ),
           ),
           SizedBox(height: compact ? 12 : 16),

@@ -8,12 +8,27 @@ import 'room_provider.dart';
 import 'socket_provider.dart';
 
 class ChatState {
-  const ChatState({this.messages = const []});
+  const ChatState({
+    this.messages = const [],
+    this.isLoadingHistory = false,
+    this.error,
+  });
 
   final List<Message> messages;
+  final bool isLoadingHistory;
+  final String? error;
 
-  ChatState copyWith({List<Message>? messages}) {
-    return ChatState(messages: messages ?? this.messages);
+  ChatState copyWith({
+    List<Message>? messages,
+    bool? isLoadingHistory,
+    String? error,
+    bool clearError = false,
+  }) {
+    return ChatState(
+      messages: messages ?? this.messages,
+      isLoadingHistory: isLoadingHistory ?? this.isLoadingHistory,
+      error: clearError ? null : (error ?? this.error),
+    );
   }
 }
 
@@ -40,10 +55,18 @@ class ChatNotifier extends StateNotifier<ChatState> {
   String? get _senderId =>
       _roomProvider.read(roomProvider).localUser?.id;
 
+  void clearError() {
+    state = state.copyWith(clearError: true);
+  }
+
   void sendMessage(String text) {
     final roomId = _roomId;
     final senderId = _senderId;
-    if (roomId == null || senderId == null || text.trim().isEmpty) return;
+    if (roomId == null || senderId == null) {
+      state = state.copyWith(error: 'No se pudo enviar el mensaje. Verifica que estés conectado a una sala.');
+      return;
+    }
+    if (text.trim().isEmpty) return;
 
     _socketService.emit('send_message', {
       'roomId': roomId,
@@ -53,6 +76,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   void requestHistory(String roomId) {
+    state = state.copyWith(isLoadingHistory: true, clearError: true);
     _socketService.emit('get_chat_history', {'roomId': roomId});
   }
 }

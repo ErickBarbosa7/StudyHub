@@ -22,8 +22,8 @@ class Message {
       senderId: json['senderId'] as String,
       senderName: json['senderName'] as String,
       text: json['text'] as String,
-      timestamp: DateTime.tryParse(json['timestamp'] as String) ??
-          DateTime.now(),
+      timestamp: (DateTime.tryParse(json['timestamp'] as String) ??
+          DateTime.now()).toLocal(),
     );
   }
 
