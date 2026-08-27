@@ -1171,36 +1171,27 @@ class _ChatTabBadgeState extends ConsumerState<_ChatTabBadge> {
   @override
   Widget build(BuildContext context) {
     final unreadCount = ref.watch(chatProvider.select((s) => s.unreadCount));
-    return Tab(
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.chat_bubble_rounded),
-                SizedBox(width: 6),
-                Text('Chat'),
-              ],
-            ),
-          ),
-          if (unreadCount > 0)
-            Positioned(
-              top: 2,
-              right: 0,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: kColorError,
-                  shape: BoxShape.circle,
-                ),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const Tab(
+          icon: Icon(Icons.chat_bubble_rounded),
+          text: 'Chat',
+        ),
+        if (unreadCount > 0)
+          Positioned(
+            top: 2,
+            right: 4,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: kColorError,
+                shape: BoxShape.circle,
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }

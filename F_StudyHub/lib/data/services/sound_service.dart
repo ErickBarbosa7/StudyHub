@@ -34,15 +34,14 @@ class SoundNotifier extends StateNotifier<SoundState> {
             category: AVAudioSessionCategory.playback,
             options: const {
               AVAudioSessionOptions.mixWithOthers,
-              AVAudioSessionOptions.duckOthers,
             },
           ),
           android: const AudioContextAndroid(
-            isSpeakerphoneOn: true,
-            stayAwake: true,
-            contentType: AndroidContentType.sonification,
-            usageType: AndroidUsageType.alarm,
-            audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+            isSpeakerphoneOn: false,
+            stayAwake: false,
+            contentType: AndroidContentType.music,
+            usageType: AndroidUsageType.media,
+            audioFocus: AndroidAudioFocus.none,
           ),
         );
         await AudioPlayer.global.setAudioContext(audioContext);
@@ -66,16 +65,13 @@ class SoundNotifier extends StateNotifier<SoundState> {
     if (_unlocked) return;
     _unlocked = true;
     try {
-      if (kIsWeb) {
-        final unlocker = AudioPlayer();
-        await unlocker.setVolume(0);
-        await unlocker.play(AssetSource('audio/pomodoro_bell.mp3'));
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-        await unlocker.stop();
-        await unlocker.dispose();
-      } else {
-        await _configureAudioContext();
-      }
+      await _configureAudioContext();
+      await _player.setReleaseMode(ReleaseMode.stop);
+      await _player.setVolume(0);
+      await _player.play(AssetSource('audio/pomodoro_bell.mp3'));
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      await _player.stop();
+      await _player.setVolume(1.0);
     } catch (e) {
       debugPrint('[SoundNotifier] Error desbloqueando audio: $e');
     }
@@ -96,16 +92,22 @@ class SoundNotifier extends StateNotifier<SoundState> {
     if (!state.isEnabled) return;
     try {
       await _configureAudioContext();
-      final player = AudioPlayer();
-      await player.play(AssetSource('audio/pomodoro_bell.mp3'), volume: 1.0);
-      player.onPlayerComplete.first.then((_) => player.dispose()).catchError((_) {});
+      await _player.stop();
+      await _player.setReleaseMode(ReleaseMode.stop);
+      await _player.setVolume(1.0);
+      await _player.play(
+        AssetSource('audio/pomodoro_bell.mp3'),
+        volume: 1.0,
+      );
     } catch (e) {
       debugPrint('[SoundNotifier] Error al reproducir sonido pomodoro: $e');
       try {
-        await _player.stop();
-        await _player.play(AssetSource('audio/pomodoro_bell.mp3'), volume: 1.0);
+        await _player.play(
+          AssetSource('audio/pomodoro_bell.wav'),
+          volume: 1.0,
+        );
       } catch (e2) {
-        debugPrint('[SoundNotifier] Fallback pomodoro falló: $e2');
+        debugPrint('[SoundNotifier] Error al reproducir fallback wav: $e2');
       }
     }
   }
@@ -114,17 +116,15 @@ class SoundNotifier extends StateNotifier<SoundState> {
     if (!state.isEnabled) return;
     try {
       await _configureAudioContext();
-      final player = AudioPlayer();
-      await player.play(AssetSource('audio/task_notification.mp3'), volume: 1.0);
-      player.onPlayerComplete.first.then((_) => player.dispose()).catchError((_) {});
+      await _player.stop();
+      await _player.setReleaseMode(ReleaseMode.stop);
+      await _player.setVolume(1.0);
+      await _player.play(
+        AssetSource('audio/task_notification.mp3'),
+        volume: 1.0,
+      );
     } catch (e) {
       debugPrint('[SoundNotifier] Error al reproducir sonido de tarea: $e');
-      try {
-        await _player.stop();
-        await _player.play(AssetSource('audio/task_notification.mp3'), volume: 1.0);
-      } catch (e2) {
-        debugPrint('[SoundNotifier] Fallback tarea falló: $e2');
-      }
     }
   }
 
