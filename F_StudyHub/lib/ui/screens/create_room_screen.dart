@@ -10,6 +10,7 @@ import '../../data/models/user_model.dart';
 import '../../logic/chat_provider.dart';
 import '../../logic/room_provider.dart';
 import '../../logic/task_provider.dart';
+import '../../data/services/sound_service.dart';
 import '../widgets/chat_box.dart';
 import '../widgets/pomodoro_timer.dart';
 import '../widgets/qr_display.dart';
@@ -339,6 +340,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
     ref.listen<TaskState>(taskProvider, (previous, next) {
       if (next.newTaskCount > 0 && next.newTaskCount != previous?.newTaskCount) {
+        ref.read(soundProvider.notifier).playTaskNotificationSound();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           setState(() {

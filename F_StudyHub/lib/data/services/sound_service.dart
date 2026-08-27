@@ -89,6 +89,17 @@ class SoundNotifier extends StateNotifier<SoundState> {
     }
   }
 
+  Future<void> playTaskNotificationSound() async {
+    if (!state.isEnabled) return;
+    try {
+      await _configureAudioContext();
+      await _player.stop();
+      await _player.play(AssetSource('audio/task_notification.mp3'));
+    } catch (e) {
+      debugPrint('[SoundNotifier] Error al reproducir sonido de tarea: $e');
+    }
+  }
+
   @override
   void dispose() {
     _player.dispose();
