@@ -39,8 +39,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   static const int _codeLength = 6;
   
   // --- LÍMITES DE CARACTERES PARA PRODUCCIÓN ---
-  static const int _maxUserNameLength = 20;
-  static const int _maxRoomNameLength = 50;
+  static const int _maxUserNameLength = 15;
+  static const int _maxRoomNameLength = 20;
 
   late final List<TextEditingController> _codeControllers;
   late final List<FocusNode> _codeFocusNodes;
