@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { generateRoomCode, RoomModel, type Room } from '../models/Room.js';
 
 const MAX_CODE_ATTEMPTS = 5;
+const MAX_ROOM_NAME_LENGTH = 20;
 
 async function findUniqueRoomCode(): Promise<string> {
   for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt += 1) {
@@ -20,8 +21,14 @@ export async function createRoom(
 ): Promise<void> {
   const { name, hostId } = req.body as { name?: unknown; hostId?: unknown };
 
-  if (typeof name !== 'string' || name.trim() === '') {
-    res.status(400).json({ error: 'El nombre de la sala es obligatorio' });
+  if (
+    typeof name !== 'string' ||
+    name.trim() === '' ||
+    name.trim().length > MAX_ROOM_NAME_LENGTH
+  ) {
+    res.status(400).json({
+      error: `El nombre de la sala debe tener entre 1 y ${MAX_ROOM_NAME_LENGTH} caracteres`,
+    });
     return;
   }
   if (typeof hostId !== 'string' || hostId.trim() === '') {

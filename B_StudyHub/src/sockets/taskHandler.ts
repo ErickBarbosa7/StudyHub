@@ -29,6 +29,7 @@ interface EditTaskPayload {
 }
 
 const STATE_ORDER = ['PENDING', 'IN_PROGRESS', 'COMPLETED'] as const;
+const MAX_TASK_TITLE_LENGTH = 100;
 
 async function getRoomTasks(roomId: string): Promise<Array<TaskSubDoc & {
   stateCode: string;
@@ -67,7 +68,12 @@ export function registerTaskHandler(io: Server, socket: Socket): void {
   socket.on('add_task', async (payload: AddTaskPayload) => {
     const { roomId, title } = payload;
 
-    if (!roomId || typeof title !== 'string' || title.trim() === '') {
+    if (
+      !roomId ||
+      typeof title !== 'string' ||
+      title.trim() === '' ||
+      title.trim().length > MAX_TASK_TITLE_LENGTH
+    ) {
       return;
     }
 
@@ -135,7 +141,13 @@ export function registerTaskHandler(io: Server, socket: Socket): void {
   socket.on('edit_task', async (payload: EditTaskPayload) => {
     const { roomId, taskId, title } = payload;
 
-    if (!roomId || !taskId || typeof title !== 'string' || title.trim() === '') {
+    if (
+      !roomId ||
+      !taskId ||
+      typeof title !== 'string' ||
+      title.trim() === '' ||
+      title.trim().length > MAX_TASK_TITLE_LENGTH
+    ) {
       return;
     }
 

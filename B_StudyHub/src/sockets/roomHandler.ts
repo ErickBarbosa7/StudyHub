@@ -27,6 +27,7 @@ interface KickUserPayload {
 }
 
 const usersByRoom = new Map<string, Map<string, RoomUser>>();
+const MAX_USER_NAME_LENGTH = 15;
 
 function getRoomUsers(roomId: string): RoomUser[] {
   return Array.from(usersByRoom.get(roomId)?.values() ?? []);
@@ -67,6 +68,9 @@ export function registerRoomHandler(io: Server, socket: Socket): void {
     const { roomId, user } = payload;
 
     if (!roomId || !user?.id || !user?.name) {
+      return;
+    }
+    if (user.name.trim().length > MAX_USER_NAME_LENGTH) {
       return;
     }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
@@ -61,9 +62,9 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
       if (next.error != null && next.error != previous?.error) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(next.error!)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(next.error!)));
           ref.read(chatProvider.notifier).clearError();
         });
       }
@@ -74,7 +75,12 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
     final double bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(padding, padding, padding, padding + bottomInset),
+      padding: EdgeInsets.fromLTRB(
+        padding,
+        padding,
+        padding,
+        padding + bottomInset,
+      ),
       decoration: BoxDecoration(
         color: kColorCard,
         borderRadius: BorderRadius.circular(32),
@@ -142,45 +148,49 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                           Text(
                             'Cargando historial del chat...',
                             style: AppType.secondaryItalic(
-                              size: compact ? AppType.sizeBody : AppType.sizeBodyMedium,
+                              size: compact
+                                  ? AppType.sizeBody
+                                  : AppType.sizeBodyMedium,
                             ),
                           ),
                         ],
                       ),
                     )
                   : messages.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.chat_bubble_outline_rounded,
-                                size: compact ? 32 : 40,
-                                color: kColorSage,
-                              ),
-                              SizedBox(height: compact ? 8 : 12),
-                              Text(
-                                'Todavía no hay mensajes.\n¡Inicia la conversación!',
-                                textAlign: TextAlign.center,
-                                style: AppType.secondaryItalic(
-                                  size: compact ? AppType.sizeBody : AppType.sizeBodyMedium,
-                                ),
-                              ),
-                            ],
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: compact ? 32 : 40,
+                            color: kColorSage,
                           ),
-                        )
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                          SizedBox(height: compact ? 8 : 12),
+                          Text(
+                            'Todavía no hay mensajes.\n¡Inicia la conversación!',
+                            textAlign: TextAlign.center,
+                            style: AppType.secondaryItalic(
+                              size: compact
+                                  ? AppType.sizeBody
+                                  : AppType.sizeBodyMedium,
+                            ),
                           ),
-                          itemCount: messages.length,
-                          itemBuilder: (context, index) => _MessageBubble(
-                            message: messages[index],
-                            isOwn: messages[index].isOwn(localUserId),
-                          ),
-                        ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) => _MessageBubble(
+                        message: messages[index],
+                        isOwn: messages[index].isOwn(localUserId),
+                      ),
+                    ),
             ),
           ),
           SizedBox(height: compact ? 12 : 16),
@@ -195,7 +205,10 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                     controller: _messageController,
                     textCapitalization: TextCapitalization.sentences,
                     style: const TextStyle(color: kColorInk),
+                    maxLength: 1000,
+                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
                     decoration: InputDecoration(
+                      counterText: '',
                       labelText: 'Escribe un mensaje',
                       hintText: 'ej. ¿Vamos por el capítulo 3?',
                       labelStyle: const TextStyle(color: kColorTextSecondary),
@@ -238,8 +251,8 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                 SizedBox(
                   height: compact ? 48 : 56,
                   width: compact ? 48 : 56,
-                    child: ElevatedButton(
-                      onPressed: _send,
+                  child: ElevatedButton(
+                    onPressed: _send,
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(

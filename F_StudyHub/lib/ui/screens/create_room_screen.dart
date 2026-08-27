@@ -12,6 +12,7 @@ import '../../logic/room_provider.dart';
 import '../../logic/task_provider.dart';
 import '../../data/services/sound_service.dart';
 import '../widgets/chat_box.dart';
+import '../widgets/connection_banner.dart';
 import '../widgets/pomodoro_timer.dart';
 import '../widgets/qr_display.dart';
 import '../widgets/qr_scanner.dart';
@@ -37,7 +38,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   final _formKey = GlobalKey<FormState>();
 
   static const int _codeLength = 6;
-  
+
   // --- LÍMITES DE CARACTERES PARA PRODUCCIÓN ---
   static const int _maxUserNameLength = 15;
   static const int _maxRoomNameLength = 20;
@@ -53,7 +54,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   @override
   void initState() {
     super.initState();
-    _codeControllers = List.generate(_codeLength, (_) => TextEditingController());
+    _codeControllers = List.generate(
+      _codeLength,
+      (_) => TextEditingController(),
+    );
     _codeFocusNodes = List.generate(_codeLength, (_) => FocusNode());
   }
 
@@ -73,7 +77,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   }
 
   void _syncCodeController() {
-    _roomCodeController.text = _codeControllers.map((c) => c.text).join().toUpperCase();
+    _roomCodeController.text = _codeControllers
+        .map((c) => c.text)
+        .join()
+        .toUpperCase();
   }
 
   void _fillCode(String code) {
@@ -123,7 +130,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   }
 
   void _onCodeKeyEvent(int index, KeyEvent event) {
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.backspace) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.backspace) {
       if (_codeControllers[index].text.isEmpty && index > 0) {
         _codeControllers[index - 1].clear();
         _codeFocusNodes[index - 1].requestFocus();
@@ -173,7 +181,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
     if (!created) {
       final error = ref.read(roomProvider).error;
-      final isNotFound = error != null && error.toLowerCase().contains('código no válido');
+      final isNotFound =
+          error != null && error.toLowerCase().contains('código no válido');
       if (isNotFound) {
         _showNotFoundSheet();
       } else {
@@ -204,11 +213,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Lottie.asset(
-              'assets/Lottie/404.json',
-              height: 180,
-              repeat: true,
-            ),
+            Lottie.asset('assets/Lottie/404.json', height: 180, repeat: true),
             const SizedBox(height: 20),
             const Text(
               'Código no válido',
@@ -327,16 +332,20 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     final bool inRoom = roomState.room != null;
 
     ref.listen<RoomState>(roomProvider, (previous, next) {
-      if (next.error != null && next.error != previous?.error && !next.isCreating) {
+      if (next.error != null &&
+          next.error != previous?.error &&
+          !next.isCreating) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          final isNotFound = next.error!.toLowerCase().contains('código no válido');
+          final isNotFound = next.error!.toLowerCase().contains(
+            'código no válido',
+          );
           if (isNotFound) {
             _showNotFoundSheet();
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(next.error!)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(next.error!)));
           }
           ref.read(roomProvider.notifier).clearError();
         });
@@ -344,7 +353,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     });
 
     ref.listen<TaskState>(taskProvider, (previous, next) {
-      if (next.newTaskCount > 0 && next.newTaskCount != previous?.newTaskCount) {
+      if (next.newTaskCount > 0 &&
+          next.newTaskCount != previous?.newTaskCount) {
         ref.read(soundProvider.notifier).playTaskNotificationSound();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
@@ -387,13 +397,25 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               ? [
                   IconButton(
                     onPressed: _leaveRoom,
-                    icon: const Icon(Icons.logout_rounded, color: kColorTextSecondary),
+                    icon: const Icon(
+                      Icons.logout_rounded,
+                      color: kColorTextSecondary,
+                    ),
                     tooltip: 'Salir de la sala',
                   ),
                 ]
               : null,
         ),
-        body: inRoom ? _buildWorkspace(roomState) : _buildCreateForm(roomState),
+        body: Column(
+          children: [
+            const ConnectionBanner(),
+            Expanded(
+              child: inRoom
+                  ? _buildWorkspace(roomState)
+                  : _buildCreateForm(roomState),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -412,10 +434,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 'StudyHub',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: kColorInk,
-                      fontWeight: AppType.weightBold,
-                      fontSize: AppType.sizeHero,
-                    ),
+                  color: kColorInk,
+                  fontWeight: AppType.weightBold,
+                  fontSize: AppType.sizeHero,
+                ),
               ),
               const SizedBox(height: 12),
               Text(
@@ -447,7 +469,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                       const SizedBox(height: 8),
                       _buildModeHelpText(),
                       const SizedBox(height: 20),
-                      
+
                       // --- CAMPO: NOMBRE DE USUARIO ---
                       _buildOrganicTextField(
                         controller: _userNameController,
@@ -456,10 +478,9 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                         icon: Icons.person_outline_rounded,
                         maxLength: _maxUserNameLength,
                       ),
-                      
+
                       const SizedBox(height: 24),
                       if (_mode == _FormMode.create)
-                      
                         // --- CAMPO: NOMBRE DE SALA ---
                         _buildOrganicTextField(
                           controller: _roomNameController,
@@ -477,12 +498,17 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             onPressed: () async {
-                              final scannedCode = await QrScannerSheet.show(context);
+                              final scannedCode = await QrScannerSheet.show(
+                                context,
+                              );
                               if (scannedCode != null && mounted) {
                                 _fillCode(scannedCode);
                               }
                             },
-                            icon: const Icon(Icons.qr_code_scanner_rounded, size: 22),
+                            icon: const Icon(
+                              Icons.qr_code_scanner_rounded,
+                              size: 22,
+                            ),
                             label: const Text(
                               'Escanear QR para unirse',
                               style: TextStyle(
@@ -490,7 +516,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                               ),
                             ),
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
                             ),
                           ),
                         ),
@@ -549,10 +578,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         Text(
           'Código de la sala',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: _showCodeError ? kColorError : kColorTextSecondary,
-                fontWeight: AppType.weightSemiBold,
-                fontSize: AppType.sizeCaption,
-              ),
+            color: _showCodeError ? kColorError : kColorTextSecondary,
+            fontWeight: AppType.weightSemiBold,
+            fontSize: AppType.sizeCaption,
+          ),
         ),
         SizedBox(height: boxWidth < 40 ? 8 : 12),
         SizedBox(
@@ -565,72 +594,76 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 children: [
                   if (index > 0) SizedBox(width: gap),
                   SizedBox(
-                  width: boxWidth,
-                  height: boxHeight,
-                  child: KeyboardListener(
-                    focusNode: FocusNode(),
-                    onKeyEvent: (event) => _onCodeKeyEvent(index, event),
-                    child: GestureDetector(
-                      onTap: _handleCodePaste,
-                      child: TextField(
-                        controller: _codeControllers[index],
-                        focusNode: _codeFocusNodes[index],
-                        textAlign: TextAlign.center,
-                        textCapitalization: TextCapitalization.characters,
-                        keyboardType: TextInputType.visiblePassword,
-                        maxLength: 1,
-                        style: TextStyle(
-                          fontFamily: kFontFamilyMono,
-                          fontWeight: AppType.weightSemiBold,
-                          fontSize: fontSize,
-                          color: kColorInk,
+                    width: boxWidth,
+                    height: boxHeight,
+                    child: KeyboardListener(
+                      focusNode: FocusNode(),
+                      onKeyEvent: (event) => _onCodeKeyEvent(index, event),
+                      child: GestureDetector(
+                        onTap: _handleCodePaste,
+                        child: TextField(
+                          controller: _codeControllers[index],
+                          focusNode: _codeFocusNodes[index],
+                          textAlign: TextAlign.center,
+                          textCapitalization: TextCapitalization.characters,
+                          keyboardType: TextInputType.visiblePassword,
+                          maxLength: 1,
+                          style: TextStyle(
+                            fontFamily: kFontFamilyMono,
+                            fontWeight: AppType.weightSemiBold,
+                            fontSize: fontSize,
+                            color: kColorInk,
+                          ),
+                          cursorColor: kColorDeepSage,
+                          decoration: InputDecoration(
+                            counterText: '',
+                            contentPadding: EdgeInsets.zero,
+                            filled: true,
+                            fillColor: kColorPaper,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color:
+                                    _showCodeError &&
+                                        _codeControllers[index].text.isEmpty
+                                    ? kColorErrorBorder
+                                    : kColorBorder,
+                                width: 1.5,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color:
+                                    _showCodeError &&
+                                        _codeControllers[index].text.isEmpty
+                                    ? kColorErrorBorder
+                                    : kColorBorder,
+                                width: 1.5,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(
+                                color: kColorDeepSage,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          onChanged: (value) => _onCodeChanged(index, value),
+                          onTap: () {
+                            _codeControllers[index].selection = TextSelection(
+                              baseOffset: 0,
+                              extentOffset: _codeControllers[index].text.length,
+                            );
+                          },
                         ),
-                        cursorColor: kColorDeepSage,
-                        decoration: InputDecoration(
-                          counterText: '',
-                          contentPadding: EdgeInsets.zero,
-                          filled: true,
-                          fillColor: kColorPaper,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: _showCodeError && _codeControllers[index].text.isEmpty
-                                  ? kColorErrorBorder
-                                  : kColorBorder,
-                              width: 1.5,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: _showCodeError && _codeControllers[index].text.isEmpty
-                                  ? kColorErrorBorder
-                                  : kColorBorder,
-                              width: 1.5,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
-                              color: kColorDeepSage,
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                        onChanged: (value) => _onCodeChanged(index, value),
-                        onTap: () {
-                          _codeControllers[index].selection = TextSelection(
-                            baseOffset: 0,
-                            extentOffset: _codeControllers[index].text.length,
-                          );
-                        },
                       ),
                     ),
                   ),
-                ),
-              ],
-            );
-          }),
+                ],
+              );
+            }),
           ),
         ),
         if (_showCodeError) ...[
@@ -654,7 +687,9 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
-          isCreate ? Icons.info_outline_rounded : Icons.lightbulb_outline_rounded,
+          isCreate
+              ? Icons.info_outline_rounded
+              : Icons.lightbulb_outline_rounded,
           size: 16,
           color: kColorTextSecondary,
         ),
@@ -787,14 +822,14 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         Expanded(
           child: DefaultTabController(
             length: 2,
-          child: Column(
-            children: [
-              TabBar(
-                tabs: [
-                  const Tab(icon: Icon(Icons.timer_rounded), text: 'Estudio'),
-                  const _ChatTabBadge(),
-                ],
-              ),
+            child: Column(
+              children: [
+                TabBar(
+                  tabs: [
+                    const Tab(icon: Icon(Icons.timer_rounded), text: 'Estudio'),
+                    const _ChatTabBadge(),
+                  ],
+                ),
                 Expanded(
                   child: TabBarView(
                     children: [
@@ -811,9 +846,16 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                       ),
                       Builder(
                         builder: (context) {
-                          final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+                          final bottomInset = MediaQuery.of(
+                            context,
+                          ).viewInsets.bottom;
                           return Padding(
-                            padding: EdgeInsets.fromLTRB(compact ? 16 : 24, compact ? 16 : 24, compact ? 16 : 24, bottomInset > 0 ? 8 : (compact ? 16 : 24)),
+                            padding: EdgeInsets.fromLTRB(
+                              compact ? 16 : 24,
+                              compact ? 16 : 24,
+                              compact ? 16 : 24,
+                              bottomInset > 0 ? 8 : (compact ? 16 : 24),
+                            ),
                             child: const ChatBox(),
                           );
                         },
@@ -832,7 +874,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   Widget _buildRoomCodePill(String roomId) {
     final bool compact = MediaQuery.sizeOf(context).width < 600;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14, vertical: compact ? 6 : 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 14,
+        vertical: compact ? 6 : 8,
+      ),
       decoration: BoxDecoration(
         color: kColorCard,
         borderRadius: BorderRadius.circular(20),
@@ -852,10 +897,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           Text(
             roomId,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: kColorInk,
-                  fontWeight: AppType.weightBold,
-                  letterSpacing: 1.2,
-                ),
+              color: kColorInk,
+              fontWeight: AppType.weightBold,
+              letterSpacing: 1.2,
+            ),
           ),
           SizedBox(width: compact ? 6 : 8),
           GestureDetector(
@@ -893,7 +938,12 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     final bool compact = MediaQuery.sizeOf(context).width < 600;
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(compact ? 16 : 24, compact ? 6 : 8, compact ? 16 : 24, compact ? 8 : 12),
+      padding: EdgeInsets.fromLTRB(
+        compact ? 16 : 24,
+        compact ? 6 : 8,
+        compact ? 16 : 24,
+        compact ? 8 : 12,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -902,7 +952,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               if (room != null) _buildRoomCodePill(room.roomId),
               const Spacer(),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12, vertical: compact ? 4 : 6),
+                padding: EdgeInsets.symmetric(
+                  horizontal: compact ? 8 : 12,
+                  vertical: compact ? 4 : 6,
+                ),
                 decoration: BoxDecoration(
                   color: kColorSageSoft,
                   borderRadius: BorderRadius.circular(16),
@@ -910,14 +963,20 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.people_rounded, size: compact ? 14 : 16, color: kColorDeepSage),
+                    Icon(
+                      Icons.people_rounded,
+                      size: compact ? 14 : 16,
+                      color: kColorDeepSage,
+                    ),
                     SizedBox(width: compact ? 4 : 6),
                     Text(
                       '${roomState.users.length}',
                       style: TextStyle(
                         color: kColorInk,
                         fontWeight: AppType.weightSemiBold,
-                        fontSize: compact ? AppType.sizeCaption : AppType.sizeBody,
+                        fontSize: compact
+                            ? AppType.sizeCaption
+                            : AppType.sizeBody,
                       ),
                     ),
                   ],
@@ -937,17 +996,24 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: roomState.users.length,
-                separatorBuilder: (context, index) => SizedBox(width: compact ? 8 : 10),
+                separatorBuilder: (context, index) =>
+                    SizedBox(width: compact ? 8 : 10),
                 itemBuilder: (context, index) {
                   final user = roomState.users[index];
                   final bool isHost = room?.hostId == user.id;
                   final bool isLocal = roomState.localUser?.id == user.id;
-                  final bool canKick = !isHost && !isLocal && room?.hostId == roomState.localUser?.id;
+                  final bool canKick =
+                      !isHost &&
+                      !isLocal &&
+                      room?.hostId == roomState.localUser?.id;
 
                   return GestureDetector(
                     onLongPress: canKick ? () => _showKickDialog(user) : null,
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 18, vertical: compact ? 8 : 10),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 14 : 18,
+                        vertical: compact ? 8 : 10,
+                      ),
                       decoration: BoxDecoration(
                         color: isHost ? kColorGoldSoft : kColorSageSoft,
                         borderRadius: BorderRadius.circular(20),
@@ -969,12 +1035,18 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                             style: TextStyle(
                               color: kColorInk,
                               fontWeight: AppType.weightSemiBold,
-                              fontSize: compact ? AppType.sizeBody : AppType.sizeBodyMedium,
+                              fontSize: compact
+                                  ? AppType.sizeBody
+                                  : AppType.sizeBodyMedium,
                             ),
                           ),
                           if (isHost) ...[
                             SizedBox(width: compact ? 4 : 6),
-                            Icon(Icons.workspace_premium_rounded, size: 14, color: kColorGold),
+                            Icon(
+                              Icons.workspace_premium_rounded,
+                              size: 14,
+                              color: kColorGold,
+                            ),
                           ],
                         ],
                       ),
@@ -1001,11 +1073,13 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     return TextFormField(
       controller: controller,
       textCapitalization: textCapitalization,
-      
+
       // Bloqueo de entrada
       maxLength: maxLength,
-      maxLengthEnforcement: maxLength != null ? MaxLengthEnforcement.enforced : null,
-      
+      maxLengthEnforcement: maxLength != null
+          ? MaxLengthEnforcement.enforced
+          : null,
+
       autofillHints: keyboardType == TextInputType.visiblePassword
           ? const [AutofillHints.oneTimeCode]
           : null,
@@ -1013,16 +1087,19 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        
+
         // Ocultar el contador "0/20" para mantener el diseño limpio
         counterText: '',
-        
+
         labelStyle: const TextStyle(color: kColorTextSecondary),
         hintStyle: TextStyle(color: kColorTextSecondary.withValues(alpha: 0.5)),
         prefixIcon: Icon(icon, color: kColorDeepSage),
         filled: true,
         fillColor: kColorPaper,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 20,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(24),
           borderSide: BorderSide.none,
@@ -1039,7 +1116,9 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       validator: (value) {
         final text = value?.trim() ?? '';
         if (text.isEmpty) return 'Requerido';
-        if (maxLength != null && text.length > maxLength) return 'Excede el límite';
+        if (maxLength != null && text.length > maxLength) {
+          return 'Excede el límite';
+        }
         return null;
       },
     );
@@ -1070,7 +1149,9 @@ class _ChatTabBadgeState extends ConsumerState<_ChatTabBadge> {
 
   void _onTabChange() {
     if (!mounted) return;
-    ref.read(chatProvider.notifier).setChatVisible(DefaultTabController.of(context).index == 1);
+    ref
+        .read(chatProvider.notifier)
+        .setChatVisible(DefaultTabController.of(context).index == 1);
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
-import 'package:flutter_riverpod/legacy.dart' show StateNotifier, StateNotifierProvider;
+import 'package:flutter_riverpod/legacy.dart'
+    show StateNotifier, StateNotifierProvider;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/models/room_model.dart';
@@ -49,19 +50,29 @@ class RoomState {
 
 String _translateError(Object error) {
   final msg = error.toString().toLowerCase();
-  if (msg.contains('socket') || msg.contains('connection') || msg.contains('network') || msg.contains('failed to host') || msg.contains('connecting')) {
+  if (msg.contains('socket') ||
+      msg.contains('connection') ||
+      msg.contains('network') ||
+      msg.contains('failed to host') ||
+      msg.contains('connecting')) {
     return 'No se pudo conectar al servidor. Verifica tu conexión a internet e intenta de nuevo.';
   }
   if (msg.contains('timeout')) {
     return 'La conexión está tardando demasiado. Verifica tu internet e intenta de nuevo.';
   }
-  if (msg.contains('404') || msg.contains('not found') || msg.contains('no encontr')) {
+  if (msg.contains('404') ||
+      msg.contains('not found') ||
+      msg.contains('no encontr')) {
     return 'Código no válido. No se encontró una sala con ese código. Verifica que esté bien escrito e intenta de nuevo.';
   }
-  if (msg.contains('400') || msg.contains('bad request') || msg.contains('invalid')) {
+  if (msg.contains('400') ||
+      msg.contains('bad request') ||
+      msg.contains('invalid')) {
     return 'Los datos enviados no son válidos. Revisa la información e intenta de nuevo.';
   }
-  if (msg.contains('500') || msg.contains('server') || msg.contains('internal')) {
+  if (msg.contains('500') ||
+      msg.contains('server') ||
+      msg.contains('internal')) {
     return 'El servidor no está disponible en este momento. Intenta de nuevo en unos segundos.';
   }
   return 'Ocurrió un error inesperado. Intenta de nuevo.';
@@ -69,7 +80,7 @@ String _translateError(Object error) {
 
 class RoomNotifier extends StateNotifier<RoomState> {
   RoomNotifier(this._ref, this._apiService, this._socketService)
-      : super(const RoomState()) {
+    : super(const RoomState()) {
     _socketService.on('room_users_update', (data) {
       final users = (data as List)
           .map((item) => User.fromJson(item as Map<String, dynamic>))
@@ -83,7 +94,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
       state = const RoomState();
     });
 
-    _socketService.onConnected = _rejoinRoomIfNeeded;
+    _socketService.addOnConnected(_rejoinRoomIfNeeded);
   }
 
   void _rejoinRoomIfNeeded() {
@@ -112,6 +123,17 @@ class RoomNotifier extends StateNotifier<RoomState> {
 
   void clearError() {
     state = state.copyWith(clearError: true);
+  }
+
+  Future<void> _ensureConnected() async {
+    if (_socketService.isConnected) return;
+    final ok = await _ref.read(socketStateProvider.notifier).ensureConnected();
+    if (!ok && !_socketService.isConnected) {
+      state = state.copyWith(
+        error:
+            'No se pudo conectar con el servidor. Verifica tu conexión a internet e inténtalo de nuevo.',
+      );
+    }
   }
 
   Future<bool> restoreSavedSession() async {
@@ -143,7 +165,8 @@ class RoomNotifier extends StateNotifier<RoomState> {
       await _clearSession();
       state = state.copyWith(
         isRestoring: false,
-        error: 'No se pudo recuperar tu sesión anterior. Puedes crear o unirte a una sala nuevamente.',
+        error:
+            'No se pudo recuperar tu sesión anterior. Puedes crear o unirte a una sala nuevamente.',
       );
       return false;
     }
@@ -161,10 +184,17 @@ class RoomNotifier extends StateNotifier<RoomState> {
     state = state.copyWith(localUser: user, isCreating: true, clearError: true);
 
     try {
-      final room = await _apiService.createRoom(name: roomName, hostId: user.id);
+      final room = await _apiService.createRoom(
+        name: roomName,
+        hostId: user.id,
+      );
       state = state.copyWith(room: room);
       await _saveSession(room, user);
-      _joinRoom(room.roomId, user);
+      await _joinRoom(room.roomId, user);
+      if (!_socketService.isConnected) {
+        state = state.copyWith(isCreating: false);
+        return false;
+      }
       return true;
     } catch (error) {
       debugPrint('[room] Error al crear la sala: $error');
@@ -192,7 +222,11 @@ class RoomNotifier extends StateNotifier<RoomState> {
       final room = await _apiService.getRoom(roomCode.trim());
       state = state.copyWith(room: room);
       await _saveSession(room, user);
-      _joinRoom(room.roomId, user);
+      await _joinRoom(room.roomId, user);
+      if (!_socketService.isConnected) {
+        state = state.copyWith(isCreating: false);
+        return false;
+      }
       return true;
     } catch (error) {
       debugPrint('[room] Error al unirse a la sala: $error');
@@ -203,7 +237,9 @@ class RoomNotifier extends StateNotifier<RoomState> {
     }
   }
 
-  void _joinRoom(String roomId, User user) {
+  Future<void> _joinRoom(String roomId, User user) async {
+    await _ensureConnected();
+    if (!_socketService.isConnected) return;
     _ref.read(chatProvider);
     _socketService.emit('join_room', {
       'roomId': roomId,
@@ -247,4 +283,6 @@ final roomProvider = StateNotifierProvider<RoomNotifier, RoomState>((ref) {
   );
 });
 
-final apiServiceProvider = riverpod.Provider<ApiService>((_) => const ApiService());
+final apiServiceProvider = riverpod.Provider<ApiService>(
+  (_) => const ApiService(),
+);

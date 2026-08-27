@@ -1,6 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/legacy.dart' show StateNotifier, StateNotifierProvider;
+import 'package:flutter_riverpod/legacy.dart'
+    show StateNotifier, StateNotifierProvider;
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String _kPrefSoundEnabled = 'pomodoro_sound_enabled';
@@ -27,9 +28,7 @@ class SoundNotifier extends StateNotifier<SoundState> {
     try {
       await _player.setAudioContext(
         AudioContext(
-          iOS: AudioContextIOS(
-            category: AVAudioSessionCategory.playback,
-          ),
+          iOS: AudioContextIOS(category: AVAudioSessionCategory.playback),
         ),
       );
     } catch (e) {
@@ -60,7 +59,17 @@ class SoundNotifier extends StateNotifier<SoundState> {
         await unlocker.stop();
         await unlocker.dispose();
       } else {
+        // En iOS/Android es necesario activar la sesión de audio dentro de un
+        // gesto del usuario para que las reproducciones posteriores suenen.
+        // Reproducir un clip mudo aquí desbloquea la sesión (setActive(true)).
         await _configureAudioContext();
+        await _player.stop();
+        await _player.setSource(AssetSource('audio/pomodoro_bell.mp3'));
+        await _player.setVolume(0);
+        await _player.resume();
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        await _player.stop();
+        await _player.setVolume(1);
       }
     } catch (e) {
       debugPrint('[SoundNotifier] Error desbloqueando audio: $e');

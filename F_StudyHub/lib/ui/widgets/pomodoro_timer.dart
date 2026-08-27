@@ -81,10 +81,10 @@ class PomodoroTimer extends ConsumerWidget {
                     child: Text(
                       'Pomodoro',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: kColorInk,
-                            fontWeight: AppType.weightSemiBold,
-                            fontSize: compact ? AppType.sizeTitle : null,
-                          ),
+                        color: kColorInk,
+                        fontWeight: AppType.weightSemiBold,
+                        fontSize: compact ? AppType.sizeTitle : null,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -131,10 +131,7 @@ class PomodoroTimer extends ConsumerWidget {
                       ),
                     ),
                   const SizedBox(width: 4),
-                  _StatusPill(
-                    isRunning: state.isRunning,
-                    compact: compact,
-                  ),
+                  _StatusPill(isRunning: state.isRunning, compact: compact),
                 ],
               );
             },
@@ -161,8 +158,8 @@ class PomodoroTimer extends ConsumerWidget {
               color: state.isRunning
                   ? kColorSageSoft
                   : finished
-                      ? kColorGoldSoft
-                      : kColorPaper,
+                  ? kColorGoldSoft
+                  : kColorPaper,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -190,7 +187,9 @@ class PomodoroTimer extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                   style: AppType.monoTimer(
                     color: finished ? kColorDeepSage : kColorInk,
-                    fontSize: compact ? AppType.sizeTimerCompact : AppType.sizeTimerLarge,
+                    fontSize: compact
+                        ? AppType.sizeTimerCompact
+                        : AppType.sizeTimerLarge,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -205,28 +204,30 @@ class PomodoroTimer extends ConsumerWidget {
                             '¡Tiempo completado!',
                             style: AppType.secondaryItalic(
                               color: kColorInk,
-                              size: compact ? AppType.sizeBody : AppType.sizeBodyMedium,
+                              size: compact
+                                  ? AppType.sizeBody
+                                  : AppType.sizeBodyMedium,
                             ).copyWith(fontWeight: AppType.weightSemiBold),
                             textAlign: TextAlign.center,
                           )
                         : state.isRunning
-                            ? Transform.scale(
-                                scale: 1.5,
-                                child: Lottie.asset(
-                                  'assets/Lottie/Loading.json',
-                                  repeat: true,
-                                ),
-                              )
-                            : Text(
-                                'En pausa',
-                                style: AppType.secondaryItalic(
-                                  color: kColorTextSecondary,
-                                  size: compact ? AppType.sizeBody : AppType.sizeBodyMedium,
-                                ).copyWith(
-                                  fontWeight: AppType.weightSemiBold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
+                        ? Transform.scale(
+                            scale: 1.5,
+                            child: Lottie.asset(
+                              'assets/Lottie/Loading.json',
+                              repeat: true,
+                            ),
+                          )
+                        : Text(
+                            'En pausa',
+                            style: AppType.secondaryItalic(
+                              color: kColorTextSecondary,
+                              size: compact
+                                  ? AppType.sizeBody
+                                  : AppType.sizeBodyMedium,
+                            ).copyWith(fontWeight: AppType.weightSemiBold),
+                            textAlign: TextAlign.center,
+                          ),
                   ),
                 ),
               ],
@@ -248,18 +249,18 @@ class PomodoroTimer extends ConsumerWidget {
             SizedBox(
               height: compact ? 48 : 56,
               child: ElevatedButton.icon(
-                onPressed: () => ref
-                    .read(pomodoroProvider.notifier)
-                    .start(state.totalSeconds),
+                onPressed: () {
+                  ref.read(soundProvider.notifier).unlock();
+                  ref.read(pomodoroProvider.notifier).start(state.totalSeconds);
+                },
                 icon: const Icon(Icons.play_arrow_rounded, size: 24),
                 label: const Text('Iniciar'),
               ),
             ),
           const SizedBox(height: 8),
           TextButton.icon(
-            onPressed: () => ref
-                .read(pomodoroProvider.notifier)
-                .reset(state.totalSeconds),
+            onPressed: () =>
+                ref.read(pomodoroProvider.notifier).reset(state.totalSeconds),
             icon: const Icon(Icons.restart_alt_rounded, size: 20),
             label: const Text('Reiniciar'),
             style: TextButton.styleFrom(
@@ -274,7 +275,10 @@ class PomodoroTimer extends ConsumerWidget {
 }
 
 class _DurationPills extends StatelessWidget {
-  const _DurationPills({required this.selectedSeconds, required this.onSelected});
+  const _DurationPills({
+    required this.selectedSeconds,
+    required this.onSelected,
+  });
 
   final int selectedSeconds;
   final ValueChanged<int> onSelected;
@@ -290,10 +294,10 @@ class _DurationPills extends StatelessWidget {
         Text(
           'Duración',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: kColorTextSecondary,
-                fontWeight: AppType.weightSemiBold,
-                fontSize: compact ? AppType.sizeCaption : null,
-              ),
+            color: kColorTextSecondary,
+            fontWeight: AppType.weightSemiBold,
+            fontSize: compact ? AppType.sizeCaption : null,
+          ),
         ),
         SizedBox(height: compact ? 6 : 10),
         Wrap(
@@ -306,11 +310,12 @@ class _DurationPills extends StatelessWidget {
                 onTap: () => onSelected(seconds),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: compact ? 8 : 10),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 12 : 16,
+                    vertical: compact ? 8 : 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: selected
-                        ? kColorDeepSage
-                        : kColorSageSoft,
+                    color: selected ? kColorDeepSage : kColorSageSoft,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -318,7 +323,9 @@ class _DurationPills extends StatelessWidget {
                     style: TextStyle(
                       color: selected ? kColorPaper : kColorTextSecondary,
                       fontWeight: AppType.weightSemiBold,
-                      fontSize: compact ? AppType.sizeCaption : AppType.sizeLabel,
+                      fontSize: compact
+                          ? AppType.sizeCaption
+                          : AppType.sizeLabel,
                     ),
                   ),
                 ),
@@ -332,14 +339,16 @@ class _DurationPills extends StatelessWidget {
   }
 
   Widget _buildCustomPill(BuildContext context) {
-    final bool selected =
-        !_durationPresets.contains(selectedSeconds);
+    final bool selected = !_durationPresets.contains(selectedSeconds);
     final bool compact = MediaQuery.sizeOf(context).width < 600;
     return GestureDetector(
       onTap: () => _promptCustomDuration(context),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: compact ? 8 : 10),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 12 : 16,
+          vertical: compact ? 8 : 10,
+        ),
         decoration: BoxDecoration(
           color: selected ? kColorDeepSage : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
@@ -376,17 +385,25 @@ class _DurationPills extends StatelessWidget {
     final minutes = await showDialog<int>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        insetPadding: const EdgeInsets.symmetric(
+          horizontal: 40,
+          vertical: kToolbarHeight,
+        ),
         backgroundColor: kColorPaper,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text(
           'Duración personalizada',
-          style: TextStyle(color: kColorInk, fontWeight: AppType.weightSemiBold),
+          style: TextStyle(
+            color: kColorInk,
+            fontWeight: AppType.weightSemiBold,
+          ),
         ),
         content: TextField(
           controller: controller,
           autofocus: true,
           keyboardType: TextInputType.number,
           style: const TextStyle(color: kColorInk),
+          scrollPadding: EdgeInsets.zero,
           decoration: const InputDecoration(
             labelText: 'Minutos',
             hintText: 'ej. 20',
@@ -406,7 +423,10 @@ class _DurationPills extends StatelessWidget {
               Navigator.of(dialogContext).pop(value);
             },
             style: TextButton.styleFrom(foregroundColor: kColorDeepSage),
-            child: const Text('Aceptar', style: TextStyle(fontWeight: AppType.weightSemiBold)),
+            child: const Text(
+              'Aceptar',
+              style: TextStyle(fontWeight: AppType.weightSemiBold),
+            ),
           ),
         ],
       ),
@@ -429,9 +449,7 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isRunning
-            ? kColorSageSoft
-            : Colors.transparent,
+        color: isRunning ? kColorSageSoft : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(

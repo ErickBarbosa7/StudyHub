@@ -22,6 +22,7 @@ export interface ChatMessage {
 }
 
 const HISTORY_LIMIT = 100;
+const MAX_MESSAGE_LENGTH = 1000;
 
 async function sendHistory(socket: Socket, roomId: string) {
   const messages = await MessageModel.find({ roomId })
@@ -62,7 +63,8 @@ export function registerChatHandler(io: Server, socket: Socket): void {
       !roomId ||
       !senderId ||
       typeof text !== 'string' ||
-      text.trim() === ''
+      text.trim() === '' ||
+      text.trim().length > MAX_MESSAGE_LENGTH
     ) {
       return;
     }
