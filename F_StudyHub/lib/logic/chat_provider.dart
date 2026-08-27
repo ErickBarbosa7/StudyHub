@@ -50,13 +50,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final message = Message.fromJson(data as Map<String, dynamic>);
       state = state.copyWith(
         messages: [...state.messages, message],
-        unreadCount: state.unreadCount + 1,
+        unreadCount: _isChatVisible ? 0 : state.unreadCount + 1,
       );
     });
   }
 
   final WebSocketService _socketService;
   final riverpod.Ref _roomProvider;
+  bool _isChatVisible = false;
 
   String? get _roomId => _roomProvider.read(roomProvider).room?.roomId;
   String? get _senderId =>
@@ -68,6 +69,11 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   void clearUnread() {
     state = state.copyWith(unreadCount: 0);
+  }
+
+  void setChatVisible(bool visible) {
+    _isChatVisible = visible;
+    if (visible) state = state.copyWith(unreadCount: 0);
   }
 
   void sendMessage(String text) {

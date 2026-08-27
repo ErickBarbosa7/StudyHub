@@ -1,4 +1,5 @@
 import type { Server, Socket } from 'socket.io';
+import { RoomModel } from '../models/Room.js';
 
 export interface RoomUser {
   id: string;
@@ -16,6 +17,12 @@ interface JoinRoomPayload {
 
 interface LeaveRoomPayload {
   roomId: string;
+  userId: string;
+}
+
+interface KickUserPayload {
+  roomId: string;
+  hostId: string;
   userId: string;
 }
 
@@ -94,5 +101,40 @@ export function registerRoomHandler(io: Server, socket: Socket): void {
   socket.on('disconnect', () => {
     removeUserFromAllRooms(io, socket);
     console.log('[rooms] Cliente desconectado y removido de sus salas');
+  });
+
+  socket.on('kick_user', async (payload: KickUserPayload) => {
+    const { roomId, hostId, userId } = payload;
+
+    if (!roomId || !hostId || !userId || hostId === userId) {
+      return;
+    }
+
+    try {
+      const room = await RoomModel.findOne({ roomId });
+      if (!room || room.hostId !== hostId) {
+        return;
+      }
+
+      const roomUsers = usersByRoom.get(roomId);
+      const targetUser = roomUsers?.get(userId);
+
+      if (!targetUser) {
+        return;
+      }
+
+      roomUsers?.delete(userId);
+      if (roomUsers?.size === 0) {
+        usersByRoom.delete(roomId);
+      }
+
+      io.to(targetUser.socketId).emit('kicked', { roomId });
+      io.to(roomId).emit('user_kicked', { userId, userName: targetUser.name });
+      sendUsersUpdate(io, roomId);
+
+      console.log(`[rooms] ${targetUser.name} fue expulsado de la sala ${roomId}`);
+    } catch (error) {
+      console.error('[rooms] Error al expulsar usuario:', error);
+    }
   });
 }

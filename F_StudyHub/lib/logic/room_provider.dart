@@ -56,7 +56,7 @@ String _translateError(Object error) {
     return 'La conexión está tardando demasiado. Verifica tu internet e intenta de nuevo.';
   }
   if (msg.contains('404') || msg.contains('not found') || msg.contains('no encontr')) {
-    return 'No se encontró una sala con ese código. Verifica el código e intenta de nuevo.';
+    return 'Código no válido. No se encontró una sala con ese código. Verifica que esté bien escrito e intenta de nuevo.';
   }
   if (msg.contains('400') || msg.contains('bad request') || msg.contains('invalid')) {
     return 'Los datos enviados no son válidos. Revisa la información e intenta de nuevo.';
@@ -75,6 +75,12 @@ class RoomNotifier extends StateNotifier<RoomState> {
           .map((item) => User.fromJson(item as Map<String, dynamic>))
           .toList();
       state = state.copyWith(users: users);
+    });
+
+    _socketService.on('kicked', (_) {
+      debugPrint('[room] Expulsado de la sala');
+      _clearSession();
+      state = const RoomState();
     });
 
     _socketService.onConnected = _rejoinRoomIfNeeded;
@@ -217,6 +223,19 @@ class RoomNotifier extends StateNotifier<RoomState> {
     }
     _clearSession();
     state = const RoomState();
+  }
+
+  void kickUser(String userId) {
+    final room = state.room;
+    final localUser = state.localUser;
+    if (room == null || localUser == null) return;
+    if (room.hostId != localUser.id) return;
+
+    _socketService.emit('kick_user', {
+      'roomId': room.roomId,
+      'hostId': localUser.id,
+      'userId': userId,
+    });
   }
 }
 

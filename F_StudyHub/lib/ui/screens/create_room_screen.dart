@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../core/theme.dart';
+import '../../data/models/user_model.dart';
 import '../../logic/chat_provider.dart';
 import '../../logic/room_provider.dart';
 import '../widgets/chat_box.dart';
@@ -157,18 +159,112 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
     if (!created) {
       final error = ref.read(roomProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            error ??
-                (_mode == _FormMode.create
-                    ? 'No se pudo crear la sala. Intenta de nuevo.'
-                    : 'No se encontró la sala con ese código. Verifica el código e intenta de nuevo.'),
+      final isNotFound = error != null && error.toLowerCase().contains('código no válido');
+      if (isNotFound) {
+        _showNotFoundSheet();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error ??
+                  (_mode == _FormMode.create
+                      ? 'No se pudo crear la sala. Intenta de nuevo.'
+                      : 'Código no válido. Verifica que esté bien escrito e intenta de nuevo.'),
+            ),
           ),
-        ),
-      );
+        );
+      }
       ref.read(roomProvider.notifier).clearError();
     }
+  }
+
+  void _showNotFoundSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: kColorPaper,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(32, 32, 32, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Lottie.asset(
+              'assets/Lottie/404.json',
+              height: 180,
+              repeat: true,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Código no válido',
+              style: TextStyle(
+                fontSize: AppType.sizeTitle,
+                fontWeight: AppType.weightSemiBold,
+                color: kColorInk,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No se encontró una sala con ese código. Verifica que esté bien escrito e intenta de nuevo.',
+              textAlign: TextAlign.center,
+              style: AppType.secondaryItalic(
+                size: AppType.sizeBodyMedium,
+                color: kColorTextSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Reintentar'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showKickDialog(User user) {
+    showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: kColorPaper,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(
+          '¿Expulsar a ${user.name}?',
+          style: const TextStyle(
+            color: kColorInk,
+            fontWeight: AppType.weightSemiBold,
+          ),
+        ),
+        content: Text(
+          '${user.name} será removido de la sala. Podrá volver a unirse con el mismo código.',
+          style: AppType.secondaryItalic(color: kColorInk),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            style: TextButton.styleFrom(foregroundColor: kColorTextSecondary),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: kColorError),
+            child: const Text(
+              'Expulsar',
+              style: TextStyle(fontWeight: AppType.weightSemiBold),
+            ),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true) {
+        ref.read(roomProvider.notifier).kickUser(user.id);
+      }
+    });
   }
 
   void _leaveRoom() {
@@ -220,15 +316,26 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       if (next.error != null && next.error != previous?.error && !next.isCreating) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(next.error!)),
-          );
+          final isNotFound = next.error!.toLowerCase().contains('código no válido');
+          if (isNotFound) {
+            _showNotFoundSheet();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(next.error!)),
+            );
+          }
           ref.read(roomProvider.notifier).clearError();
         });
       }
     });
 
-    return Scaffold(
+    return PopScope(
+      canPop: !inRoom,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || !inRoom) return;
+        _leaveRoom();
+      },
+      child: Scaffold(
       backgroundColor: kColorPaper,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -254,6 +361,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             : null,
       ),
       body: inRoom ? _buildWorkspace(roomState) : _buildCreateForm(roomState),
+    ),
     );
   }
 
@@ -748,33 +856,44 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 separatorBuilder: (context, index) => SizedBox(width: compact ? 8 : 10),
                 itemBuilder: (context, index) {
                   final user = roomState.users[index];
-                  return Container(
-                    padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 18, vertical: compact ? 8 : 10),
-                    decoration: BoxDecoration(
-                      color: kColorSageSoft,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: kColorDeepSage,
+                  final bool isHost = room?.hostId == user.id;
+                  final bool isLocal = roomState.localUser?.id == user.id;
+                  final bool canKick = !isHost && !isLocal && room?.hostId == roomState.localUser?.id;
+
+                  return GestureDetector(
+                    onLongPress: canKick ? () => _showKickDialog(user) : null,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 18, vertical: compact ? 8 : 10),
+                      decoration: BoxDecoration(
+                        color: isHost ? kColorGoldSoft : kColorSageSoft,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isHost ? kColorGold : kColorDeepSage,
+                            ),
                           ),
-                        ),
-                        SizedBox(width: compact ? 8 : 10),
-                        Text(
-                          user.name,
-                          style: TextStyle(
-                            color: kColorInk,
-                            fontWeight: AppType.weightSemiBold,
-                            fontSize: compact ? AppType.sizeBody : AppType.sizeBodyMedium,
+                          SizedBox(width: compact ? 8 : 10),
+                          Text(
+                            user.name,
+                            style: TextStyle(
+                              color: kColorInk,
+                              fontWeight: AppType.weightSemiBold,
+                              fontSize: compact ? AppType.sizeBody : AppType.sizeBodyMedium,
+                            ),
                           ),
-                        ),
-                      ],
+                          if (isHost) ...[
+                            SizedBox(width: compact ? 4 : 6),
+                            Icon(Icons.workspace_premium_rounded, size: 14, color: kColorGold),
+                          ],
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -851,9 +970,7 @@ class _ChatTabBadgeState extends ConsumerState<_ChatTabBadge> {
 
   void _onTabChange() {
     if (!mounted) return;
-    if (DefaultTabController.of(context).index == 1) {
-      ref.read(chatProvider.notifier).clearUnread();
-    }
+    ref.read(chatProvider.notifier).setChatVisible(DefaultTabController.of(context).index == 1);
   }
 
   @override

@@ -155,6 +155,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 ),
+                if (roomState.room != null) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pushNamed(
+                          CreateRoomScreen.routeName,
+                        );
+                      },
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      label: const Text('Volver a la sala'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: kColorDeepSage,
+                        side: const BorderSide(color: kColorSage, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 TextButton.icon(
                   onPressed: _showHowItWorks,
