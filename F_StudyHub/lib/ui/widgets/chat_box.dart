@@ -239,10 +239,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                   height: compact ? 48 : 56,
                   width: compact ? 48 : 56,
                     child: ElevatedButton(
-                      onPressed: () {
-                        FocusScope.of(context).unfocus();
-                        _send();
-                      },
+                      onPressed: _send,
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(

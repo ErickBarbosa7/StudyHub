@@ -11,19 +11,29 @@ class TaskState {
   const TaskState({
     this.tasks = const [],
     this.error,
+    this.newTaskCount = 0,
+    this.lastAddedTaskTitle,
   });
 
   final List<Task> tasks;
   final String? error;
+  final int newTaskCount;
+  final String? lastAddedTaskTitle;
 
   TaskState copyWith({
     List<Task>? tasks,
     String? error,
     bool clearError = false,
+    int? newTaskCount,
+    String? lastAddedTaskTitle,
+    bool clearNewTask = false,
   }) {
     return TaskState(
       tasks: tasks ?? this.tasks,
       error: clearError ? null : (error ?? this.error),
+      newTaskCount: clearNewTask ? 0 : (newTaskCount ?? this.newTaskCount),
+      lastAddedTaskTitle:
+          clearNewTask ? null : (lastAddedTaskTitle ?? this.lastAddedTaskTitle),
     );
   }
 }
@@ -35,12 +45,32 @@ class TaskNotifier extends StateNotifier<TaskState> {
       final tasks = (data as List)
           .map((item) => Task.fromJson(item as Map<String, dynamic>))
           .toList();
-      state = state.copyWith(tasks: tasks, clearError: true);
+
+      final oldIds = state.tasks.map((t) => t.taskId).toSet();
+      final newTasks =
+          tasks.where((t) => !oldIds.contains(t.taskId)).toList();
+
+      if (newTasks.isNotEmpty && !_pendingLocalAdd && oldIds.isNotEmpty) {
+        state = state.copyWith(
+          tasks: tasks,
+          clearError: true,
+          newTaskCount: state.newTaskCount + 1,
+          lastAddedTaskTitle: newTasks.first.title,
+        );
+      } else {
+        state = state.copyWith(
+          tasks: tasks,
+          clearError: true,
+          clearNewTask: oldIds.isEmpty || _pendingLocalAdd,
+        );
+      }
+      _pendingLocalAdd = false;
     });
   }
 
   final WebSocketService _socketService;
   final riverpod.Ref _roomProvider;
+  bool _pendingLocalAdd = false;
 
   String? get _roomId => _roomProvider.read(roomProvider).room?.roomId;
 
@@ -48,13 +78,20 @@ class TaskNotifier extends StateNotifier<TaskState> {
     state = state.copyWith(clearError: true);
   }
 
+  void consumeNewTask() {
+    state = state.copyWith(clearNewTask: true);
+  }
+
   void addTask(String title) {
     final roomId = _roomId;
     if (roomId == null || title.trim().isEmpty) {
-      state = state.copyWith(error: 'No se pudo agregar la tarea. Asegúrate de estar dentro de una sala.');
+      state = state.copyWith(
+          error:
+              'No se pudo agregar la tarea. Asegúrate de estar dentro de una sala.');
       return;
     }
 
+    _pendingLocalAdd = true;
     _socketService.emit('add_task', {
       'roomId': roomId,
       'title': title.trim(),
@@ -64,7 +101,9 @@ class TaskNotifier extends StateNotifier<TaskState> {
   void updateTaskStatus(String taskId, String newStateRef) {
     final roomId = _roomId;
     if (roomId == null) {
-      state = state.copyWith(error: 'No se pudo actualizar la tarea. Asegúrate de estar dentro de una sala.');
+      state = state.copyWith(
+          error:
+              'No se pudo actualizar la tarea. Asegúrate de estar dentro de una sala.');
       return;
     }
 

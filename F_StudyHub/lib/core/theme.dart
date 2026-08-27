@@ -92,46 +92,12 @@ final Color kColorTintedShadow =
     kColorDeepSage.withValues(alpha: 0.06);
 
 
-// ═════════════════════════════════════════════════════════════
-// ANILLO DE PRESENCIA
-// ═════════════════════════════════════════════════════════════
-//
-// Este sistema tiene un significado específico:
-//
-// Verde → sesión activa / foco
-// Dorado → completado / logro
-// Pergamino → inactivo
-//
-// Se utiliza únicamente en:
-// • Dial del Pomodoro
-// • Anillo del avatar en salas
-// • Checkbox de tareas
-// • Estado de presencia del chat
-//
-// No utilizar estos colores como sistema genérico de estados.
-// ═════════════════════════════════════════════════════════════
 
 const Color kColorRingActive = kColorDeepSage;
 
 const Color kColorRingComplete = kColorGold;
 
 const Color kColorRingInactive = kColorBorder;
-
-
-// ═════════════════════════════════════════════════════════════
-// TIPOGRAFÍA
-// ═════════════════════════════════════════════════════════════
-//
-// Recursive → contenido editorial, títulos, botones y cuerpo.
-// Cascadia Code → información numérica que cambia constantemente.
-//
-// Ejemplos de mono:
-// • Pomodoro
-// • Timestamps
-// • Contadores
-// • Estadísticas
-//
-// ═════════════════════════════════════════════════════════════
 
 const String kFontFamily = 'Recursive';
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,7 @@ import '../../core/theme.dart';
 import '../../data/models/user_model.dart';
 import '../../logic/chat_provider.dart';
 import '../../logic/room_provider.dart';
+import '../../logic/task_provider.dart';
 import '../widgets/chat_box.dart';
 import '../widgets/pomodoro_timer.dart';
 import '../widgets/qr_display.dart';
@@ -37,6 +40,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   late final List<FocusNode> _codeFocusNodes;
   bool _showCodeError = false;
 
+  bool _taskBannerVisible = false;
+  String _taskBannerTitle = '';
+  Timer? _taskBannerTimer;
+
   @override
   void initState() {
     super.initState();
@@ -55,6 +62,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     for (final n in _codeFocusNodes) {
       n.dispose();
     }
+    _taskBannerTimer?.cancel();
     super.dispose();
   }
 
@@ -325,6 +333,24 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             );
           }
           ref.read(roomProvider.notifier).clearError();
+        });
+      }
+    });
+
+    ref.listen<TaskState>(taskProvider, (previous, next) {
+      if (next.newTaskCount > 0 && next.newTaskCount != previous?.newTaskCount) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() {
+            _taskBannerVisible = true;
+            _taskBannerTitle = next.lastAddedTaskTitle ?? 'Nueva tarea';
+          });
+          _taskBannerTimer?.cancel();
+          _taskBannerTimer = Timer(const Duration(seconds: 3), () {
+            if (!mounted) return;
+            setState(() => _taskBannerVisible = false);
+            ref.read(taskProvider.notifier).consumeNewTask();
+          });
         });
       }
     });
@@ -700,6 +726,50 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     return Column(
       children: [
         _buildUsersHeader(roomState),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          child: _taskBannerVisible
+              ? Container(
+                  width: double.infinity,
+                  margin: EdgeInsets.symmetric(
+                    horizontal: compact ? 16 : 24,
+                    vertical: compact ? 4 : 6,
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 14 : 18,
+                    vertical: compact ? 10 : 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: kColorSageSoft,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.add_task_rounded,
+                        color: kColorDeepSage,
+                        size: 20,
+                      ),
+                      SizedBox(width: compact ? 10 : 12),
+                      Expanded(
+                        child: Text(
+                          'Nueva tarea: $_taskBannerTitle',
+                          style: TextStyle(
+                            color: kColorInk,
+                            fontWeight: AppType.weightSemiBold,
+                            fontSize: compact
+                                ? AppType.sizeCaption
+                                : AppType.sizeBodyMedium,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
         Expanded(
           child: DefaultTabController(
             length: 2,
