@@ -7,6 +7,68 @@ import 'core/theme.dart';
 import 'ui/screens/create_room_screen.dart';
 import 'ui/screens/home_screen.dart';
 
+Widget _buildErrorWidget(FlutterErrorDetails errorDetails) {
+  return Builder(
+    builder: (context) {
+      return Material(
+        color: kColorPaper,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: kColorSageSoft,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.error_outline_rounded,
+                    color: kColorDeepSage,
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Algo salió mal',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: kColorInk,
+                        fontWeight: AppType.weightSemiBold,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Ocurrió un error inesperado. Por favor, reinicia la aplicación.',
+                  textAlign: TextAlign.center,
+                  style: AppType.secondaryItalic(color: kColorInk),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: 200,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => const HomeScreen(),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                    icon: const Icon(Icons.home_rounded),
+                    label: const Text('Volver al inicio'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
 void main() {
   runZonedGuarded(
     () {
@@ -14,6 +76,7 @@ void main() {
         debugPrint('[FlutterError] ${details.exceptionAsString()}');
         debugPrint('${details.stack}');
       };
+      ErrorWidget.builder = _buildErrorWidget;
       runApp(const ProviderScope(child: StudyHubApp()));
     },
     (error, stackTrace) {
@@ -32,66 +95,6 @@ class StudyHubApp extends StatelessWidget {
       title: 'StudyHub',
       theme: buildTheme(),
       home: const HomeScreen(),
-      builder: (context, child) {
-        ErrorWidget.builder = (errorDetails) {
-          return Material(
-            color: kColorPaper,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: kColorSageSoft,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.error_outline_rounded,
-                        color: kColorDeepSage,
-                        size: 40,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Algo salió mal',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: kColorInk,
-                            fontWeight: AppType.weightSemiBold,
-                          ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Ocurrió un error inesperado. Por favor, reinicia la aplicación.',
-                      textAlign: TextAlign.center,
-                      style: AppType.secondaryItalic(color: kColorInk),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: 200,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                              builder: (_) => const HomeScreen(),
-                            ),
-                            (route) => false,
-                          );
-                        },
-                        icon: const Icon(Icons.home_rounded),
-                        label: const Text('Volver al inicio'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        };
-        return child ?? const SizedBox.shrink();
-      },
       routes: {
         CreateRoomScreen.routeName: (_) => const CreateRoomScreen(),
       },
