@@ -88,6 +88,15 @@ class RoomNotifier extends StateNotifier<RoomState> {
       state = state.copyWith(users: users);
     });
 
+    _socketService.on('host_transferred', (data) {
+      final newHostId =
+          (data as Map<String, dynamic>)['newHostId'] as String;
+      final room = state.room;
+      if (room == null) return;
+      state = state.copyWith(room: room.copyWith(hostId: newHostId));
+      debugPrint('[room] Nuevo dueño de la sala: $newHostId');
+    });
+
     _socketService.on('kicked', (_) {
       debugPrint('[room] Expulsado de la sala');
       _clearSession();

@@ -294,6 +294,12 @@ ref.listen<XState>(provider, (previous, next) {
 | **Botón "Volver a la sala"** | `home_screen.dart` | Aparece cuando `roomState.room != null` |
 | **Notificación tarea nueva** | `task_provider.dart`, `create_room_screen.dart` | Banner animado top workspace, solo para tareas de otros |
 | **Fix teclado chat** | `chat_box.dart` | Eliminado `FocusScope.unfocus()` del botón enviar |
+| **Banner conexión/errores** | `connection_banner.dart`, `websocket_service.dart`, `socket_provider.dart` | `SocketConnectionStatus` + `ValueNotifier`, `SocketState`, `ensureConnected`, banner "Conectando…"/error con Reintentar |
+| **Límites de caracteres** | `chat_box.dart`, `roomHandler.ts`, `chatHandler.ts`, `taskHandler.ts`, `roomController.ts` | Chat 1000, feedback 100, tarea 100, sala 20, usuario 15 |
+| **Sound unlock iOS (edit)** | `sound_service.dart`, `pomodoro_timer.dart` | `unlock()` reproduce clip mudo dentro del gesto para activar sesión de audio |
+| **Pomodoro bottom sheet (edit)** | `pomodoro_timer.dart` | `_promptCustomDuration` convertido a `showModalBottomSheet` con input numérico (`digitsOnly`, max 3) |
+| **Traspaso de dueño** | `roomHandler.ts`, `room_provider.dart`, `room_model.dart` | Al irse el dueño y quedar 1+ usuario, el 1ro que se queda pasa a ser dueño (Mongo + evento `host_transferred`) |
+| **Eliminar sala vacía** | `roomHandler.ts` | Al quedar 0 usuarios conectados se borra `Room` + `Message` del chat |
 
 #### 12. REGLAS DE CODIFICACIÓN
 
@@ -306,7 +312,8 @@ ref.listen<XState>(provider, (previous, next) {
 - **Constants:** Prefijo `k` (e.g. `kColorPaper`, `kDefaultPomodoroSeconds`).
 - **IDs de usuario local:** Se generan con `User.generateLocal(name)` usando timestamp + random.
 - **Código de sala:** 6 caracteres de `'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'` (sin I/0/O).
-- **Room host:** `hostId` se guarda en MongoDB Room model y se usa para permisos de kick.
+- **Room host:** `hostId` se guarda en MongoDB Room model y se usa para permisos de kick. Si el dueño sale y quedan usuarios, el cargo se transfiere al 1ro que se queda (`host_transferred`).
+- **Sala vacía:** Si quedan 0 usuarios conectados (`usersByRoom`), la sala y sus mensajes se eliminan de Mongo automáticamente (`handleRoomAfterLeave`).
 - **Users in-memory:** Se trackean en `usersByRoom` Map (keyed by socket `id`), no persistidos.
 - **Audio iOS:** Requiere `AudioContext` con `AVAudioSessionCategory.playback` para funcionar en silencio.
 - **PopScope:** Usado en `create_room_screen.dart` para interceptar back button cuando hay sala activa.
