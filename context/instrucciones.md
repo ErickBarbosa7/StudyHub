@@ -297,7 +297,7 @@ ref.listen<XState>(provider, (previous, next) {
 | **Banner conexión/errores** | `connection_banner.dart`, `websocket_service.dart`, `socket_provider.dart` | `SocketConnectionStatus` + `ValueNotifier`, `SocketState`, `ensureConnected`, banner "Conectando…"/error con Reintentar |
 | **Límites de caracteres** | `chat_box.dart`, `roomHandler.ts`, `chatHandler.ts`, `taskHandler.ts`, `roomController.ts` | Chat 1000, feedback 100, tarea 100, sala 20, usuario 15 |
 | **Sound unlock iOS (edit)** | `sound_service.dart`, `pomodoro_timer.dart` | `unlock()` reproduce clip mudo dentro del gesto para activar sesión de audio |
-| **Pomodoro bottom sheet (edit)** | `pomodoro_timer.dart` | `_promptCustomDuration` convertido a `showModalBottomSheet` con input numérico (`digitsOnly`, max 3) |
+| **Pomodoro bottom sheet (edit)** | `pomodoro_timer.dart` | `_promptCustomDuration` en `showModalBottomSheet` con `AnimatedPadding` (sigue al teclado), sin `SingleChildScrollView`, input numérico (`digitsOnly`, max 3). Fix salto iOS al abrir |
 | **Traspaso de dueño** | `roomHandler.ts`, `room_provider.dart`, `room_model.dart` | Al irse el dueño y quedar 1+ usuario, el 1ro que se queda pasa a ser dueño (Mongo + evento `host_transferred`) |
 | **Eliminar sala vacía** | `roomHandler.ts` | Al quedar 0 usuarios conectados se borra `Room` + `Message` del chat |
 

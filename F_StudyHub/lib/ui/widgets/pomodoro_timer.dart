@@ -394,14 +394,14 @@ class _DurationPills extends StatelessWidget {
       ),
       builder: (sheetContext) {
         final bottomInset = MediaQuery.viewInsetsOf(sheetContext).bottom;
-        
-        return Padding(
-          // 1. Movemos el Padding hacia afuera para controlar el teclado
+
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
           padding: EdgeInsets.only(bottom: bottomInset),
           child: SafeArea(
-            // 2. Apagamos el SafeArea en la parte inferior para evitar el doble espacio en iPhone
-            bottom: false, 
-            child: SingleChildScrollView(
+            top: false,
+            child: Padding(
               padding: EdgeInsets.fromLTRB(
                 compact ? 24 : 32,
                 compact ? 20 : 28,
@@ -425,10 +425,6 @@ class _DurationPills extends StatelessWidget {
                   TextField(
                     controller: controller,
                     autofocus: true,
-                    
-                    // 3. Controlamos el comportamiento de salto al abrirse el teclado
-                    scrollPadding: const EdgeInsets.only(bottom: 60), 
-                    
                     keyboardType: TextInputType.number,
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
@@ -468,7 +464,8 @@ class _DurationPills extends StatelessWidget {
                         ),
                         child: const Text(
                           'Aceptar',
-                          style: TextStyle(fontWeight: AppType.weightSemiBold),
+                          style:
+                              TextStyle(fontWeight: AppType.weightSemiBold),
                         ),
                       ),
                     ],
