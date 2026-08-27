@@ -12,22 +12,26 @@ class ChatState {
     this.messages = const [],
     this.isLoadingHistory = false,
     this.error,
+    this.unreadCount = 0,
   });
 
   final List<Message> messages;
   final bool isLoadingHistory;
   final String? error;
+  final int unreadCount;
 
   ChatState copyWith({
     List<Message>? messages,
     bool? isLoadingHistory,
     String? error,
     bool clearError = false,
+    int? unreadCount,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoadingHistory: isLoadingHistory ?? this.isLoadingHistory,
       error: clearError ? null : (error ?? this.error),
+      unreadCount: unreadCount ?? this.unreadCount,
     );
   }
 }
@@ -44,7 +48,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     _socketService.on('new_message', (data) {
       final message = Message.fromJson(data as Map<String, dynamic>);
-      state = state.copyWith(messages: [...state.messages, message]);
+      state = state.copyWith(
+        messages: [...state.messages, message],
+        unreadCount: state.unreadCount + 1,
+      );
     });
   }
 
@@ -57,6 +64,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   void clearError() {
     state = state.copyWith(clearError: true);
+  }
+
+  void clearUnread() {
+    state = state.copyWith(unreadCount: 0);
   }
 
   void sendMessage(String text) {

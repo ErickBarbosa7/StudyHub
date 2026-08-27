@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
+import '../../logic/chat_provider.dart';
 import '../../logic/room_provider.dart';
 import '../widgets/chat_box.dart';
 import '../widgets/pomodoro_timer.dart';
@@ -596,10 +597,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             length: 2,
           child: Column(
             children: [
-              const TabBar(
+              TabBar(
                 tabs: [
-                  Tab(icon: Icon(Icons.timer_rounded), text: 'Estudio'),
-                  Tab(icon: Icon(Icons.chat_bubble_rounded), text: 'Chat'),
+                  const Tab(icon: Icon(Icons.timer_rounded), text: 'Estudio'),
+                  const _ChatTabBadge(),
                 ],
               ),
                 Expanded(
@@ -822,6 +823,72 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         ),
       ),
       validator: (value) => (value == null || value.trim().isEmpty) ? 'Requerido' : null,
+    );
+  }
+}
+
+class _ChatTabBadge extends ConsumerStatefulWidget {
+  const _ChatTabBadge();
+
+  @override
+  ConsumerState<_ChatTabBadge> createState() => _ChatTabBadgeState();
+}
+
+class _ChatTabBadgeState extends ConsumerState<_ChatTabBadge> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final controller = DefaultTabController.of(context);
+    controller.removeListener(_onTabChange);
+    controller.addListener(_onTabChange);
+  }
+
+  @override
+  void dispose() {
+    DefaultTabController.of(context).removeListener(_onTabChange);
+    super.dispose();
+  }
+
+  void _onTabChange() {
+    if (!mounted) return;
+    if (DefaultTabController.of(context).index == 1) {
+      ref.read(chatProvider.notifier).clearUnread();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final unreadCount = ref.watch(chatProvider.select((s) => s.unreadCount));
+    return Tab(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.chat_bubble_rounded),
+                SizedBox(width: 6),
+                Text('Chat'),
+              ],
+            ),
+          ),
+          if (unreadCount > 0)
+            Positioned(
+              top: 2,
+              right: 0,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: kColorError,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
