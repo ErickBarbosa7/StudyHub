@@ -25,26 +25,28 @@ class SoundNotifier extends StateNotifier<SoundState> {
   bool _unlocked = false;
 
   Future<void> _configureAudioContext() async {
+    if (kIsWeb) return;
     try {
-      final audioContext = AudioContext(
-        iOS: AudioContextIOS(
-          category: AVAudioSessionCategory.playback,
-          options: const {
-            AVAudioSessionOptions.mixWithOthers,
-            AVAudioSessionOptions.duckOthers,
-          },
-        ),
-        android: const AudioContextAndroid(
-          isSpeakerphoneOn: true,
-          stayAwake: true,
-          contentType: AndroidContentType.sonification,
-          usageType: AndroidUsageType.alarm,
-          audioFocus: AndroidAudioFocus.gainTransientMayDuck,
-        ),
-      );
-      await AudioPlayer.global.setAudioContext(audioContext);
-      await _player.setAudioContext(audioContext);
-      await _player.setReleaseMode(ReleaseMode.stop);
+      if (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android) {
+        final audioContext = AudioContext(
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.playback,
+            options: const {
+              AVAudioSessionOptions.mixWithOthers,
+              AVAudioSessionOptions.duckOthers,
+            },
+          ),
+          android: const AudioContextAndroid(
+            isSpeakerphoneOn: true,
+            stayAwake: true,
+            contentType: AndroidContentType.sonification,
+            usageType: AndroidUsageType.alarm,
+            audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+          ),
+        );
+        await AudioPlayer.global.setAudioContext(audioContext);
+      }
     } catch (e) {
       debugPrint('[SoundNotifier] Error configurando AudioContext: $e');
     }
@@ -64,18 +66,15 @@ class SoundNotifier extends StateNotifier<SoundState> {
     if (_unlocked) return;
     _unlocked = true;
     try {
-      await _configureAudioContext();
       if (kIsWeb) {
         final unlocker = AudioPlayer();
-        await unlocker.setSource(AssetSource('audio/pomodoro_bell.mp3'));
         await unlocker.setVolume(0);
-        await unlocker.resume();
+        await unlocker.play(AssetSource('audio/pomodoro_bell.mp3'));
         await Future<void>.delayed(const Duration(milliseconds: 100));
         await unlocker.stop();
         await unlocker.dispose();
       } else {
-        await _player.setReleaseMode(ReleaseMode.stop);
-        await _player.setVolume(1.0);
+        await _configureAudioContext();
       }
     } catch (e) {
       debugPrint('[SoundNotifier] Error desbloqueando audio: $e');
@@ -97,23 +96,16 @@ class SoundNotifier extends StateNotifier<SoundState> {
     if (!state.isEnabled) return;
     try {
       await _configureAudioContext();
-      await _player.stop();
-      await _player.setVolume(1.0);
-      await _player.play(
-        AssetSource('audio/pomodoro_bell.mp3'),
-        volume: 1.0,
-        mode: PlayerMode.lowLatency,
-      );
+      final player = AudioPlayer();
+      await player.play(AssetSource('audio/pomodoro_bell.mp3'), volume: 1.0);
+      player.onPlayerComplete.first.then((_) => player.dispose()).catchError((_) {});
     } catch (e) {
-      debugPrint('[SoundNotifier] Error al reproducir sonido pomodoro (lowLatency): $e');
+      debugPrint('[SoundNotifier] Error al reproducir sonido pomodoro: $e');
       try {
-        await _player.play(
-          AssetSource('audio/pomodoro_bell.mp3'),
-          volume: 1.0,
-          mode: PlayerMode.mediaPlayer,
-        );
+        await _player.stop();
+        await _player.play(AssetSource('audio/pomodoro_bell.mp3'), volume: 1.0);
       } catch (e2) {
-        debugPrint('[SoundNotifier] Error al reproducir sonido pomodoro (mediaPlayer): $e2');
+        debugPrint('[SoundNotifier] Fallback pomodoro falló: $e2');
       }
     }
   }
@@ -122,23 +114,16 @@ class SoundNotifier extends StateNotifier<SoundState> {
     if (!state.isEnabled) return;
     try {
       await _configureAudioContext();
-      await _player.stop();
-      await _player.setVolume(1.0);
-      await _player.play(
-        AssetSource('audio/task_notification.mp3'),
-        volume: 1.0,
-        mode: PlayerMode.lowLatency,
-      );
+      final player = AudioPlayer();
+      await player.play(AssetSource('audio/task_notification.mp3'), volume: 1.0);
+      player.onPlayerComplete.first.then((_) => player.dispose()).catchError((_) {});
     } catch (e) {
-      debugPrint('[SoundNotifier] Error al reproducir sonido de tarea (lowLatency): $e');
+      debugPrint('[SoundNotifier] Error al reproducir sonido de tarea: $e');
       try {
-        await _player.play(
-          AssetSource('audio/task_notification.mp3'),
-          volume: 1.0,
-          mode: PlayerMode.mediaPlayer,
-        );
+        await _player.stop();
+        await _player.play(AssetSource('audio/task_notification.mp3'), volume: 1.0);
       } catch (e2) {
-        debugPrint('[SoundNotifier] Error al reproducir sonido de tarea (mediaPlayer): $e2');
+        debugPrint('[SoundNotifier] Fallback tarea falló: $e2');
       }
     }
   }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:flutter_riverpod/legacy.dart'
     show StateNotifier, StateNotifierProvider;
 
+import '../data/services/sound_service.dart';
 import '../data/services/websocket_service.dart';
 import 'room_provider.dart';
 import 'socket_provider.dart';
@@ -50,6 +51,9 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
           map.containsKey('totalSeconds') ? (map['totalSeconds'] as num).round() : null;
       final wasRunning = state.isRunning;
       final finishedAtZero = timeRemaining == 0 && wasRunning;
+      if (finishedAtZero && !state.isFinished) {
+        _roomProvider.read(soundProvider.notifier).playPomodoroFinishedSound();
+      }
       state = state.copyWith(
         timeRemaining: timeRemaining,
         status: status,
@@ -64,6 +68,9 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
       final totalSeconds =
           map.containsKey('totalSeconds') ? (map['totalSeconds'] as num).round() : null;
       debugPrint('[pomodoro] Sesión completada');
+      if (!state.isFinished) {
+        _roomProvider.read(soundProvider.notifier).playPomodoroFinishedSound();
+      }
       state = state.copyWith(
         timeRemaining: 0,
         status: 'PAUSED',

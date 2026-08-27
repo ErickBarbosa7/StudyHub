@@ -375,7 +375,6 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
     ref.listen<PomodoroState>(pomodoroProvider, (previous, next) {
       if (next.isFinished && !(previous?.isFinished ?? false)) {
-        ref.read(soundProvider.notifier).playPomodoroFinishedSound();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(

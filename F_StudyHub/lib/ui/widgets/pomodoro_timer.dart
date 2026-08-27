@@ -373,6 +373,8 @@ class _DurationPills extends StatelessWidget {
     final minutes = await showDialog<int>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        alignment: Alignment.bottomCenter,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         backgroundColor: kColorPaper,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text(
@@ -391,7 +393,7 @@ class _DurationPills extends StatelessWidget {
             textInputAction: TextInputAction.done,
             maxLength: 3,
             maxLengthEnforcement: MaxLengthEnforcement.enforced,
-            scrollPadding: const EdgeInsets.only(bottom: 60),
+            scrollPadding: const EdgeInsets.only(bottom: 20),
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(3),
