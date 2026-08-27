@@ -26,9 +26,8 @@ class QrScannerSheet extends StatefulWidget {
 
 class _QrScannerSheetState extends State<QrScannerSheet> {
   MobileScannerController? _scannerController;
-  bool _hasError = false;
+  _CameraStatus _status = _CameraStatus.initializing;
   String _errorMessage = '';
-  bool _isInitializing = true;
 
   @override
   void initState() {
@@ -38,25 +37,66 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
 
   Future<void> _initScanner() async {
     try {
+      _scannerController?.dispose();
       _scannerController = MobileScannerController(
         detectionSpeed: DetectionSpeed.normal,
         facing: CameraFacing.back,
         torchEnabled: false,
       );
+
       await _scannerController!.start();
-      if (mounted) {
-        setState(() => _isInitializing = false);
+
+      if (!mounted) return;
+
+      final error = _scannerController!.value.error;
+      if (error != null && error.errorCode == MobileScannerErrorCode.permissionDenied) {
+        _setError('Permiso de cámara denegado. Actívalo en Configuración > StudyHub.');
+      } else if (_scannerController!.value.isRunning) {
+        setState(() => _status = _CameraStatus.ready);
+      } else {
+        _setError('No se pudo acceder a la cámara. Verifica los permisos.');
       }
+    } on MobileScannerException catch (e) {
+      if (!mounted) return;
+      _setError(_getMessageForErrorCode(e.errorCode));
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isInitializing = false;
-          _hasError = true;
-          _errorMessage = 'No se pudo acceder a la cámara. '
-              'Verifica que tu navegador tenga permisos de cámara.';
-        });
-      }
+      if (!mounted) return;
+      _setError('No se pudo acceder a la cámara. Verifica los permisos.');
     }
+  }
+
+  String _getMessageForErrorCode(MobileScannerErrorCode code) {
+    switch (code) {
+      case MobileScannerErrorCode.permissionDenied:
+        return 'Permiso de cámara denegado. Actívalo en Configuración > StudyHub.';
+      case MobileScannerErrorCode.controllerDisposed:
+        return 'La cámara fue cerrada inesperadamente.';
+      case MobileScannerErrorCode.controllerAlreadyInitialized:
+        return 'La cámara ya está en uso.';
+      case MobileScannerErrorCode.controllerUninitialized:
+        return 'La cámara no está disponible en este momento.';
+      case MobileScannerErrorCode.unsupported:
+        return 'Tu dispositivo no soporta escaneo de código QR.';
+      default:
+        return 'No se pudo acceder a la cámara. Verifica los permisos.';
+    }
+  }
+
+  void _setError(String message) {
+    if (mounted) {
+      setState(() {
+        _status = _CameraStatus.error;
+        _errorMessage = message;
+      });
+    }
+  }
+
+  void _retryCamera() {
+    setState(() {
+      _status = _CameraStatus.initializing;
+      _errorMessage = '';
+    });
+    _initScanner();
   }
 
   void _onDetect(BarcodeCapture capture) {
@@ -121,7 +161,7 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
               ],
             ),
             const SizedBox(height: 20),
-            if (_hasError)
+            if (_status == _CameraStatus.error)
               _buildErrorView()
             else
               _buildCameraView(),
@@ -156,7 +196,7 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
           borderRadius: BorderRadius.circular(24),
           child: SizedBox(
             height: 260,
-            child: _isInitializing
+            child: _status == _CameraStatus.initializing
                 ? Container(
                     color: kColorInk,
                     child: const Center(
@@ -215,11 +255,22 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
               color: kColorInk,
             ),
           ),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: _retryCamera,
+            icon: const Icon(Icons.refresh_rounded, size: 20),
+            label: const Text('Reintentar'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
+enum _CameraStatus { initializing, ready, error }
 
 class _ScanOverlayPainter extends CustomPainter {
   @override

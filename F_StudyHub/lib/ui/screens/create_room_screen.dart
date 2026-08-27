@@ -387,11 +387,12 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   }
 
   Widget _buildCodeInputFields() {
-    final bool compact = MediaQuery.sizeOf(context).width < 600;
-    final double boxWidth = compact ? 48 : 52;
-    final double boxHeight = compact ? 56 : 60;
-    final double gap = compact ? 10 : 14;
-    final double fontSize = compact ? 22.0 : 24.0;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final double availableWidth = (screenWidth - 64).clamp(200.0, 420.0);
+    final double gap = (availableWidth * 0.03).clamp(4.0, 14.0);
+    final double boxWidth = ((availableWidth - gap * 5) / 6).clamp(32.0, 52.0);
+    final double boxHeight = boxWidth * 1.2;
+    final double fontSize = boxWidth * 0.46;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,15 +405,17 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 fontSize: AppType.sizeCaption,
               ),
         ),
-        SizedBox(height: compact ? 10 : 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_codeLength, (index) {
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (index > 0) SizedBox(width: gap),
-                SizedBox(
+        SizedBox(height: boxWidth < 40 ? 8 : 12),
+        SizedBox(
+          width: availableWidth,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(_codeLength, (index) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (index > 0) SizedBox(width: gap),
+                  SizedBox(
                   width: boxWidth,
                   height: boxHeight,
                   child: KeyboardListener(
@@ -479,6 +482,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               ],
             );
           }),
+          ),
         ),
         if (_showCodeError) ...[
           const SizedBox(height: 8),
