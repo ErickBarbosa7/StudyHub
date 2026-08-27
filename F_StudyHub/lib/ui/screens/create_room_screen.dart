@@ -388,9 +388,9 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
   Widget _buildCodeInputFields() {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final double availableWidth = (screenWidth - 64).clamp(200.0, 420.0);
-    final double gap = (availableWidth * 0.03).clamp(4.0, 14.0);
-    final double boxWidth = ((availableWidth - gap * 5) / 6).clamp(32.0, 52.0);
+    final double availableWidth = (screenWidth - 64).clamp(200.0, 360.0);
+    final double gap = (availableWidth * 0.025).clamp(4.0, 10.0);
+    final double boxWidth = ((availableWidth - gap * 5) / 6).clamp(28.0, 46.0);
     final double boxHeight = boxWidth * 1.2;
     final double fontSize = boxWidth * 0.46;
 
