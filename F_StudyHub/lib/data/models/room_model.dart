@@ -18,4 +18,12 @@ class Room {
         'name': name,
         'hostId': hostId,
       };
+
+  Room copyWith({String? hostId}) {
+    return Room(
+      roomId: roomId,
+      name: name,
+      hostId: hostId ?? this.hostId,
+    );
+  }
 }

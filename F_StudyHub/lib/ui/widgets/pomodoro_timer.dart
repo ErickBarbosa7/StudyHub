@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
@@ -382,58 +383,101 @@ class _DurationPills extends StatelessWidget {
 
   Future<void> _promptCustomDuration(BuildContext context) async {
     final controller = TextEditingController();
-    final minutes = await showDialog<int>(
+    final compact = MediaQuery.sizeOf(context).width < 600;
+
+    final minutes = await showModalBottomSheet<int>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        insetPadding: const EdgeInsets.symmetric(
-          horizontal: 40,
-          vertical: kToolbarHeight,
-        ),
-        backgroundColor: kColorPaper,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'Duración personalizada',
-          style: TextStyle(
-            color: kColorInk,
-            fontWeight: AppType.weightSemiBold,
-          ),
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          style: const TextStyle(color: kColorInk),
-          scrollPadding: EdgeInsets.zero,
-          decoration: const InputDecoration(
-            labelText: 'Minutos',
-            hintText: 'ej. 20',
-            labelStyle: TextStyle(color: kColorTextSecondary),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            style: TextButton.styleFrom(foregroundColor: kColorTextSecondary),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              final value = int.tryParse(controller.text.trim());
-              if (value == null) return;
-              Navigator.of(dialogContext).pop(value);
-            },
-            style: TextButton.styleFrom(foregroundColor: kColorDeepSage),
-            child: const Text(
-              'Aceptar',
-              style: TextStyle(fontWeight: AppType.weightSemiBold),
+      isScrollControlled: true,
+      backgroundColor: kColorPaper,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (sheetContext) {
+        final bottomInset = MediaQuery.viewInsetsOf(sheetContext).bottom;
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                compact ? 24 : 32,
+                compact ? 20 : 28,
+                compact ? 24 : 32,
+                16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Duración personalizada',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(sheetContext).textTheme.titleLarge
+                        ?.copyWith(
+                          color: kColorInk,
+                          fontWeight: AppType.weightSemiBold,
+                        ),
+                  ),
+                  SizedBox(height: compact ? 16 : 24),
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(3),
+                    ],
+                    style: const TextStyle(color: kColorInk),
+                    decoration: const InputDecoration(
+                      labelText: 'Minutos',
+                      hintText: 'ej. 20',
+                      labelStyle: TextStyle(color: kColorTextSecondary),
+                    ),
+                    onSubmitted: (_) {
+                      final value = int.tryParse(controller.text.trim());
+                      if (value == null) return;
+                      Navigator.of(sheetContext).pop(value);
+                    },
+                  ),
+                  SizedBox(height: compact ? 12 : 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: kColorTextSecondary,
+                        ),
+                        child: const Text('Cancelar'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          final value = int.tryParse(controller.text.trim());
+                          if (value == null) return;
+                          Navigator.of(sheetContext).pop(value);
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: kColorDeepSage,
+                        ),
+                        child: const Text(
+                          'Aceptar',
+                          style: TextStyle(fontWeight: AppType.weightSemiBold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
 
-    if (minutes == null) return;
-    final clamped = minutes.clamp(_kMinCustomMinutes, _kMaxCustomMinutes);
+    final clamped = minutes
+        ?.clamp(_kMinCustomMinutes, _kMaxCustomMinutes)
+        .toInt();
+    controller.dispose();
+    if (clamped == null) return;
     onSelected(clamped * 60);
   }
 }

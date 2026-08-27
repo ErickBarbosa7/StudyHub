@@ -1,4 +1,5 @@
 import type { Server, Socket } from 'socket.io';
+import { MessageModel } from '../models/Message.js';
 import { RoomModel } from '../models/Room.js';
 
 export interface RoomUser {
@@ -55,12 +56,53 @@ function removeUserFromAllRooms(io: Server, socket: Socket): void {
       }
     }
     if (changed) {
-      if (users.size === 0) {
-        usersByRoom.delete(roomId);
-      }
-      sendUsersUpdate(io, roomId);
+      void handleRoomAfterLeave(io, roomId).catch((error) => {
+        console.error('[rooms] Error tras remoción por desconexión:', error);
+      });
     }
   }
+}
+
+async function handleRoomAfterLeave(io: Server, roomId: string): Promise<void> {
+  const users = usersByRoom.get(roomId);
+  if (!users || users.size === 0) {
+    usersByRoom.delete(roomId);
+    await RoomModel.deleteOne({ roomId });
+    await MessageModel.deleteMany({ roomId });
+    console.log(`[rooms] Sala ${roomId} eliminada por quedar vacía`);
+    return;
+  }
+
+  // Determinar si el host que acaba de salir era el dueño actual.
+  const room = await RoomModel.findOne({ roomId }).lean();
+  if (!room) return;
+
+  const hostStillPresent = Array.from(users.values()).some(
+    (u) => u.id === room.hostId,
+  );
+  if (hostStillPresent) {
+    sendUsersUpdate(io, roomId);
+    return;
+  }
+
+  // El dueño se fue y quedan usuarios: transferir el cargo al primero en orden
+  // de ingreso (el que "se queda").
+  const newHost = Array.from(users.values())[0];
+  if (!newHost) {
+    sendUsersUpdate(io, roomId);
+    return;
+  }
+
+  await RoomModel.updateOne({ roomId }, { hostId: newHost.id });
+  io.to(roomId).emit('host_transferred', {
+    roomId,
+    newHostId: newHost.id,
+    newHostName: newHost.name,
+  });
+  sendUsersUpdate(io, roomId);
+  console.log(
+    `[rooms] Dueño transferido en ${roomId} a ${newHost.name} (${newHost.id})`,
+  );
 }
 
 export function registerRoomHandler(io: Server, socket: Socket): void {
@@ -92,14 +134,11 @@ export function registerRoomHandler(io: Server, socket: Socket): void {
     }
 
     void socket.leave(roomId);
-
     usersByRoom.get(roomId)?.delete(userId);
-    if (usersByRoom.get(roomId)?.size === 0) {
-      usersByRoom.delete(roomId);
-    }
 
-    console.log(`[rooms] ${userId} abandonó la sala ${roomId}`);
-    sendUsersUpdate(io, roomId);
+    void handleRoomAfterLeave(io, roomId).catch((error) => {
+      console.error('[rooms] Error al procesar salida:', error);
+    });
   });
 
   socket.on('disconnect', () => {
@@ -128,13 +167,13 @@ export function registerRoomHandler(io: Server, socket: Socket): void {
       }
 
       roomUsers?.delete(userId);
-      if (roomUsers?.size === 0) {
-        usersByRoom.delete(roomId);
-      }
 
       io.to(targetUser.socketId).emit('kicked', { roomId });
       io.to(roomId).emit('user_kicked', { userId, userName: targetUser.name });
-      sendUsersUpdate(io, roomId);
+
+      void handleRoomAfterLeave(io, roomId).catch((error) => {
+        console.error('[rooms] Error tras expulsión:', error);
+      });
 
       console.log(`[rooms] ${targetUser.name} fue expulsado de la sala ${roomId}`);
     } catch (error) {
