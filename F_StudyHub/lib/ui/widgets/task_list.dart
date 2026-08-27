@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
@@ -22,6 +23,9 @@ class TaskList extends ConsumerStatefulWidget {
 class _TaskListState extends ConsumerState<TaskList> {
   final _taskController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+
+  // Límite de caracteres centralizado
+  static const int maxTaskLength = 100;
 
   @override
   void dispose() {
@@ -175,14 +179,24 @@ class _TaskListState extends ConsumerState<TaskList> {
           child: TextFormField(
             controller: controller,
             autofocus: true,
+            
+            // --- PROTECCIÓN EN EDICIÓN ---
+            maxLength: maxTaskLength,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+            
             textCapitalization: TextCapitalization.sentences,
             style: const TextStyle(color: kColorInk),
             decoration: const InputDecoration(
               labelText: 'Nombre de la tarea',
               labelStyle: TextStyle(color: kColorTextSecondary),
+              counterText: '', // Oculta el contador aquí para mantener el diseño limpio
             ),
-            validator: (value) =>
-                (value == null || value.trim().isEmpty) ? 'Requerido' : null,
+            validator: (value) {
+              final text = value?.trim() ?? '';
+              if (text.isEmpty) return 'Requerido';
+              if (text.length > maxTaskLength) return 'Excede el límite';
+              return null;
+            },
           ),
         ),
         actions: [
@@ -342,10 +356,25 @@ class _TaskListState extends ConsumerState<TaskList> {
                   child: TextFormField(
                     controller: _taskController,
                     textCapitalization: TextCapitalization.sentences,
+                    
+                    // --- RESTRICCIONES Y CONTROL DE TECLADO ---
+                    maxLength: maxTaskLength,
+                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                    
+                    // Controla qué tan arriba salta el campo al abrir el teclado (evita el "super arriba")
+                    scrollPadding: const EdgeInsets.only(bottom: 60), 
+                    
                     style: const TextStyle(color: kColorInk),
                     decoration: InputDecoration(
                       labelText: 'Nueva tarea',
                       hintText: 'ej. Terminar ejercicios',
+                      
+                      // TRUCO DE PRODUCCIÓN: 
+                      // Oculta el contador, pero reserva el espacio con helperText
+                      // Esto evita que la UI "salte" y empuje todo cuando sale el texto de error.
+                      counterText: '', 
+                      helperText: ' ', 
+                      
                       labelStyle: const TextStyle(color: kColorTextSecondary),
                       hintStyle: TextStyle(
                         color: kColorTextSecondary.withValues(alpha: 0.5),
@@ -369,31 +398,39 @@ class _TaskListState extends ConsumerState<TaskList> {
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: kColorErrorBorder, width: 1.5),
+                        borderSide: const BorderSide(color: kColorErrorBorder, width: 1.5),
                       ),
                     ),
-                    validator: (value) => (value == null || value.trim().isEmpty)
-                        ? 'Requerido'
-                        : null,
+                    validator: (value) {
+                      final text = value?.trim() ?? '';
+                      if (text.isEmpty) return 'Requerido';
+                      if (text.length > maxTaskLength) return 'Excede el límite';
+                      return null;
+                    },
                     onFieldSubmitted: (_) => _addTask(),
                   ),
                 ),
                 SizedBox(width: compact ? 8 : 12),
-                SizedBox(
-                  height: compact ? 48 : 56,
-                  width: compact ? 48 : 56,
-                  child: ElevatedButton(
-                    onPressed: _addTask,
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
+                
+                // Alineamos el botón con el Padding para compensar el espacio del helperText
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 22.0), 
+                  child: SizedBox(
+                    height: compact ? 48 : 56,
+                    width: compact ? 48 : 56,
+                    child: ElevatedButton(
+                      onPressed: _addTask,
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        backgroundColor: kColorDeepSage,
+                        foregroundColor: kColorPaper,
+                        elevation: 0,
                       ),
-                      backgroundColor: kColorDeepSage,
-                      foregroundColor: kColorPaper,
-                      elevation: 0,
+                      child: const Icon(Icons.add_rounded, size: 28),
                     ),
-                    child: const Icon(Icons.add_rounded, size: 28),
                   ),
                 ),
               ],
