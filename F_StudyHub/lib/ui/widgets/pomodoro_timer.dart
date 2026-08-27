@@ -368,145 +368,79 @@ class _DurationPills extends StatelessWidget {
 
   Future<void> _promptCustomDuration(BuildContext context) async {
     final controller = TextEditingController();
+    final editFormKey = GlobalKey<FormState>();
 
-    final minutes = await showModalBottomSheet<int>(
+    final minutes = await showDialog<int>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: kColorPaper,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (sheetContext) {
-        final bottomInset = MediaQuery.viewInsetsOf(sheetContext).bottom;
-
-        return Padding(
-          padding: EdgeInsets.only(bottom: bottomInset),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: kColorBorder,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: kColorSageSoft,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.tune_rounded,
-                          color: kColorDeepSage,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Duración personalizada',
-                          style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                                color: kColorInk,
-                                fontWeight: AppType.weightSemiBold,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: controller,
-                    autofocus: true,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.done,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
-                    ],
-                    style: const TextStyle(color: kColorInk, fontSize: 16),
-                    decoration: InputDecoration(
-                      labelText: 'Minutos (1 - 180)',
-                      hintText: 'ej. 25',
-                      prefixIcon: const Icon(
-                        Icons.timer_outlined,
-                        size: 20,
-                        color: kColorTextSecondary,
-                      ),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onSubmitted: (val) {
-                      final value = int.tryParse(val.trim());
-                      if (value == null) return;
-                      Navigator.of(sheetContext).pop(value);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      final value = int.tryParse(controller.text.trim());
-                      if (value == null) return;
-                      Navigator.of(sheetContext).pop(value);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kColorDeepSage,
-                      foregroundColor: kColorPaper,
-                      minimumSize: const Size(double.infinity, 46),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Aceptar',
-                      style: TextStyle(
-                        fontWeight: AppType.weightSemiBold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Center(
-                    child: TextButton(
-                      onPressed: () => Navigator.of(sheetContext).pop(),
-                      style: TextButton.styleFrom(
-                        foregroundColor: kColorTextSecondary,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 8,
-                        ),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(fontWeight: AppType.weightMedium),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: kColorPaper,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text(
+          'Duración personalizada',
+          style: TextStyle(
+            color: kColorInk,
+            fontWeight: AppType.weightSemiBold,
+          ),
+        ),
+        content: Form(
+          key: editFormKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            maxLength: 3,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+            scrollPadding: const EdgeInsets.only(bottom: 60),
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(3),
+            ],
+            style: const TextStyle(color: kColorInk),
+            decoration: const InputDecoration(
+              labelText: 'Minutos',
+              hintText: 'ej. 25',
+              labelStyle: TextStyle(color: kColorTextSecondary),
+              counterText: '',
+            ),
+            validator: (value) {
+              final text = value?.trim() ?? '';
+              if (text.isEmpty) return 'Requerido';
+              final parsed = int.tryParse(text);
+              if (parsed == null || parsed < _kMinCustomMinutes || parsed > _kMaxCustomMinutes) {
+                return 'Entre $_kMinCustomMinutes y $_kMaxCustomMinutes min';
+              }
+              return null;
+            },
+            onFieldSubmitted: (_) {
+              if (!editFormKey.currentState!.validate()) return;
+              final value = int.tryParse(controller.text.trim());
+              if (value == null) return;
+              Navigator.of(dialogContext).pop(value);
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            style: TextButton.styleFrom(foregroundColor: kColorTextSecondary),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (!editFormKey.currentState!.validate()) return;
+              final value = int.tryParse(controller.text.trim());
+              if (value == null) return;
+              Navigator.of(dialogContext).pop(value);
+            },
+            style: TextButton.styleFrom(foregroundColor: kColorDeepSage),
+            child: const Text(
+              'Aceptar',
+              style: TextStyle(fontWeight: AppType.weightSemiBold),
             ),
           ),
-        );
-      },
+        ],
+      ),
     );
 
     final clamped = minutes
