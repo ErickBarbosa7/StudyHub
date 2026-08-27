@@ -8,6 +8,7 @@ import 'package:lottie/lottie.dart';
 import '../../core/theme.dart';
 import '../../data/models/user_model.dart';
 import '../../logic/chat_provider.dart';
+import '../../logic/pomodoro_provider.dart';
 import '../../logic/room_provider.dart';
 import '../../logic/task_provider.dart';
 import '../../data/services/sound_service.dart';
@@ -368,6 +369,20 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             setState(() => _taskBannerVisible = false);
             ref.read(taskProvider.notifier).consumeNewTask();
           });
+        });
+      }
+    });
+
+    ref.listen<PomodoroState>(pomodoroProvider, (previous, next) {
+      if (next.isFinished && !(previous?.isFinished ?? false)) {
+        ref.read(soundProvider.notifier).playPomodoroFinishedSound();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Tiempo completado! Tómate un descanso.'),
+            ),
+          );
         });
       }
     });

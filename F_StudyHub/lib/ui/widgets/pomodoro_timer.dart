@@ -29,21 +29,6 @@ class PomodoroTimer extends ConsumerWidget {
     final bool finished = state.isFinished;
     final bool compact = MediaQuery.sizeOf(context).width < 600;
 
-    ref.listen<PomodoroState>(pomodoroProvider, (previous, next) {
-      if (next.isFinished && !(previous?.isFinished ?? false)) {
-        ref.read(soundProvider.notifier).playPomodoroFinishedSound();
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('¡Tiempo completado! Tómate un descanso.'),
-            ),
-          );
-        });
-      }
-    });
-
     return Container(
       padding: EdgeInsets.all(compact ? 16 : 24),
       decoration: BoxDecoration(
@@ -383,97 +368,65 @@ class _DurationPills extends StatelessWidget {
 
   Future<void> _promptCustomDuration(BuildContext context) async {
     final controller = TextEditingController();
-    final compact = MediaQuery.sizeOf(context).width < 600;
 
-    final minutes = await showModalBottomSheet<int>(
+    final minutes = await showDialog<int>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: kColorPaper,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      builder: (sheetContext) {
-        final bottomInset = MediaQuery.viewInsetsOf(sheetContext).bottom;
-
-        return AnimatedPadding(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          padding: EdgeInsets.only(bottom: bottomInset),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                compact ? 24 : 32,
-                compact ? 20 : 28,
-                compact ? 24 : 32,
-                16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Duración personalizada',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(sheetContext).textTheme.titleLarge
-                        ?.copyWith(
-                          color: kColorInk,
-                          fontWeight: AppType.weightSemiBold,
-                        ),
-                  ),
-                  SizedBox(height: compact ? 16 : 24),
-                  TextField(
-                    controller: controller,
-                    autofocus: true,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
-                    ],
-                    style: const TextStyle(color: kColorInk),
-                    decoration: const InputDecoration(
-                      labelText: 'Minutos',
-                      hintText: 'ej. 20',
-                      labelStyle: TextStyle(color: kColorTextSecondary),
-                    ),
-                    onSubmitted: (_) {
-                      final value = int.tryParse(controller.text.trim());
-                      if (value == null) return;
-                      Navigator.of(sheetContext).pop(value);
-                    },
-                  ),
-                  SizedBox(height: compact ? 12 : 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(sheetContext).pop(),
-                        style: TextButton.styleFrom(
-                          foregroundColor: kColorTextSecondary,
-                        ),
-                        child: const Text('Cancelar'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          final value = int.tryParse(controller.text.trim());
-                          if (value == null) return;
-                          Navigator.of(sheetContext).pop(value);
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: kColorDeepSage,
-                        ),
-                        child: const Text(
-                          'Aceptar',
-                          style:
-                              TextStyle(fontWeight: AppType.weightSemiBold),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: kColorPaper,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: const Text(
+            'Duración personalizada',
+            style: TextStyle(
+              color: kColorInk,
+              fontWeight: AppType.weightSemiBold,
             ),
           ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(3),
+            ],
+            style: const TextStyle(color: kColorInk),
+            decoration: const InputDecoration(
+              labelText: 'Minutos (1 - 180)',
+              hintText: 'ej. 25',
+              labelStyle: TextStyle(color: kColorTextSecondary),
+            ),
+            onSubmitted: (val) {
+              final value = int.tryParse(val.trim());
+              if (value == null) return;
+              Navigator.of(dialogContext).pop(value);
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: kColorTextSecondary,
+              ),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                final value = int.tryParse(controller.text.trim());
+                if (value == null) return;
+                Navigator.of(dialogContext).pop(value);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: kColorDeepSage,
+              ),
+              child: const Text(
+                'Aceptar',
+                style: TextStyle(fontWeight: AppType.weightSemiBold),
+              ),
+            ),
+          ],
         );
       },
     );

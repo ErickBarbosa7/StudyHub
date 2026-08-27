@@ -48,12 +48,14 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
       final status = map['status'] as String;
       final totalSeconds =
           map.containsKey('totalSeconds') ? (map['totalSeconds'] as num).round() : null;
+      final wasRunning = state.isRunning;
+      final finishedAtZero = timeRemaining == 0 && wasRunning;
       state = state.copyWith(
         timeRemaining: timeRemaining,
         status: status,
         totalSeconds: totalSeconds ?? state.totalSeconds,
         // Nueva sesión en curso: descarta un 'completado' previo.
-        isFinished: status == 'RUNNING' ? false : state.isFinished,
+        isFinished: status == 'RUNNING' ? false : (finishedAtZero || state.isFinished),
       );
     });
 

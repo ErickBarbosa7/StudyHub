@@ -26,11 +26,25 @@ class SoundNotifier extends StateNotifier<SoundState> {
 
   Future<void> _configureAudioContext() async {
     try {
-      await _player.setAudioContext(
-        AudioContext(
-          iOS: AudioContextIOS(category: AVAudioSessionCategory.playback),
+      final audioContext = AudioContext(
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.playback,
+          options: const {
+            AVAudioSessionOptions.mixWithOthers,
+            AVAudioSessionOptions.duckOthers,
+          },
+        ),
+        android: const AudioContextAndroid(
+          isSpeakerphoneOn: true,
+          stayAwake: true,
+          contentType: AndroidContentType.sonification,
+          usageType: AndroidUsageType.alarm,
+          audioFocus: AndroidAudioFocus.gainTransientMayDuck,
         ),
       );
+      await AudioPlayer.global.setAudioContext(audioContext);
+      await _player.setAudioContext(audioContext);
+      await _player.setReleaseMode(ReleaseMode.stop);
     } catch (e) {
       debugPrint('[SoundNotifier] Error configurando AudioContext: $e');
     }
@@ -50,6 +64,7 @@ class SoundNotifier extends StateNotifier<SoundState> {
     if (_unlocked) return;
     _unlocked = true;
     try {
+      await _configureAudioContext();
       if (kIsWeb) {
         final unlocker = AudioPlayer();
         await unlocker.setSource(AssetSource('audio/pomodoro_bell.mp3'));
@@ -59,17 +74,8 @@ class SoundNotifier extends StateNotifier<SoundState> {
         await unlocker.stop();
         await unlocker.dispose();
       } else {
-        // En iOS/Android es necesario activar la sesión de audio dentro de un
-        // gesto del usuario para que las reproducciones posteriores suenen.
-        // Reproducir un clip mudo aquí desbloquea la sesión (setActive(true)).
-        await _configureAudioContext();
-        await _player.stop();
-        await _player.setSource(AssetSource('audio/pomodoro_bell.mp3'));
-        await _player.setVolume(0);
-        await _player.resume();
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-        await _player.stop();
-        await _player.setVolume(1);
+        await _player.setReleaseMode(ReleaseMode.stop);
+        await _player.setVolume(1.0);
       }
     } catch (e) {
       debugPrint('[SoundNotifier] Error desbloqueando audio: $e');
@@ -92,9 +98,23 @@ class SoundNotifier extends StateNotifier<SoundState> {
     try {
       await _configureAudioContext();
       await _player.stop();
-      await _player.play(AssetSource('audio/pomodoro_bell.mp3'));
+      await _player.setVolume(1.0);
+      await _player.play(
+        AssetSource('audio/pomodoro_bell.mp3'),
+        volume: 1.0,
+        mode: PlayerMode.lowLatency,
+      );
     } catch (e) {
-      debugPrint('[SoundNotifier] Error al reproducir sonido: $e');
+      debugPrint('[SoundNotifier] Error al reproducir sonido pomodoro (lowLatency): $e');
+      try {
+        await _player.play(
+          AssetSource('audio/pomodoro_bell.mp3'),
+          volume: 1.0,
+          mode: PlayerMode.mediaPlayer,
+        );
+      } catch (e2) {
+        debugPrint('[SoundNotifier] Error al reproducir sonido pomodoro (mediaPlayer): $e2');
+      }
     }
   }
 
@@ -103,9 +123,23 @@ class SoundNotifier extends StateNotifier<SoundState> {
     try {
       await _configureAudioContext();
       await _player.stop();
-      await _player.play(AssetSource('audio/task_notification.mp3'));
+      await _player.setVolume(1.0);
+      await _player.play(
+        AssetSource('audio/task_notification.mp3'),
+        volume: 1.0,
+        mode: PlayerMode.lowLatency,
+      );
     } catch (e) {
-      debugPrint('[SoundNotifier] Error al reproducir sonido de tarea: $e');
+      debugPrint('[SoundNotifier] Error al reproducir sonido de tarea (lowLatency): $e');
+      try {
+        await _player.play(
+          AssetSource('audio/task_notification.mp3'),
+          volume: 1.0,
+          mode: PlayerMode.mediaPlayer,
+        );
+      } catch (e2) {
+        debugPrint('[SoundNotifier] Error al reproducir sonido de tarea (mediaPlayer): $e2');
+      }
     }
   }
 
