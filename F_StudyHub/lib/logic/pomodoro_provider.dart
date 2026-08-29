@@ -43,6 +43,17 @@ class PomodoroState {
 class PomodoroNotifier extends StateNotifier<PomodoroState> {
   PomodoroNotifier(this._socketService, this._roomProvider)
       : super(const PomodoroState()) {
+    _roomProvider.listen<RoomState>(roomProvider, (previous, next) {
+      final prevRoomId = previous?.room?.roomId;
+      final nextRoomId = next.room?.roomId;
+      if (prevRoomId != nextRoomId) {
+        // Al entrar a una sala nueva, limpiamos el estado local para no
+        // arrastrar el tiempo de una sala anterior. El servidor (fuente única
+        // de verdad) sobrescribirá estos valores con el timer_tick real.
+        state = const PomodoroState();
+      }
+    });
+
     _socketService.on('timer_tick', (data) {
       final map = data as Map<String, dynamic>;
       final timeRemaining = (map['timeRemaining'] as num).round();

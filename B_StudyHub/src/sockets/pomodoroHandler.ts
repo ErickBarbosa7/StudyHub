@@ -159,9 +159,9 @@ export function registerPomodoroHandler(io: Server, socket: Socket): void {
 
   socket.on('join_room', (payload: JoinRoomPayload) => {
     const { roomId } = payload;
-    if (!roomId || !sessions.has(roomId)) return;
+    if (!roomId) return;
 
-    const session = sessions.get(roomId)!;
+    const session = getSession(roomId);
     socket.emit('timer_tick', {
       roomId,
       timeRemaining: session.timeRemaining,
