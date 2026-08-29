@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../data/models/message_model.dart';
 import '../../logic/chat_provider.dart';
 import '../../logic/room_provider.dart';
+import 'help_icon.dart';
 
 class ChatBox extends ConsumerStatefulWidget {
   const ChatBox({super.key});
@@ -28,22 +29,22 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
     super.dispose();
   }
 
-  void _autoScroll() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) return;
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-      );
-    });
-  }
-
   void _send() {
     if (!_formKey.currentState!.validate()) return;
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
 
-    ref.read(chatProvider.notifier).sendMessage(_messageController.text);
+    ref.read(chatProvider.notifier).sendMessage(text);
     _messageController.clear();
+  }
+
+  void _scrollToBottom() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
   @override
@@ -51,12 +52,14 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
     final chatState = ref.watch(chatProvider);
     final messages = chatState.messages;
     final isLoadingHistory = chatState.isLoadingHistory;
-    final localUserId = ref.watch(roomProvider).localUser?.id ?? '';
+    final localUserId = ref.watch(roomProvider.select((s) => s.localUser?.id ?? ''));
 
-    if (messages.length != _lastMessageCount) {
-      _lastMessageCount = messages.length;
-      _autoScroll();
+    if (chatState.messages.length > _lastMessageCount) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
     }
+    _lastMessageCount = chatState.messages.length;
 
     ref.listen<ChatState>(chatProvider, (previous, next) {
       if (next.error != null && next.error != previous?.error) {
@@ -81,33 +84,16 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
         padding,
         padding + bottomInset,
       ),
-      decoration: BoxDecoration(
-        color: kColorCard,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: kColorTintedShadow,
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      decoration: const BoxDecoration(color: Colors.transparent),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Container(
-                padding: EdgeInsets.all(compact ? 8 : 10),
-                decoration: BoxDecoration(
-                  color: kColorSageSoft,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  Icons.forum_rounded,
-                  color: kColorDeepSage,
-                  size: compact ? 20 : 24,
-                ),
+              Icon(
+                Icons.forum_rounded,
+                color: kColorDeepSage,
+                size: compact ? 24 : 28,
               ),
               SizedBox(width: compact ? 12 : 16),
               Expanded(
@@ -119,6 +105,11 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                     fontSize: compact ? AppType.sizeTitle : null,
                   ),
                 ),
+              ),
+              HelpIcon(
+                title: 'Chat del equipo',
+                description: 'Habla con tu equipo aquí. Todos los mensajes se borran al salir de la sala.',
+                compact: compact,
               ),
             ],
           ),
@@ -210,7 +201,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                     decoration: InputDecoration(
                       counterText: '',
                       labelText: 'Escribe un mensaje',
-                      hintText: 'ej. ¿Vamos por el capítulo 3?',
+                      hintText: 'ej. ¿Listos para estudiar?',
                       labelStyle: const TextStyle(color: kColorTextSecondary),
                       hintStyle: TextStyle(
                         color: kColorTextSecondary.withValues(alpha: 0.5),
@@ -242,7 +233,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                     ),
                     validator: (value) =>
                         (value == null || value.trim().isEmpty)
-                        ? 'Requerido'
+                        ? '¡Escribe algo antes de enviar!'
                         : null,
                     onFieldSubmitted: (_) => _send(),
                   ),

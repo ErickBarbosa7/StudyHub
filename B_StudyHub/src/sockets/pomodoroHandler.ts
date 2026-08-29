@@ -20,7 +20,7 @@ interface JoinRoomPayload {
   roomId?: string;
 }
 
-export const DEFAULT_POMODORO_SECONDS = 25 * 60;
+export const DEFAULT_POMODORO_SECONDS = 30 * 60;
 
 const MIN_DURATION_SECONDS = 1;
 const MAX_DURATION_SECONDS = 180 * 60;

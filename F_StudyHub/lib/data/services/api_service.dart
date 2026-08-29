@@ -16,7 +16,12 @@ class ApiService {
     );
 
     if (response.statusCode != 201) {
-      throw Exception('Error al crear la sala: ${response.body}');
+      String errMsg = 'Error al crear la sala';
+      try {
+        final errJson = jsonDecode(response.body);
+        if (errJson['error'] != null) errMsg = errJson['error'];
+      } catch (_) {}
+      throw Exception(errMsg);
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -29,7 +34,12 @@ class ApiService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Error al obtener la sala: ${response.body}');
+      String errMsg = 'Error al obtener la sala';
+      try {
+        final errJson = jsonDecode(response.body);
+        if (errJson['error'] != null) errMsg = errJson['error'];
+      } catch (_) {}
+      throw Exception(errMsg);
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;

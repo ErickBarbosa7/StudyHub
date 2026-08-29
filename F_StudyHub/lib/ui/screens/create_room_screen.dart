@@ -15,6 +15,7 @@ import '../../data/services/sound_service.dart';
 import '../widgets/chat_box.dart';
 import '../widgets/connection_banner.dart';
 import '../widgets/pomodoro_timer.dart';
+import '../widgets/folder_tabs.dart';
 import '../widgets/qr_display.dart';
 import '../widgets/qr_scanner.dart';
 import '../widgets/task_list.dart';
@@ -407,18 +408,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                   ),
                 )
               : const Text(''),
-          actions: inRoom
-              ? [
-                  IconButton(
-                    onPressed: _leaveRoom,
-                    icon: const Icon(
-                      Icons.logout_rounded,
-                      color: kColorTextSecondary,
-                    ),
-                    tooltip: 'Salir de la sala',
-                  ),
-                ]
-              : null,
+          actions: [],
         ),
         body: Column(
           children: [
@@ -761,8 +751,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     required VoidCallback onTap,
   }) {
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -780,12 +772,14 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             ),
           ),
         ),
+        ),
       ),
     );
   }
 
   Widget _buildWorkspace(RoomState roomState) {
     final bool compact = MediaQuery.sizeOf(context).width < 600;
+    final bool isWide = MediaQuery.sizeOf(context).width >= 800;
     return Column(
       children: [
         _buildUsersHeader(roomState),
@@ -836,45 +830,135 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         Expanded(
           child: DefaultTabController(
             length: 2,
-            child: Column(
+            child: Stack(
               children: [
-                TabBar(
-                  tabs: [
-                    const Tab(icon: Icon(Icons.timer_rounded), text: 'Estudio'),
-                    const _ChatTabBadge(),
-                  ],
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      SingleChildScrollView(
-                        padding: EdgeInsets.all(compact ? 16 : 24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: const [
-                            PomodoroTimer(),
-                            SizedBox(height: 32),
-                            TaskList(),
-                          ],
-                        ),
+                // Unified Content Container
+                Positioned.fill(
+                  top: 56, // Height of the tabs
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: kColorCard,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(0), // flush with the tabs
+                        bottom: Radius.circular(0),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kColorTintedShadow,
+                          blurRadius: 24,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: TabBarView(
+                      children: [
+                        isWide
+                            ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: SingleChildScrollView(
+                                    padding: const EdgeInsets.all(24),
+                                    child: const PomodoroTimer(),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: SingleChildScrollView(
+                                    padding: const EdgeInsets.all(24),
+                                    child: const TaskList(),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : SingleChildScrollView(
+                              padding: EdgeInsets.all(compact ? 16 : 24),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: const [
+                                  PomodoroTimer(),
+                                  SizedBox(height: 16),
+                                  _ScrollHint(),
+                                  SizedBox(height: 16),
+                                  TaskList(),
+                                ],
+                              ),
+                            ),
                       Builder(
                         builder: (context) {
-                          final bottomInset = MediaQuery.of(
-                            context,
-                          ).viewInsets.bottom;
+                          final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+                          final padding = EdgeInsets.fromLTRB(
+                            compact ? 16 : 24,
+                            compact ? 16 : 24,
+                            compact ? 16 : 24,
+                            bottomInset > 0 ? 8 : (compact ? 16 : 24),
+                          );
+
+                          final hasTasks = ref.watch(
+                            taskProvider.select((s) => s.tasks.isNotEmpty),
+                          );
+
+                          if (isWide && hasTasks) {
+                            return Padding(
+                              padding: padding,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Expanded(
+                                    flex: 7,
+                                    child: ChatBox(),
+                                  ),
+                                  Container(
+                                    width: 1,
+                                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                                    color: kColorBorder,
+                                  ),
+                                  const Expanded(
+                                    flex: 3,
+                                    child: _AllTasksSidePanel(),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
                           return Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              compact ? 16 : 24,
-                              compact ? 16 : 24,
-                              compact ? 16 : 24,
-                              bottomInset > 0 ? 8 : (compact ? 16 : 24),
-                            ),
+                            padding: padding,
                             child: const ChatBox(),
                           );
                         },
                       ),
                     ],
+                  ),
+                ),
+                ), // Closes Positioned.fill(child: Container)
+                // Tabs paint ON TOP of the container to cover the shadow seam!
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 56,
+                  child: Builder(
+                    builder: (context) {
+                      final tabController = DefaultTabController.of(context);
+                      return AnimatedBuilder(
+                        animation: tabController,
+                        builder: (context, child) {
+                          return FolderTabs(
+                            currentIndex: tabController.index,
+                            firstTab: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [Icon(Icons.alarm_rounded), SizedBox(width: 8), Text('Estudio')],
+                            ),
+                            secondTab: const _ChatTabBadge(),
+                            onChanged: (index) {
+                              tabController.animateTo(index);
+                            },
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
               ],
@@ -889,8 +973,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     final bool compact = MediaQuery.sizeOf(context).width < 600;
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 10 : 14,
-        vertical: compact ? 6 : 8,
+        horizontal: compact ? 12 : 16,
+        vertical: compact ? 8 : 10,
       ),
       decoration: BoxDecoration(
         color: kColorCard,
@@ -906,7 +990,13 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.key_rounded, size: compact ? 16 : 18, color: kColorGold),
+          Text(
+            'Código:',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: kColorTextSecondary,
+              fontWeight: AppType.weightSemiBold,
+            ),
+          ),
           SizedBox(width: compact ? 6 : 8),
           Text(
             roomId,
@@ -916,33 +1006,49 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               letterSpacing: 1.2,
             ),
           ),
-          SizedBox(width: compact ? 6 : 8),
-          GestureDetector(
-            onTap: () => QrDisplaySheet.show(context, roomId),
-            child: Icon(
-              Icons.qr_code_rounded,
-              size: compact ? 18 : 22,
-              color: kColorDeepSage,
-            ),
-          ),
-          SizedBox(width: compact ? 6 : 8),
-          GestureDetector(
-            onTap: () async {
-              await Clipboard.setData(ClipboardData(text: roomId));
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Código $roomId copiado al portapapeles'),
-                ),
-              );
-            },
-            child: Icon(
-              Icons.copy_rounded,
-              size: compact ? 14 : 16,
-              color: kColorTextSecondary,
+          SizedBox(width: compact ? 12 : 16),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () async {
+                await Clipboard.setData(ClipboardData(text: roomId));
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Código $roomId copiado al portapapeles'),
+                  ),
+                );
+              },
+              child: Icon(
+                Icons.copy_rounded,
+                size: compact ? 16 : 18,
+                color: kColorTextSecondary,
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQrBtn(String roomId) {
+    final bool compact = MediaQuery.sizeOf(context).width < 600;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => QrDisplaySheet.show(context, roomId),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: kColorSageSoft,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.qr_code_2_rounded,
+            size: compact ? 22 : 26,
+            color: kColorDeepSage,
+          ),
+        ),
       ),
     );
   }
@@ -964,33 +1070,33 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           Row(
             children: [
               if (room != null) _buildRoomCodePill(room.roomId),
+              if (room != null) SizedBox(width: compact ? 8 : 12),
+              if (room != null) _buildQrBtn(room.roomId),
               const Spacer(),
               Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: compact ? 8 : 12,
-                  vertical: compact ? 4 : 6,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
                 ),
                 decoration: BoxDecoration(
                   color: kColorSageSoft,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12), // matched QR radius
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.people_rounded,
-                      size: compact ? 14 : 16,
+                      size: compact ? 22 : 26, // matched QR size
                       color: kColorDeepSage,
                     ),
-                    SizedBox(width: compact ? 4 : 6),
+                    SizedBox(width: compact ? 6 : 8),
                     Text(
                       '${roomState.users.length}',
                       style: TextStyle(
-                        color: kColorInk,
-                        fontWeight: AppType.weightSemiBold,
-                        fontSize: compact
-                            ? AppType.sizeCaption
-                            : AppType.sizeBody,
+                        color: kColorDeepSage,
+                        fontWeight: AppType.weightBold,
+                        fontSize: compact ? 16 : 18,
                       ),
                     ),
                   ],
@@ -1129,9 +1235,9 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       ),
       validator: (value) {
         final text = value?.trim() ?? '';
-        if (text.isEmpty) return 'Requerido';
+        if (text.isEmpty) return 'Por favor, completa este campo.';
         if (maxLength != null && text.length > maxLength) {
-          return 'Excede el límite';
+          return 'Uy, el texto es demasiado largo.';
         }
         return null;
       },
@@ -1174,14 +1280,18 @@ class _ChatTabBadgeState extends ConsumerState<_ChatTabBadge> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        const Tab(
-          icon: Icon(Icons.chat_bubble_rounded),
-          text: 'Chat',
+        const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.forum_rounded),
+            SizedBox(width: 8),
+            Text('Chat de equipo'),
+          ],
         ),
         if (unreadCount > 0)
           Positioned(
-            top: 2,
-            right: 4,
+            top: -2,
+            right: -8,
             child: Container(
               width: 8,
               height: 8,
@@ -1195,3 +1305,149 @@ class _ChatTabBadgeState extends ConsumerState<_ChatTabBadge> {
     );
   }
 }
+
+class _AllTasksSidePanel extends ConsumerWidget {
+  const _AllTasksSidePanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tasks = ref.watch(taskProvider.select((s) => s.tasks));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Tareas',
+          style: TextStyle(
+            fontSize: AppType.sizeTitle,
+            fontWeight: AppType.weightBold,
+            color: kColorInk,
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (tasks.isEmpty)
+          const Text(
+            'No hay tareas creadas.',
+            style: TextStyle(color: kColorTextSecondary),
+          )
+        else
+          Expanded(
+            child: ListView.separated(
+              itemCount: tasks.length,
+              separatorBuilder: (context, _) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final task = tasks[index];
+                final isDone = task.stateCode == 'COMPLETED';
+                final isInProgress = task.stateCode == 'IN_PROGRESS';
+
+                final baseColor = isDone
+                    ? kColorTextSecondary
+                    : (isInProgress ? kColorDeepSage : kColorInk);
+                final bgColor = isDone
+                    ? kColorPaper
+                    : (isInProgress ? kColorSageSoft : Colors.transparent);
+                final borderColor = isDone
+                    ? kColorBorder
+                    : (isInProgress ? kColorDeepSage : kColorBorder);
+                final icon = isDone
+                    ? Icons.check_circle_rounded
+                    : (isInProgress ? Icons.play_circle_outline_rounded : Icons.radio_button_unchecked_rounded);
+
+                // Colores vivos SOLO para la etiqueta del estado
+                final pillColor = isDone
+                    ? kColorStateDone
+                    : (isInProgress ? kColorStateInProgress : kColorStatePending);
+
+                return MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Material(
+                    color: Colors.transparent,
+                    clipBehavior: Clip.antiAlias,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      onTap: () {
+                        DefaultTabController.of(context).animateTo(0);
+                      },
+                      hoverColor: baseColor.withValues(alpha: 0.1),
+                      splashColor: baseColor.withValues(alpha: 0.2),
+                      highlightColor: baseColor.withValues(alpha: 0.1),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: borderColor, width: isInProgress ? 1.5 : 1.0),
+                          borderRadius: BorderRadius.circular(16),
+                          color: bgColor,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(icon, color: baseColor, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                task.title,
+                                style: TextStyle(
+                                  fontWeight: isDone ? AppType.weightMedium : AppType.weightSemiBold,
+                                  color: baseColor,
+                                  decoration: isDone ? TextDecoration.lineThrough : null,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: pillColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                task.stateLabel,
+                                style: TextStyle(
+                                  fontSize: AppType.sizeCaption,
+                                  fontWeight: AppType.weightSemiBold,
+                                  color: pillColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+
+class _ScrollHint extends StatelessWidget {
+  const _ScrollHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Desliza para ver tareas',
+            style: AppType.secondaryItalic(
+              color: kColorTextSecondary.withValues(alpha: 0.5),
+            ),
+          ),
+          Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: kColorTextSecondary.withValues(alpha: 0.5),
+            size: 20,
+          ),
+        ],
+      ),
+    );
+  }
+}
+

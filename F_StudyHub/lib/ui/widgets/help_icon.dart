@@ -88,8 +88,10 @@ class HelpIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double size = compact ? 18 : 20;
-    return GestureDetector(
-      onTap: () => _showHelp(context),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => _showHelp(context),
       child: Container(
         width: size + 8,
         height: size + 8,
@@ -102,6 +104,7 @@ class HelpIcon extends StatelessWidget {
           size: size,
           color: kColorTextSecondary,
         ),
+      ),
       ),
     );
   }

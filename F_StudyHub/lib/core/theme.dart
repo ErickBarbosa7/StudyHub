@@ -76,6 +76,11 @@ const Color kColorError = Color(0xFFC94A4A);
 
 const Color kColorErrorBorder = Color(0xFFE9A6A6);
 
+const Color kColorStateDone = Color(0xFF10B981); // Emerald 500
+const Color kColorStateInProgress = Color(0xFFF59E0B); // Amber 500
+const Color kColorStatePending = Color(0xFFF43F5E); // Rose 500
+
+
 
 // ═════════════════════════════════════════════════════════════
 // SUPERFICIES Y SOMBRAS
@@ -623,15 +628,24 @@ ThemeData buildTheme() {
     // TABS
     // ═══════════════════════════════════════════════════════
 
-    tabBarTheme: const TabBarThemeData(
-
-      indicatorColor: kColorDeepSage,
-
-      labelColor: kColorInk,
-
+    tabBarTheme: TabBarThemeData(
+      labelColor: kColorDeepSage,
       unselectedLabelColor: kColorTextSecondary,
-
-      indicatorSize: TabBarIndicatorSize.label,
+      indicatorSize: TabBarIndicatorSize.tab,
+      indicator: BoxDecoration(
+        color: kColorCard,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      labelStyle: const TextStyle(fontWeight: AppType.weightSemiBold),
+      unselectedLabelStyle: const TextStyle(fontWeight: AppType.weightMedium),
+      dividerColor: Colors.transparent,
     ),
   );
 }

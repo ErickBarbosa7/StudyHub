@@ -69,29 +69,32 @@ class _TaskListState extends ConsumerState<TaskList> {
                     ),
               ),
               const SizedBox(height: 28),
-              GestureDetector(
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _editTask(task);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: kColorSageSoft,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit_rounded, color: kColorDeepSage, size: 20),
-                      const SizedBox(width: 14),
-                      Text(
-                        'Editar nombre',
-                        style: TextStyle(
-                          color: kColorInk,
-                          fontWeight: AppType.weightSemiBold,
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _editTask(task);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: kColorSageSoft,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_rounded, color: kColorDeepSage, size: 20),
+                        const SizedBox(width: 14),
+                        Text(
+                          'Editar nombre',
+                          style: TextStyle(
+                            color: kColorInk,
+                            fontWeight: AppType.weightSemiBold,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -116,29 +119,32 @@ class _TaskListState extends ConsumerState<TaskList> {
                     },
                   )),
               const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _confirmDelete(task);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: kColorError.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_outline_rounded, color: kColorError, size: 20),
-                      const SizedBox(width: 14),
-                      Text(
-                        'Eliminar esta tarea',
-                        style: TextStyle(
-                          color: kColorError,
-                          fontWeight: AppType.weightSemiBold,
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _confirmDelete(task);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: kColorError.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline_rounded, color: kColorError, size: 20),
+                        const SizedBox(width: 14),
+                        Text(
+                          'Eliminar esta tarea',
+                          style: TextStyle(
+                            color: kColorError,
+                            fontWeight: AppType.weightSemiBold,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -263,8 +269,7 @@ class _TaskListState extends ConsumerState<TaskList> {
 
   @override
   Widget build(BuildContext context) {
-    final taskState = ref.watch(taskProvider);
-    final tasks = taskState.tasks;
+    final tasks = ref.watch(taskProvider.select((s) => s.tasks));
     final bool compact = MediaQuery.sizeOf(context).width < 600;
 
     ref.listen<TaskState>(taskProvider, (previous, next) {
@@ -497,19 +502,21 @@ class _TaskTile extends StatelessWidget {
           SizedBox(
             width: 44,
             height: 44,
-            child: GestureDetector(
-              onTap: onToggleComplete,
-              behavior: HitTestBehavior.opaque,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: onToggleComplete,
+                behavior: HitTestBehavior.opaque,
               child: Center(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: done ? kColorDeepSage : Colors.transparent,
+                    color: done ? _getStateColor(task.stateCode) : Colors.transparent,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: done ? kColorDeepSage : kColorGold,
+                      color: done ? _getStateColor(task.stateCode) : (task.stateCode == 'IN_PROGRESS' ? _getStateColor(task.stateCode) : kColorBorder),
                       width: 2,
                     ),
                   ),
@@ -523,11 +530,14 @@ class _TaskTile extends StatelessWidget {
                 ),
               ),
             ),
+            ),
           ),
           Expanded(
-            child: GestureDetector(
-              onTap: onOpenMenu,
-              behavior: HitTestBehavior.opaque,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: onOpenMenu,
+                behavior: HitTestBehavior.opaque,
               child: Text(
                 task.title,
                 style: TextStyle(
@@ -537,16 +547,19 @@ class _TaskTile extends StatelessWidget {
                   decorationColor: kColorTextSecondary,
                 ),
               ),
+              ),
             ),
           ),
-          GestureDetector(
-            onTap: onOpenMenu,
-            behavior: HitTestBehavior.opaque,
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: onOpenMenu,
+              behavior: HitTestBehavior.opaque,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: pill.background,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -569,30 +582,30 @@ class _TaskTile extends StatelessWidget {
               ),
             ),
           ),
+          ),
         ],
       ),
     );
   }
 
   ({Color background, Color foreground}) _pillColors(String code) {
-    switch (code) {
-      case 'IN_PROGRESS':
-        return (
-          background: kColorGoldSoft,
-          foreground: kColorInk,
-        );
-      case 'COMPLETED':
-        return (
-          background: kColorSageSoft,
-          foreground: kColorDeepSage,
-        );
-      case 'PENDING':
-      default:
-        return (
-          background: Colors.transparent,
-          foreground: kColorTextSecondary,
-        );
-    }
+    final color = _getStateColor(code);
+    return (
+      background: color.withValues(alpha: 0.1),
+      foreground: color,
+    );
+  }
+}
+
+Color _getStateColor(String code) {
+  switch (code) {
+    case 'IN_PROGRESS':
+      return kColorStateInProgress;
+    case 'COMPLETED':
+      return kColorStateDone;
+    case 'PENDING':
+    default:
+      return kColorStatePending;
   }
 }
 
@@ -613,19 +626,19 @@ class _StateOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: GestureDetector(
-        onTap: onTap,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
-            color: selected ? kColorDeepSage : Colors.transparent,
+            color: selected ? _getStateColor(code).withValues(alpha: 0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
-            border: selected
-                ? null
-                : Border.all(
-                    color: kColorBorder,
-                    width: 1.5,
-                  ),
+            border: Border.all(
+              color: selected ? _getStateColor(code) : kColorBorder,
+              width: 1.5,
+            ),
           ),
           child: Row(
             children: [
@@ -634,23 +647,24 @@ class _StateOption extends StatelessWidget {
                     ? Icons.check_circle_outline_rounded
                     : code == 'IN_PROGRESS'
                         ? Icons.play_circle_outline_rounded
-                        : Icons.schedule_rounded,
-                color: selected ? kColorPaper : kColorTextSecondary,
+                        : Icons.radio_button_unchecked_rounded,
+                color: selected ? _getStateColor(code) : kColorTextSecondary,
               ),
               const SizedBox(width: 14),
               Text(
                 label,
                 style: TextStyle(
-                  color: selected ? kColorPaper : kColorInk,
+                  color: selected ? _getStateColor(code) : kColorInk,
                   fontWeight: AppType.weightSemiBold,
                 ),
               ),
               const Spacer(),
               if (selected)
-                const Icon(Icons.check_rounded, color: kColorPaper, size: 20),
+                Icon(Icons.check_rounded, color: _getStateColor(code), size: 20),
             ],
           ),
         ),
+      ),
       ),
     );
   }

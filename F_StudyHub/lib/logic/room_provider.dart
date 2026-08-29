@@ -75,7 +75,14 @@ String _translateError(Object error) {
       msg.contains('internal')) {
     return 'El servidor no está disponible en este momento. Intenta de nuevo en unos segundos.';
   }
-  return 'Ocurrió un error inesperado. Intenta de nuevo.';
+  
+  // Clean up "Exception: " prefix and pass through backend error messages
+  final stringError = error.toString();
+  if (stringError.startsWith('Exception: ')) {
+    return stringError.substring(11);
+  }
+  
+  return stringError;
 }
 
 class RoomNotifier extends StateNotifier<RoomState> {
