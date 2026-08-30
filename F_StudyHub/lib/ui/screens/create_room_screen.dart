@@ -104,10 +104,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
   void _onCodeChanged(int index, String value) {
     if (value.length > 1) {
-      _codeControllers[index].text = value.characters.last;
-      _codeControllers[index].selection = TextSelection.fromPosition(
-        TextPosition(offset: 1),
-      );
+      _fillCode(value);
+      return;
     }
 
     final char = _codeControllers[index].text.toUpperCase();
@@ -135,6 +133,16 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         _codeFocusNodes[index - 1].requestFocus();
         _syncCodeController();
       }
+      return;
+    }
+
+    final isPaste =
+        event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.keyV &&
+        (HardwareKeyboard.instance.isControlPressed ||
+            HardwareKeyboard.instance.isMetaPressed);
+    if (isPaste) {
+      _handleCodePaste();
     }
   }
 
