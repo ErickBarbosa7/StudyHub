@@ -137,6 +137,12 @@ class RoomNotifier extends StateNotifier<RoomState> {
     await prefs.remove('session_user_name');
   }
 
+  Future<void> _resetRoomUiState() async {
+    final prefs = await _getPrefs();
+    await prefs.remove('pomodoro_expanded');
+    await prefs.remove('tasks_expanded');
+  }
+
   void clearError() {
     state = state.copyWith(clearError: true);
   }
@@ -170,6 +176,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
     try {
       final room = await _apiService.getRoom(roomId);
       final user = User(id: userId, name: userName);
+      await _resetRoomUiState();
       state = state.copyWith(room: room, localUser: user, isRestoring: false);
       if (_socketService.isConnected) {
         _joinRoom(room.roomId, user);
@@ -204,6 +211,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
         name: roomName,
         hostId: user.id,
       );
+      await _resetRoomUiState();
       state = state.copyWith(room: room);
       await _saveSession(room, user);
       await _joinRoom(room.roomId, user);
@@ -236,6 +244,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
 
     try {
       final room = await _apiService.getRoom(roomCode.trim());
+      await _resetRoomUiState();
       state = state.copyWith(room: room);
       await _saveSession(room, user);
       await _joinRoom(room.roomId, user);
