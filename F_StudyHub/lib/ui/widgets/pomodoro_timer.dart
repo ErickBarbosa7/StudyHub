@@ -1,3 +1,4 @@
+import "package:shared_preferences/shared_preferences.dart";
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,8 +14,44 @@ const _durationPresets = [5 * 60, 10 * 60, 15 * 60, 30 * 60];
 const _kMinCustomMinutes = 1;
 const _kMaxCustomMinutes = 180;
 
-class PomodoroTimer extends ConsumerWidget {
+class PomodoroTimer extends ConsumerStatefulWidget {
   const PomodoroTimer({super.key});
+
+  @override
+  ConsumerState<PomodoroTimer> createState() => _PomodoroTimerState();
+}
+
+class _PomodoroTimerState extends ConsumerState<PomodoroTimer> {
+  bool _isExpanded = true;
+  bool _isFirstLoad = true;
+  static const _prefsKey = 'pomodoro_expanded';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadState();
+  }
+
+  Future<void> _loadState() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        if (prefs.containsKey(_prefsKey)) {
+          _isExpanded = prefs.getBool(_prefsKey) ?? true;
+        }
+        _isFirstLoad = false;
+      });
+    }
+  }
+
+  Future<void> _toggleExpanded() async {
+    setState(() {
+      _isExpanded = !_isExpanded;
+      _isFirstLoad = false;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefsKey, _isExpanded);
+  }
 
   String _formatTime(int totalSeconds) {
     final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
@@ -23,9 +60,8 @@ class PomodoroTimer extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final state = ref.watch(pomodoroProvider);
-    final soundState = ref.watch(soundProvider);
     final bool finished = state.isFinished;
     final bool compact = MediaQuery.sizeOf(context).width < 600;
 
@@ -35,208 +71,189 @@ class PomodoroTimer extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final bool layoutCompact = constraints.maxWidth < 310;
-              return Row(
-                children: [
-                  Icon(
-                    Icons.alarm_rounded,
-                    color: kColorGold,
-                    size: compact ? 24 : 32,
-                  ),
-                  SizedBox(width: layoutCompact ? 12 : 16),
-                  Expanded(
-                    child: Text(
-                      'Pomodoro',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: kColorInk,
-                        fontWeight: AppType.weightSemiBold,
-                        fontSize: compact ? AppType.sizeTitle : null,
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: _toggleExpanded,
+              behavior: HitTestBehavior.opaque,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final bool layoutCompact = constraints.maxWidth < 310;
+                  return Row(
+                    children: [
+                      Icon(
+                        Icons.alarm_rounded,
+                        color: kColorGold,
+                        size: compact ? 24 : 32,
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  HelpIcon(
-                    title: 'Reloj de estudio',
-                    description:
-                        'Es un reloj para concentrarse. Dale a "Iniciar" y empezará a contar para todos. Cuando el tiempo acabe, sonará una alarma para descansar.',
-                    compact: compact,
-                  ),
-                  const SizedBox(width: 4),
-                  if (!compact)
-                    IconButton(
-                      icon: Icon(
-                        soundState.isEnabled
-                            ? Icons.volume_up_rounded
-                            : Icons.volume_off_rounded,
-                        color: soundState.isEnabled
-                            ? kColorDeepSage
-                            : kColorTextSecondary,
-                        size: 20,
-                      ),
-                      tooltip: soundState.isEnabled
-                          ? 'Sonido activado'
-                          : 'Sonido silenciado',
-                      onPressed: () =>
-                          ref.read(soundProvider.notifier).toggleSound(),
-                      visualDensity: VisualDensity.compact,
-                      splashRadius: 18,
-                    ),
-                  if (compact)
-                    MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        onTap: () =>
-                            ref.read(soundProvider.notifier).toggleSound(),
-                        child: Icon(
-                        soundState.isEnabled
-                            ? Icons.volume_up_rounded
-                            : Icons.volume_off_rounded,
-                        color: soundState.isEnabled
-                            ? kColorDeepSage
-                            : kColorTextSecondary,
-                        size: 20,
-                      ),
-                    ),
-                    ),
-                  const SizedBox(width: 4),
-                  _StatusPill(isRunning: state.isRunning, compact: compact),
-                ],
-              );
-            },
-          ),
-          SizedBox(height: compact ? 16 : 24),
-
-          if (!state.isRunning) ...[
-            _DurationPills(
-              selectedSeconds: state.totalSeconds,
-              onSelected: (seconds) =>
-                  ref.read(pomodoroProvider.notifier).reset(seconds),
-            ),
-            SizedBox(height: compact ? 16 : 24),
-          ],
-
-          Container(
-            padding: EdgeInsets.only(
-              top: compact ? 10 : 16,
-              bottom: compact ? 14 : 24,
-              left: compact ? 14 : 24,
-              right: compact ? 14 : 24,
-            ),
-            decoration: BoxDecoration(
-              color: state.isRunning
-                  ? kColorSageSoft
-                  : finished
-                  ? kColorGoldSoft
-                  : kColorPaper,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: compact ? 140 : 224,
-                  height: compact ? 100 : 150,
-                  child: FittedBox(
-                    fit: BoxFit.contain,
-                    child: Lottie.asset(
-                      'assets/Lottie/claude.json',
-                      repeat: true,
-                      width: compact ? 140 : 224,
-                      height: compact ? 100 : 150,
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: compact ? 2 : 8),
-
-                Text(
-                  _formatTime(state.timeRemaining),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppType.monoTimer(
-                    color: finished ? kColorDeepSage : kColorInk,
-                    fontSize: compact
-                        ? AppType.sizeTimerCompact
-                        : AppType.sizeTimerLarge,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: 4),
-
-                SizedBox(
-                  height: compact ? 24 : 32,
-                  child: Center(
-                    child: finished
-                        ? Text(
-                            '¡Tiempo completado!',
-                            style: AppType.secondaryItalic(
-                              color: kColorInk,
-                              size: compact
-                                  ? AppType.sizeBody
-                                  : AppType.sizeBodyMedium,
-                            ).copyWith(fontWeight: AppType.weightSemiBold),
-                            textAlign: TextAlign.center,
-                          )
-                        : state.isRunning
-                        ? Transform.scale(
-                            scale: 1.5,
-                            child: Lottie.asset(
-                              'assets/Lottie/Loading.json',
-                              repeat: true,
-                            ),
-                          )
-                        : Text(
-                            'En pausa',
-                            style: AppType.secondaryItalic(
-                              color: kColorTextSecondary,
-                              size: compact
-                                  ? AppType.sizeBody
-                                  : AppType.sizeBodyMedium,
-                            ).copyWith(fontWeight: AppType.weightSemiBold),
-                            textAlign: TextAlign.center,
+                      SizedBox(width: layoutCompact ? 12 : 16),
+                      Expanded(
+                        child: Text(
+                          'Pomodoro',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: kColorInk,
+                            fontWeight: AppType.weightSemiBold,
+                            fontSize: compact ? AppType.sizeTitle : null,
                           ),
-                  ),
-                ),
-              ],
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      HelpIcon(
+                        title: 'Reloj de estudio',
+                        description:
+                            'Es un reloj para concentrarse. Dale a "Iniciar" y empezará a contar para todos. Cuando el tiempo acabe, sonará una alarma para descansar.',
+                        compact: compact,
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        _isExpanded
+                            ? Icons.expand_less_rounded
+                            : Icons.expand_more_rounded,
+                        color: kColorTextSecondary,
+                        size: 24,
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
-
-          SizedBox(height: compact ? 16 : 24),
-
-          if (state.isRunning)
-            SizedBox(
-              height: compact ? 48 : 56,
-              child: ElevatedButton.icon(
-                onPressed: () => ref.read(pomodoroProvider.notifier).pause(),
-                icon: const Icon(Icons.pause_rounded, size: 24),
-                label: const Text('Pausar'),
-              ),
-            )
-          else
-            SizedBox(
-              height: compact ? 48 : 56,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  ref.read(soundProvider.notifier).unlock();
-                  ref.read(pomodoroProvider.notifier).start(state.totalSeconds);
-                },
-                icon: const Icon(Icons.play_arrow_rounded, size: 24),
-                label: const Text('Iniciar'),
-              ),
-            ),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: () =>
-                ref.read(pomodoroProvider.notifier).reset(state.totalSeconds),
-            icon: const Icon(Icons.restart_alt_rounded, size: 20),
-            label: const Text('Reiniciar'),
-            style: TextButton.styleFrom(
-              foregroundColor: kColorTextSecondary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
+          AnimatedSize(
+            duration: _isFirstLoad ? Duration.zero : const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: !_isExpanded
+                ? const SizedBox(width: double.infinity)
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(height: compact ? 16 : 24),
+                      if (!state.isRunning) ...[
+                        _DurationPills(
+                          selectedSeconds: state.totalSeconds,
+                          onSelected: (seconds) =>
+                              ref.read(pomodoroProvider.notifier).reset(seconds),
+                        ),
+                        SizedBox(height: compact ? 16 : 24),
+                      ],
+                      Container(
+                        padding: EdgeInsets.only(
+                          top: compact ? 10 : 16,
+                          bottom: compact ? 14 : 24,
+                          left: compact ? 14 : 24,
+                          right: compact ? 14 : 24,
+                        ),
+                        decoration: BoxDecoration(
+                          color: state.isRunning
+                              ? kColorSageSoft
+                              : finished
+                              ? kColorGoldSoft
+                              : kColorPaper,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: compact ? 140 : 224,
+                              height: compact ? 100 : 150,
+                              child: FittedBox(
+                                fit: BoxFit.contain,
+                                child: Lottie.asset(
+                                  'assets/Lottie/claude.json',
+                                  repeat: true,
+                                  width: compact ? 140 : 224,
+                                  height: compact ? 100 : 150,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: compact ? 2 : 8),
+                            Text(
+                              _formatTime(state.timeRemaining),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppType.monoTimer(
+                                color: finished ? kColorDeepSage : kColorInk,
+                                fontSize: compact
+                                    ? AppType.sizeTimerCompact
+                                    : AppType.sizeTimerLarge,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            SizedBox(
+                              height: compact ? 24 : 32,
+                              child: Center(
+                                child: finished
+                                    ? Text(
+                                        '¡Tiempo completado!',
+                                        style: AppType.secondaryItalic(
+                                          color: kColorInk,
+                                          size: compact
+                                              ? AppType.sizeBody
+                                              : AppType.sizeBodyMedium,
+                                        ).copyWith(fontWeight: AppType.weightSemiBold),
+                                        textAlign: TextAlign.center,
+                                      )
+                                    : state.isRunning
+                                    ? Transform.scale(
+                                        scale: 1.5,
+                                        child: Lottie.asset(
+                                          'assets/Lottie/Loading.json',
+                                          repeat: true,
+                                        ),
+                                      )
+                                    : Text(
+                                        'En pausa',
+                                        style: AppType.secondaryItalic(
+                                          color: kColorTextSecondary,
+                                          size: compact
+                                              ? AppType.sizeBody
+                                              : AppType.sizeBodyMedium,
+                                        ).copyWith(fontWeight: AppType.weightSemiBold),
+                                        textAlign: TextAlign.center,
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: compact ? 16 : 24),
+                      if (state.isRunning)
+                        SizedBox(
+                          height: compact ? 48 : 56,
+                          child: ElevatedButton.icon(
+                            onPressed: () => ref.read(pomodoroProvider.notifier).pause(),
+                            icon: const Icon(Icons.pause_rounded, size: 24),
+                            label: const Text('Pausar'),
+                          ),
+                        )
+                      else
+                        SizedBox(
+                          height: compact ? 48 : 56,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              ref.read(soundProvider.notifier).unlock();
+                              ref.read(pomodoroProvider.notifier).start(state.totalSeconds);
+                            },
+                            icon: const Icon(Icons.play_arrow_rounded, size: 24),
+                            label: const Text('Iniciar'),
+                          ),
+                        ),
+                      if (state.timeRemaining < state.totalSeconds) ...[
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () =>
+                              ref.read(pomodoroProvider.notifier).reset(state.totalSeconds),
+                          icon: const Icon(Icons.restart_alt_rounded, size: 20),
+                          label: const Text('Reiniciar'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: kColorTextSecondary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
           ),
         ],
       ),
@@ -511,56 +528,3 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
   }
 }
 
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.isRunning, this.compact = false});
-
-  final bool isRunning;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isRunning ? kColorSageSoft : Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isRunning)
-            Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.symmetric(vertical: 5),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: kColorDeepSage,
-              ),
-            )
-          else
-            Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.symmetric(vertical: 5),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: kColorTextSecondary,
-              ),
-            ),
-          if (!compact) ...[
-            const SizedBox(width: 6),
-            Text(
-              isRunning ? 'Activo' : 'En pausa',
-              style: TextStyle(
-                color: isRunning ? kColorInk : kColorTextSecondary,
-                fontWeight: AppType.weightSemiBold,
-                fontSize: AppType.sizeCaption,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}

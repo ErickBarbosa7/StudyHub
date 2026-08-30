@@ -1,3 +1,4 @@
+import "../widgets/custom_snackbar.dart";
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -49,10 +50,6 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   late final List<FocusNode> _codeFocusNodes;
   bool _showCodeError = false;
 
-  bool _taskBannerVisible = false;
-  String _taskBannerTitle = '';
-  Timer? _taskBannerTimer;
-
   @override
   void initState() {
     super.initState();
@@ -74,7 +71,6 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     for (final n in _codeFocusNodes) {
       n.dispose();
     }
-    _taskBannerTimer?.cancel();
     super.dispose();
   }
 
@@ -360,16 +356,13 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         ref.read(soundProvider.notifier).playTaskNotificationSound();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          setState(() {
-            _taskBannerVisible = true;
-            _taskBannerTitle = next.lastAddedTaskTitle ?? 'Nueva tarea';
-          });
-          _taskBannerTimer?.cancel();
-          _taskBannerTimer = Timer(const Duration(seconds: 3), () {
-            if (!mounted) return;
-            setState(() => _taskBannerVisible = false);
-            ref.read(taskProvider.notifier).consumeNewTask();
-          });
+          showCustomNotification(
+            context,
+            title: 'Nueva tarea: ${next.lastAddedTaskTitle ?? 'Agregada'}',
+            icon: Icons.add_task_rounded,
+            iconColor: kColorGold,
+          );
+          ref.read(taskProvider.notifier).consumeNewTask();
         });
       }
     });
@@ -378,10 +371,22 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       if (next.isFinished && !(previous?.isFinished ?? false)) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('¡Tiempo completado! Tómate un descanso.'),
-            ),
+          showCustomNotification(
+            context,
+            title: '¡Tiempo completado! Tómate un descanso.',
+            icon: Icons.alarm_on_rounded,
+          );
+        });
+      }
+      
+      if (next.isRunning && !(previous?.isRunning ?? false)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          showCustomNotification(
+            context,
+            title: 'Pomodoro iniciado. ¡A concentrarse!',
+            icon: Icons.timer_rounded,
+            iconColor: kColorDeepSage,
           );
         });
       }
@@ -775,50 +780,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     return Column(
       children: [
         _buildUsersHeader(roomState),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          child: _taskBannerVisible
-              ? Container(
-                  width: double.infinity,
-                  margin: EdgeInsets.symmetric(
-                    horizontal: compact ? 16 : 24,
-                    vertical: compact ? 4 : 6,
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: compact ? 14 : 18,
-                    vertical: compact ? 10 : 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: kColorSageSoft,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.add_task_rounded,
-                        color: kColorDeepSage,
-                        size: 20,
-                      ),
-                      SizedBox(width: compact ? 10 : 12),
-                      Expanded(
-                        child: Text(
-                          'Nueva tarea: $_taskBannerTitle',
-                          style: TextStyle(
-                            color: kColorInk,
-                            fontWeight: AppType.weightSemiBold,
-                            fontSize: compact
-                                ? AppType.sizeCaption
-                                : AppType.sizeBodyMedium,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
+        
         Expanded(
           child: DefaultTabController(
             length: 2,
@@ -844,39 +806,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                     ),
                     child: TabBarView(
                       children: [
-                        isWide
-                            ? Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  flex: 1,
-                                  child: SingleChildScrollView(
-                                    padding: const EdgeInsets.all(24),
-                                    child: const PomodoroTimer(),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 1,
-                                  child: SingleChildScrollView(
-                                    padding: const EdgeInsets.all(24),
-                                    child: const TaskList(),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : SingleChildScrollView(
-                              padding: EdgeInsets.all(compact ? 16 : 24),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: const [
-                                  PomodoroTimer(),
-                                  SizedBox(height: 16),
-                                  _ScrollHint(),
-                                  SizedBox(height: 16),
-                                  TaskList(),
-                                ],
-                              ),
-                            ),
+                        _StudyTabContent(
+                          isWide: isWide,
+                          compact: compact,
+                        ),
                       Builder(
                         builder: (context) {
                           final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -1054,7 +987,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         compact ? 16 : 24,
         compact ? 6 : 8,
         compact ? 16 : 24,
-        compact ? 8 : 12,
+        compact ? 24 : 32,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1432,29 +1365,57 @@ class _AllTasksSidePanel extends ConsumerWidget {
 }
 
 
-class _ScrollHint extends StatelessWidget {
-  const _ScrollHint();
+
+
+
+class _StudyTabContent extends StatefulWidget {
+  const _StudyTabContent({required this.isWide, required this.compact});
+  final bool isWide;
+  final bool compact;
+
+  @override
+  State<_StudyTabContent> createState() => _StudyTabContentState();
+}
+
+class _StudyTabContentState extends State<_StudyTabContent> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    super.build(context);
+    if (widget.isWide) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Desliza para ver tareas',
-            style: AppType.secondaryItalic(
-              color: kColorTextSecondary.withValues(alpha: 0.5),
+          Expanded(
+            flex: 1,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: const PomodoroTimer(),
             ),
           ),
-          Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: kColorTextSecondary.withValues(alpha: 0.5),
-            size: 20,
+          Expanded(
+            flex: 1,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: const TaskList(),
+            ),
           ),
         ],
-      ),
-    );
+      );
+    } else {
+      return SingleChildScrollView(
+        padding: EdgeInsets.all(widget.compact ? 16 : 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: const [
+            PomodoroTimer(),
+            SizedBox(height: 16),
+            TaskList(),
+          ],
+        ),
+      );
+    }
   }
 }
-

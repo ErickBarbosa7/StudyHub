@@ -1,3 +1,4 @@
+import "package:shared_preferences/shared_preferences.dart";
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +24,36 @@ class TaskList extends ConsumerStatefulWidget {
 class _TaskListState extends ConsumerState<TaskList> {
   final _taskController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _isExpanded = true;
+  bool _isFirstLoad = true;
+  static const _prefsKey = 'tasks_expanded';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadState();
+  }
+
+  Future<void> _loadState() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        if (prefs.containsKey(_prefsKey)) {
+          _isExpanded = prefs.getBool(_prefsKey) ?? true;
+        }
+        _isFirstLoad = false;
+      });
+    }
+  }
+
+  Future<void> _toggleExpanded() async {
+    setState(() {
+      _isExpanded = !_isExpanded;
+      _isFirstLoad = false;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefsKey, _isExpanded);
+  }
 
   // Límite de caracteres centralizado
   static const int maxTaskLength = 100;
@@ -300,174 +331,192 @@ class _TaskListState extends ConsumerState<TaskList> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(compact ? 8 : 10),
-                decoration: BoxDecoration(
-                  color: kColorGoldSoft,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  Icons.checklist_rounded,
-                  color: kColorGold,
-                  size: compact ? 20 : 24,
-                ),
-              ),
-              SizedBox(width: compact ? 12 : 16),
-              Expanded(
-                child: Text(
-                  'Tareas',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: _toggleExpanded,
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(compact ? 8 : 10),
+                    decoration: BoxDecoration(
+                      color: kColorGoldSoft,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      Icons.checklist_rounded,
+                      color: kColorGold,
+                      size: compact ? 20 : 24,
+                    ),
+                  ),
+                  SizedBox(width: compact ? 12 : 16),
+                  Expanded(
+                    child: Text(
+                      'Tareas',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: kColorInk,
+                            fontWeight: AppType.weightSemiBold,
+                            fontSize: compact ? AppType.sizeTitle : null,
+                          ),
+                    ),
+                  ),
+                  HelpIcon(
+                    title: 'Tareas colaborativas',
+                    description:
+                        'Lista de tareas que todos pueden ver y actualizar en tiempo real. '
+                        'Agrega tareas, márcalas como pendientes, en progreso o completadas. '
+                        'Todo se sincroniza automáticamente entre todos los miembros de la sala.',
+                    compact: compact,
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12, vertical: compact ? 4 : 6),
+                    decoration: BoxDecoration(
+                      color: kColorGoldSoft,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '${tasks.length}',
+                      style: const TextStyle(
                         color: kColorInk,
                         fontWeight: AppType.weightSemiBold,
-                        fontSize: compact ? AppType.sizeTitle : null,
-                      ),
-                ),
-              ),
-              HelpIcon(
-                title: 'Tareas colaborativas',
-                description:
-                    'Lista de tareas que todos pueden ver y actualizar en tiempo real. '
-                    'Agrega tareas, márcalas como pendientes, en progreso o completadas. '
-                    'Todo se sincroniza automáticamente entre todos los miembros de la sala.',
-                compact: compact,
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12, vertical: compact ? 4 : 6),
-                decoration: BoxDecoration(
-                  color: kColorGoldSoft,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  '${tasks.length}',
-                  style: const TextStyle(
-                    color: kColorInk,
-                    fontWeight: AppType.weightSemiBold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: compact ? 16 : 24),
-
-          Form(
-            key: _formKey,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _taskController,
-                    textCapitalization: TextCapitalization.sentences,
-                    
-                    // --- RESTRICCIONES Y CONTROL DE TECLADO ---
-                    maxLength: maxTaskLength,
-                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
-                    
-                    // Controla qué tan arriba salta el campo al abrir el teclado (evita el "super arriba")
-                    scrollPadding: const EdgeInsets.only(bottom: 60), 
-                    
-                    style: const TextStyle(color: kColorInk),
-                    decoration: InputDecoration(
-                      labelText: 'Nueva tarea',
-                      hintText: 'ej. Terminar ejercicios',
-                      
-                      // TRUCO DE PRODUCCIÓN: 
-                      // Oculta el contador, pero reserva el espacio con helperText
-                      // Esto evita que la UI "salte" y empuje todo cuando sale el texto de error.
-                      counterText: '', 
-                      helperText: ' ', 
-                      
-                      labelStyle: const TextStyle(color: kColorTextSecondary),
-                      hintStyle: TextStyle(
-                        color: kColorTextSecondary.withValues(alpha: 0.5),
-                      ),
-                      prefixIcon:
-                          const Icon(Icons.add_task_rounded, color: kColorDeepSage),
-                      filled: true,
-                      fillColor: kColorPaper,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: compact ? 16 : 24,
-                        vertical: compact ? 14 : 18,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide:
-                            const BorderSide(color: kColorDeepSage, width: 1.5),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(color: kColorErrorBorder, width: 1.5),
                       ),
                     ),
-                    validator: (value) {
-                      final text = value?.trim() ?? '';
-                      if (text.isEmpty) return 'Requerido';
-                      if (text.length > maxTaskLength) return 'Excede el límite';
-                      return null;
-                    },
-                    onFieldSubmitted: (_) => _addTask(),
                   ),
-                ),
-                SizedBox(width: compact ? 8 : 12),
-                
-                // Alineamos el botón con el Padding para compensar el espacio del helperText
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 22.0), 
-                  child: SizedBox(
-                    height: compact ? 48 : 56,
-                    width: compact ? 48 : 56,
-                    child: ElevatedButton(
-                      onPressed: _addTask,
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        backgroundColor: kColorDeepSage,
-                        foregroundColor: kColorPaper,
-                        elevation: 0,
-                      ),
-                      child: const Icon(Icons.add_rounded, size: 28),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: compact ? 16 : 24),
-
-          if (tasks.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.fact_check_outlined,
-                    size: 40,
-                    color: kColorGold,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Sin tareas todavía.\nAñade la primera para empezar.',
-                    textAlign: TextAlign.center,
-                    style: AppType.secondaryItalic(),
+                  const SizedBox(width: 8),
+                  Icon(
+                    _isExpanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    color: kColorTextSecondary,
+                    size: 24,
                   ),
                 ],
               ),
-            )
-          else
-            ...tasks.map((task) => _TaskTile(
-                  task: task,
-                  onToggleComplete: () => _toggleComplete(task),
-                  onOpenMenu: () => _showTaskActions(task),
-                )),
+            ),
+          ),
+          AnimatedSize(
+            duration: _isFirstLoad ? Duration.zero : const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: !_isExpanded
+                ? const SizedBox(width: double.infinity)
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(height: compact ? 16 : 24),
+                      Form(
+                        key: _formKey,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _taskController,
+                                textCapitalization: TextCapitalization.sentences,
+                                
+                                maxLength: maxTaskLength,
+                                maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                                
+                                scrollPadding: const EdgeInsets.only(bottom: 60), 
+                                
+                                style: const TextStyle(color: kColorInk),
+                                decoration: InputDecoration(
+                                  labelText: 'Nueva tarea',
+                                  hintText: 'ej. Terminar ejercicios',
+                                  
+                                  counterText: '', 
+                                  helperText: ' ', 
+                                  
+                                  labelStyle: const TextStyle(color: kColorTextSecondary),
+                                  hintStyle: TextStyle(
+                                    color: kColorTextSecondary.withValues(alpha: 0.5),
+                                  ),
+                                  prefixIcon:
+                                      const Icon(Icons.add_task_rounded, color: kColorDeepSage),
+                                  filled: true,
+                                  fillColor: kColorPaper,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: compact ? 16 : 24,
+                                    vertical: compact ? 14 : 18,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                    borderSide:
+                                        const BorderSide(color: kColorDeepSage, width: 1.5),
+                                  ),
+                                  errorBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                    borderSide: const BorderSide(color: kColorErrorBorder, width: 1.5),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  final text = value?.trim() ?? '';
+                                  if (text.isEmpty) return 'Requerido';
+                                  if (text.length > maxTaskLength) return 'Excede el límite';
+                                  return null;
+                                },
+                                onFieldSubmitted: (_) => _addTask(),
+                              ),
+                            ),
+                            SizedBox(width: compact ? 8 : 12),
+                            
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 22.0), 
+                              child: SizedBox(
+                                height: compact ? 48 : 56,
+                                width: compact ? 48 : 56,
+                                child: ElevatedButton(
+                                  onPressed: _addTask,
+                                  style: ElevatedButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    backgroundColor: kColorDeepSage,
+                                    foregroundColor: kColorPaper,
+                                    elevation: 0,
+                                  ),
+                                  child: const Icon(Icons.add_rounded, size: 28),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: compact ? 16 : 24),
+                      if (tasks.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.fact_check_outlined,
+                                size: 40,
+                                color: kColorGold,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Sin tareas todavía.\nAñade la primera para empezar.',
+                                textAlign: TextAlign.center,
+                                style: AppType.secondaryItalic(),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ...tasks.map((task) => _TaskTile(
+                              task: task,
+                              onToggleComplete: () => _toggleComplete(task),
+                              onOpenMenu: () => _showTaskActions(task),
+                            )),
+                    ],
+                  ),
+          ),
         ],
       ),
     );
