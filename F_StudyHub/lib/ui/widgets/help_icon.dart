@@ -15,74 +15,99 @@ class HelpIcon extends StatelessWidget {
   final bool compact;
 
   void _showHelp(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: kColorPaper,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(32, 32, 32, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    final bool isWide = MediaQuery.sizeOf(context).width >= 600;
+
+    Widget buildContent(BuildContext sheetContext) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: kColorSageSoft,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.help_outline_rounded,
-                      color: kColorDeepSage,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
-                            color: kColorInk,
-                            fontWeight: AppType.weightSemiBold,
-                          ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text(
-                description,
-                style: AppType.secondaryItalic(
-                  color: kColorInk,
-                  size: AppType.sizeBodyMedium,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: kColorSageSoft,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.help_outline_rounded,
+                  color: kColorDeepSage,
+                  size: 22,
                 ),
               ),
-              const SizedBox(height: 28),
-              TextButton(
-                onPressed: () => Navigator.of(sheetContext).pop(),
-                style: TextButton.styleFrom(
-                  foregroundColor: kColorDeepSage,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: const Text(
-                  'Entendido',
-                  style: TextStyle(fontWeight: AppType.weightSemiBold),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
+                        color: kColorInk,
+                        fontWeight: AppType.weightSemiBold,
+                      ),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 20),
+          Text(
+            description,
+            style: AppType.secondaryItalic(
+              color: kColorInk,
+              size: AppType.sizeBodyMedium,
+            ),
+          ),
+          const SizedBox(height: 28),
+          TextButton(
+            onPressed: () => Navigator.of(sheetContext).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: kColorDeepSage,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Text(
+              'Entendido',
+              style: TextStyle(fontWeight: AppType.weightSemiBold),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (isWide) {
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => Dialog(
+          backgroundColor: kColorPaper,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: buildContent(dialogContext),
+            ),
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: kColorPaper,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        builder: (sheetContext) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(32, 32, 32, 16),
+            child: buildContent(sheetContext),
+          ),
+        ),
+      );
+    }
   }
 
   @override

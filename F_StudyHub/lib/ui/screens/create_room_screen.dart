@@ -399,15 +399,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           iconTheme: const IconThemeData(color: kColorInk),
-          title: inRoom
-              ? Text(
-                  roomState.room!.name,
-                  style: const TextStyle(
-                    color: kColorInk,
-                    fontWeight: AppType.weightSemiBold,
-                  ),
-                )
-              : const Text(''),
+          title: const Text(''),
           actions: [],
         ),
         body: Column(
@@ -1067,6 +1059,21 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (room != null) ...[
+            Text(
+              room.name,
+              style: const TextStyle(
+                fontSize: 32, // Large and prominent
+                fontWeight: AppType.weightBold,
+                color: kColorInk,
+                letterSpacing: -0.5,
+                height: 1.1,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: compact ? 12 : 16),
+          ],
           Row(
             children: [
               if (room != null) _buildRoomCodePill(room.roomId),
