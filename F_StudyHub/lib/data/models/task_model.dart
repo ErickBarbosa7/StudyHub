@@ -5,6 +5,7 @@ class Task {
     required this.stateCode,
     required this.stateLabel,
     this.createdAt,
+    this.creatorName,
   });
 
   final String taskId;
@@ -12,6 +13,7 @@ class Task {
   final String stateCode;
   final String stateLabel;
   final DateTime? createdAt;
+  final String? creatorName;
 
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
@@ -22,6 +24,7 @@ class Task {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String)?.toLocal()
           : null,
+      creatorName: json['creatorName'] as String?,
     );
   }
 }

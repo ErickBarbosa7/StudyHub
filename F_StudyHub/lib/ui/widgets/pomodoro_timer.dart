@@ -9,7 +9,7 @@ import '../../data/services/sound_service.dart';
 import '../../logic/pomodoro_provider.dart';
 import 'help_icon.dart';
 
-const _durationPresets = [5 * 60, 10 * 60, 15 * 60, 30 * 60];
+const _durationPresets = [5 * 60, 15 * 60, 30 * 60];
 
 const _kMinCustomMinutes = 1;
 const _kMaxCustomMinutes = 180;
@@ -90,11 +90,12 @@ class _PomodoroTimerState extends ConsumerState<PomodoroTimer> {
                       Expanded(
                         child: Text(
                           'Pomodoro',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: kColorInk,
-                            fontWeight: AppType.weightSemiBold,
-                            fontSize: compact ? AppType.sizeTitle : null,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                color: kColorInk,
+                                fontWeight: AppType.weightSemiBold,
+                                fontSize: compact ? AppType.sizeTitle : null,
+                              ),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -119,7 +120,9 @@ class _PomodoroTimerState extends ConsumerState<PomodoroTimer> {
             ),
           ),
           AnimatedSize(
-            duration: _isFirstLoad ? Duration.zero : const Duration(milliseconds: 300),
+            duration: _isFirstLoad
+                ? Duration.zero
+                : const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             child: !_isExpanded
                 ? const SizedBox(width: double.infinity)
@@ -130,8 +133,9 @@ class _PomodoroTimerState extends ConsumerState<PomodoroTimer> {
                       if (!state.isRunning) ...[
                         _DurationPills(
                           selectedSeconds: state.totalSeconds,
-                          onSelected: (seconds) =>
-                              ref.read(pomodoroProvider.notifier).reset(seconds),
+                          onSelected: (seconds) => ref
+                              .read(pomodoroProvider.notifier)
+                              .reset(seconds),
                         ),
                         SizedBox(height: compact ? 16 : 24),
                       ],
@@ -186,12 +190,16 @@ class _PomodoroTimerState extends ConsumerState<PomodoroTimer> {
                                 child: finished
                                     ? Text(
                                         '¡Tiempo completado!',
-                                        style: AppType.secondaryItalic(
-                                          color: kColorInk,
-                                          size: compact
-                                              ? AppType.sizeBody
-                                              : AppType.sizeBodyMedium,
-                                        ).copyWith(fontWeight: AppType.weightSemiBold),
+                                        style:
+                                            AppType.secondaryItalic(
+                                              color: kColorInk,
+                                              size: compact
+                                                  ? AppType.sizeBody
+                                                  : AppType.sizeBodyMedium,
+                                            ).copyWith(
+                                              fontWeight:
+                                                  AppType.weightSemiBold,
+                                            ),
                                         textAlign: TextAlign.center,
                                       )
                                     : state.isRunning
@@ -204,12 +212,16 @@ class _PomodoroTimerState extends ConsumerState<PomodoroTimer> {
                                       )
                                     : Text(
                                         'En pausa',
-                                        style: AppType.secondaryItalic(
-                                          color: kColorTextSecondary,
-                                          size: compact
-                                              ? AppType.sizeBody
-                                              : AppType.sizeBodyMedium,
-                                        ).copyWith(fontWeight: AppType.weightSemiBold),
+                                        style:
+                                            AppType.secondaryItalic(
+                                              color: kColorTextSecondary,
+                                              size: compact
+                                                  ? AppType.sizeBody
+                                                  : AppType.sizeBodyMedium,
+                                            ).copyWith(
+                                              fontWeight:
+                                                  AppType.weightSemiBold,
+                                            ),
                                         textAlign: TextAlign.center,
                                       ),
                               ),
@@ -222,7 +234,8 @@ class _PomodoroTimerState extends ConsumerState<PomodoroTimer> {
                         SizedBox(
                           height: compact ? 48 : 56,
                           child: ElevatedButton.icon(
-                            onPressed: () => ref.read(pomodoroProvider.notifier).pause(),
+                            onPressed: () =>
+                                ref.read(pomodoroProvider.notifier).pause(),
                             icon: const Icon(Icons.pause_rounded, size: 24),
                             label: const Text('Pausar'),
                           ),
@@ -233,17 +246,23 @@ class _PomodoroTimerState extends ConsumerState<PomodoroTimer> {
                           child: ElevatedButton.icon(
                             onPressed: () {
                               ref.read(soundProvider.notifier).unlock();
-                              ref.read(pomodoroProvider.notifier).start(state.totalSeconds);
+                              ref
+                                  .read(pomodoroProvider.notifier)
+                                  .start(state.totalSeconds);
                             },
-                            icon: const Icon(Icons.play_arrow_rounded, size: 24),
+                            icon: const Icon(
+                              Icons.play_arrow_rounded,
+                              size: 24,
+                            ),
                             label: const Text('Iniciar'),
                           ),
                         ),
                       if (state.timeRemaining < state.totalSeconds) ...[
                         const SizedBox(height: 8),
                         TextButton.icon(
-                          onPressed: () =>
-                              ref.read(pomodoroProvider.notifier).reset(state.totalSeconds),
+                          onPressed: () => ref
+                              .read(pomodoroProvider.notifier)
+                              .reset(state.totalSeconds),
                           icon: const Icon(Icons.restart_alt_rounded, size: 20),
                           label: const Text('Reiniciar'),
                           style: TextButton.styleFrom(
@@ -298,26 +317,26 @@ class _DurationPills extends StatelessWidget {
                 child: GestureDetector(
                   onTap: () => onSelected(seconds),
                   child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: compact ? 12 : 16,
-                    vertical: compact ? 8 : 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected ? kColorDeepSage : kColorSageSoft,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    _formatMinutes(seconds),
-                    style: TextStyle(
-                      color: selected ? kColorPaper : kColorTextSecondary,
-                      fontWeight: AppType.weightSemiBold,
-                      fontSize: compact
-                          ? AppType.sizeCaption
-                          : AppType.sizeLabel,
+                    duration: const Duration(milliseconds: 200),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 12 : 16,
+                      vertical: compact ? 8 : 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected ? kColorDeepSage : kColorSageSoft,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _formatMinutes(seconds),
+                      style: TextStyle(
+                        color: selected ? kColorPaper : kColorTextSecondary,
+                        fontWeight: AppType.weightSemiBold,
+                        fontSize: compact
+                            ? AppType.sizeCaption
+                            : AppType.sizeLabel,
+                      ),
                     ),
                   ),
-                ),
                 ),
               );
             }),
@@ -336,39 +355,28 @@ class _DurationPills extends StatelessWidget {
       child: GestureDetector(
         onTap: () => _promptCustomDuration(context),
         child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-          horizontal: compact ? 12 : 16,
-          vertical: compact ? 8 : 10,
-        ),
-        decoration: BoxDecoration(
-          color: selected ? kColorDeepSage : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? kColorDeepSage : kColorBorder,
-            width: 1.2,
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 16,
+            vertical: compact ? 8 : 10,
+          ),
+          decoration: BoxDecoration(
+            color: selected ? kColorDeepSage : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? kColorDeepSage : kColorBorder,
+              width: 1.2,
+            ),
+          ),
+          child: Text(
+            'Personalizado',
+            style: TextStyle(
+              color: selected ? kColorPaper : kColorTextSecondary,
+              fontWeight: AppType.weightSemiBold,
+              fontSize: compact ? AppType.sizeCaption : AppType.sizeLabel,
+            ),
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.tune_rounded,
-              size: compact ? 14 : 16,
-              color: selected ? kColorPaper : kColorTextSecondary,
-            ),
-            SizedBox(width: compact ? 4 : 6),
-            Text(
-              'Personalizado',
-              style: TextStyle(
-                color: selected ? kColorPaper : kColorTextSecondary,
-                fontWeight: AppType.weightSemiBold,
-                fontSize: compact ? AppType.sizeCaption : AppType.sizeLabel,
-              ),
-            ),
-          ],
-        ),
-      ),
       ),
     );
   }
@@ -385,7 +393,9 @@ class _DurationPills extends StatelessWidget {
       },
     );
 
-    final clamped = minutes?.clamp(_kMinCustomMinutes, _kMaxCustomMinutes).toInt();
+    final clamped = minutes
+        ?.clamp(_kMinCustomMinutes, _kMaxCustomMinutes)
+        .toInt();
     if (clamped == null) return;
     onSelected(clamped * 60);
   }
@@ -452,9 +462,9 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
                   Text(
                     'Duración personalizada',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: kColorInk,
-                          fontWeight: AppType.weightSemiBold,
-                        ),
+                      color: kColorInk,
+                      fontWeight: AppType.weightSemiBold,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Form(
@@ -480,7 +490,8 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
                       ),
                       validator: (value) {
                         final text = value?.trim() ?? '';
-                        if (text.isEmpty) return 'Ups, olvidaste poner los minutos.';
+                        if (text.isEmpty)
+                          return 'Ups, olvidaste poner los minutos.';
                         final parsed = int.tryParse(text);
                         if (parsed == null ||
                             parsed < _kMinCustomMinutes ||
@@ -511,9 +522,7 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
                         ),
                         child: const Text(
                           'Aceptar',
-                          style: TextStyle(
-                            fontWeight: AppType.weightSemiBold,
-                          ),
+                          style: TextStyle(fontWeight: AppType.weightSemiBold),
                         ),
                       ),
                     ],
@@ -527,4 +536,3 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
     );
   }
 }
-

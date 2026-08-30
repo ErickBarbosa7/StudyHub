@@ -13,12 +13,14 @@ class TaskState {
     this.error,
     this.newTaskCount = 0,
     this.lastAddedTaskTitle,
+    this.lastAddedTaskCreatorName,
   });
 
   final List<Task> tasks;
   final String? error;
   final int newTaskCount;
   final String? lastAddedTaskTitle;
+  final String? lastAddedTaskCreatorName;
 
   TaskState copyWith({
     List<Task>? tasks,
@@ -26,6 +28,7 @@ class TaskState {
     bool clearError = false,
     int? newTaskCount,
     String? lastAddedTaskTitle,
+    String? lastAddedTaskCreatorName,
     bool clearNewTask = false,
   }) {
     return TaskState(
@@ -34,6 +37,8 @@ class TaskState {
       newTaskCount: clearNewTask ? 0 : (newTaskCount ?? this.newTaskCount),
       lastAddedTaskTitle:
           clearNewTask ? null : (lastAddedTaskTitle ?? this.lastAddedTaskTitle),
+      lastAddedTaskCreatorName:
+          clearNewTask ? null : (lastAddedTaskCreatorName ?? this.lastAddedTaskCreatorName),
     );
   }
 }
@@ -56,6 +61,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
           clearError: true,
           newTaskCount: state.newTaskCount + 1,
           lastAddedTaskTitle: newTasks.first.title,
+          lastAddedTaskCreatorName: newTasks.first.creatorName,
         );
       } else {
         state = state.copyWith(
@@ -91,10 +97,13 @@ class TaskNotifier extends StateNotifier<TaskState> {
       return;
     }
 
+    final localUser = _roomProvider.read(roomProvider).localUser;
+
     _pendingLocalAdd = true;
     _socketService.emit('add_task', {
       'roomId': roomId,
       'title': title.trim(),
+      if (localUser != null) 'creatorName': localUser.name,
     });
   }
 

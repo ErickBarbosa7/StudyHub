@@ -9,6 +9,7 @@ import { RoomModel, type TaskSubDoc } from '../models/Room.js';
 interface AddTaskPayload {
   roomId: string;
   title: string;
+  creatorName?: string;
 }
 
 interface UpdateTaskStatusPayload {
@@ -88,6 +89,10 @@ export function registerTaskHandler(io: Server, socket: Socket): void {
       title: title.trim(),
       stateRef: pending._id,
       createdAt: new Date(),
+      creatorName:
+        typeof payload.creatorName === 'string' && payload.creatorName.trim() !== ''
+          ? payload.creatorName.trim()
+          : undefined,
     });
     await room.save();
 

@@ -356,9 +356,11 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         ref.read(soundProvider.notifier).playTaskNotificationSound();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
+          final creatorName = next.lastAddedTaskCreatorName;
+          final titlePrefix = creatorName != null ? '$creatorName agregó una tarea:' : 'Nueva tarea:';
           showCustomNotification(
             context,
-            title: 'Nueva tarea: ${next.lastAddedTaskTitle ?? 'Agregada'}',
+            title: '$titlePrefix ${next.lastAddedTaskTitle ?? 'Agregada'}',
             icon: Icons.add_task_rounded,
             iconColor: kColorGold,
           );
