@@ -352,13 +352,33 @@ class _TaskListState extends ConsumerState<TaskList> {
                   ),
                   SizedBox(width: compact ? 12 : 16),
                   Expanded(
-                    child: Text(
-                      'Tareas',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: kColorInk,
-                            fontWeight: AppType.weightSemiBold,
-                            fontSize: compact ? AppType.sizeTitle : null,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Tareas',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: kColorInk,
+                                fontWeight: AppType.weightSemiBold,
+                                fontSize: compact ? AppType.sizeTitle : null,
+                              ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12, vertical: compact ? 4 : 6),
+                          decoration: BoxDecoration(
+                            color: kColorGoldSoft,
+                            borderRadius: BorderRadius.circular(16),
                           ),
+                          child: Text(
+                            '${tasks.length}',
+                            style: const TextStyle(
+                              color: kColorInk,
+                              fontWeight: AppType.weightSemiBold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   HelpIcon(
@@ -368,21 +388,6 @@ class _TaskListState extends ConsumerState<TaskList> {
                         'Agrega tareas, márcalas como pendientes, en progreso o completadas. '
                         'Todo se sincroniza automáticamente entre todos los miembros de la sala.',
                     compact: compact,
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12, vertical: compact ? 4 : 6),
-                    decoration: BoxDecoration(
-                      color: kColorGoldSoft,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      '${tasks.length}',
-                      style: const TextStyle(
-                        color: kColorInk,
-                        fontWeight: AppType.weightSemiBold,
-                      ),
-                    ),
                   ),
                   const SizedBox(width: 8),
                   Icon(

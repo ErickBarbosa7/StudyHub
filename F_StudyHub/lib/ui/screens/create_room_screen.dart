@@ -306,7 +306,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           ),
         ),
         content: Text(
-          'Si sales, perderás el acceso a esta sala. Puedes volver a unirte con el mismo código.',
+          'Puedes volver a entrar con el código. Pero ojo: si eres el último en irte, la sala desaparecerá.',
           style: AppType.secondaryItalic(color: kColorInk),
         ),
         actions: [

@@ -103,7 +103,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 32),
                       Text(
-                        'Estudia en equipo,\na tu ritmo',
+                        'Estudia y concéntrate\nen equipo',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
@@ -114,7 +114,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Crea una sala o únete con un código.',
+                        'Una app para estudiar a distancia. Crea una sala con tus amigos, anoten sus tareas y usen el temporizador para no distraerse.',
                         textAlign: TextAlign.center,
                         style: AppType.secondaryItalic(),
                       ),

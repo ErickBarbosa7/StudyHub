@@ -115,7 +115,7 @@ class SocketNotifier extends StateNotifier<SocketState> {
 
 final socketServiceProvider = riverpod.Provider<WebSocketService>((ref) {
   final service = WebSocketService();
-  ref.onDispose(service.disconnect);
+  ref.onDispose(service.dispose);
   return service;
 });
 

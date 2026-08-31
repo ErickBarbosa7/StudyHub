@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'ui/widgets/inactivity_detector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/theme.dart';
@@ -86,18 +87,21 @@ void main() {
   );
 }
 
+
 class StudyHubApp extends StatelessWidget {
   const StudyHubApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'StudyHub',
-      theme: buildTheme(),
-      home: const HomeScreen(),
-      routes: {
-        CreateRoomScreen.routeName: (_) => const CreateRoomScreen(),
-      },
+    return InactivityDetector(
+      child: MaterialApp(
+        title: 'StudyHub',
+        theme: buildTheme(),
+        home: const HomeScreen(),
+        routes: {
+          CreateRoomScreen.routeName: (_) => const CreateRoomScreen(),
+        },
+      ),
     );
   }
 }

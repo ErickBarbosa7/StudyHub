@@ -490,8 +490,9 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
                       ),
                       validator: (value) {
                         final text = value?.trim() ?? '';
-                        if (text.isEmpty)
+                        if (text.isEmpty) {
                           return 'Ups, olvidaste poner los minutos.';
+                        }
                         final parsed = int.tryParse(text);
                         if (parsed == null ||
                             parsed < _kMinCustomMinutes ||
