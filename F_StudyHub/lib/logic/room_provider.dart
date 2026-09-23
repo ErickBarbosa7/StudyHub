@@ -18,6 +18,7 @@ class RoomState {
     this.users = const [],
     this.isCreating = false,
     this.isRestoring = false,
+    this.sessionEnded = false,
     this.error,
   });
 
@@ -26,6 +27,9 @@ class RoomState {
   final List<User> users;
   final bool isCreating;
   final bool isRestoring;
+
+  /// Marca que la sesión fue terminada (conexión perdida sin recuperarse).
+  final bool sessionEnded;
   final String? error;
 
   RoomState copyWith({
@@ -34,6 +38,7 @@ class RoomState {
     List<User>? users,
     bool? isCreating,
     bool? isRestoring,
+    bool? sessionEnded,
     String? error,
     bool clearError = false,
   }) {
@@ -43,10 +48,14 @@ class RoomState {
       users: users ?? this.users,
       isCreating: isCreating ?? this.isCreating,
       isRestoring: isRestoring ?? this.isRestoring,
+      sessionEnded: sessionEnded ?? this.sessionEnded,
       error: clearError ? null : (error ?? this.error),
     );
   }
 }
+
+/// Tiempo máximo de vida de una sesión guardada antes de considerarla expirada.
+const Duration _sessionTtl = Duration(hours: 6);
 
 String _translateError(Object error) {
   final msg = error.toString().toLowerCase();
@@ -110,13 +119,43 @@ class RoomNotifier extends StateNotifier<RoomState> {
       state = const RoomState();
     });
 
+    _socketService.on('room_not_found', (_) {
+      debugPrint('[room] La sala ya no existe en el servidor');
+      endSession(message: 'La sala ya no existe o ha expirado.');
+    });
+
+    _socketService.addOnGaveUp(() {
+      debugPrint('[room] Conexión perdida sin recuperarse');
+      if (state.room != null || state.localUser != null) {
+        endSession();
+      }
+    });
+
     _socketService.addOnConnected(_rejoinRoomIfNeeded);
   }
 
-  void _rejoinRoomIfNeeded() {
+  bool _isSessionExpired(SharedPreferences prefs) {
+    final savedAt = prefs.getInt('session_saved_at');
+    if (savedAt == null) return false;
+    final age = DateTime.now().difference(
+      DateTime.fromMillisecondsSinceEpoch(savedAt),
+    );
+    return age > _sessionTtl;
+  }
+
+  Future<void> _rejoinRoomIfNeeded() async {
     final room = state.room;
     final user = state.localUser;
     if (room == null || user == null) return;
+
+    final prefs = await _getPrefs();
+    if (_isSessionExpired(prefs)) {
+      debugPrint('[room] Sesión expirada, no se re-une a la sala');
+      await _clearSession();
+      state = const RoomState();
+      return;
+    }
+
     debugPrint('[room] Reconectado, re-uniéndose a ${room.roomId}');
     _joinRoom(room.roomId, user);
   }
@@ -128,6 +167,10 @@ class RoomNotifier extends StateNotifier<RoomState> {
     await prefs.setString('session_room_id', room.roomId);
     await prefs.setString('session_user_id', user.id);
     await prefs.setString('session_user_name', user.name);
+    await prefs.setInt(
+      'session_saved_at',
+      DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
   Future<void> _clearSession() async {
@@ -135,6 +178,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
     await prefs.remove('session_room_id');
     await prefs.remove('session_user_id');
     await prefs.remove('session_user_name');
+    await prefs.remove('session_saved_at');
   }
 
   Future<void> _resetRoomUiState() async {
@@ -145,6 +189,20 @@ class RoomNotifier extends StateNotifier<RoomState> {
 
   void clearError() {
     state = state.copyWith(clearError: true);
+  }
+
+  /// Termina la sesión local: limpia el token guardado, resetea el estado y
+  /// marca `sessionEnded` para que la UI vuelva al inicio.
+  Future<void> endSession({
+    String message = 'Se perdió la conexión. Tu sesión se cerró; vuelve a entrar cuando tengas señal.',
+  }) async {
+    debugPrint('[room] Finalizando sesión local');
+    await _clearSession();
+    state = RoomState(sessionEnded: true, error: message);
+  }
+
+  void clearSessionEnded() {
+    state = state.copyWith(sessionEnded: false);
   }
 
   Future<void> _ensureConnected() async {
@@ -165,6 +223,13 @@ class RoomNotifier extends StateNotifier<RoomState> {
     final userName = prefs.getString('session_user_name');
 
     if (roomId == null || userId == null || userName == null) {
+      return false;
+    }
+
+    // Si la sesión superó el TTL se mata el "token" y se vuelve al inicio.
+    if (_isSessionExpired(prefs)) {
+      debugPrint('[room] Sesión expirada (TTL), limpiando token');
+      await _clearSession();
       return false;
     }
 

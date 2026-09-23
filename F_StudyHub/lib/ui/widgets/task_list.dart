@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../data/models/task_model.dart';
 import '../../logic/task_provider.dart';
 import 'help_icon.dart';
+import 'hint_pill.dart';
 
 const _kTaskStates = <String, String>{
   'PENDING': 'Pendiente',
@@ -493,6 +494,17 @@ class _TaskListState extends ConsumerState<TaskList> {
                           ],
                         ),
                       ),
+                      if (tasks.isEmpty &&
+                          _taskController.text.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Center(
+                            child: HintPill(
+                              message: 'Escribe aquí y toca + para añadir tu tarea',
+                              icon: Icons.edit_rounded,
+                            ),
+                          ),
+                        ),
                       SizedBox(height: compact ? 16 : 24),
                       if (tasks.isEmpty)
                         Padding(

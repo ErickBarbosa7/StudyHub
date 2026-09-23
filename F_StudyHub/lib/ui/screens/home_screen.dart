@@ -4,9 +4,11 @@ import 'package:lottie/lottie.dart';
 
 import '../../core/theme.dart';
 import '../../data/services/sound_service.dart';
+import '../../logic/onboarding_provider.dart';
 import '../../logic/room_provider.dart';
 import '../../logic/socket_provider.dart';
 import '../../ui/widgets/connection_banner.dart';
+import '../../ui/widgets/mascot/onboarding_tour.dart';
 import 'create_room_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -22,6 +24,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(socketServiceProvider).connect();
+      ref.read(onboardingProvider.notifier).load();
       final restored = await ref
           .read(roomProvider.notifier)
           .restoreSavedSession();
@@ -32,20 +35,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showHowItWorks() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: kColorPaper,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      builder: (context) => const _HowItWorksModal(),
-    );
+    showOnboardingTour(context, ref.read(onboardingProvider.notifier));
   }
 
   @override
   Widget build(BuildContext context) {
     final roomState = ref.watch(roomProvider);
+
+    // Primera vez en la app: abrir la guía con la mascota.
+    ref.listen<OnboardingState>(onboardingProvider, (previous, next) {
+      if (next.hasChecked && !next.isCompleted && !next.isOpen) {
+        Future<void>.delayed(const Duration(milliseconds: 600), () {
+          if (!context.mounted) return;
+          showOnboardingTour(
+            context,
+            ref.read(onboardingProvider.notifier),
+          );
+        });
+      }
+    });
 
     ref.listen<RoomState>(roomProvider, (previous, next) {
       if (next.error != null && next.error != previous?.error) {
@@ -201,114 +209,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HowItWorksModal extends StatelessWidget {
-  const _HowItWorksModal();
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(32, 32, 32, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Tu espacio de enfoque',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: kColorInk,
-                fontWeight: AppType.weightSemiBold,
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            const _HelpFeature(
-              icon: Icons.meeting_room_rounded,
-              title: 'Salas Privadas',
-              subtitle: 'Comparte un código y reúne a tu equipo.',
-            ),
-            const _HelpFeature(
-              icon: Icons.checklist_rounded,
-              title: 'Tareas Sincronizadas',
-              subtitle: 'Una lista única que se actualiza al instante.',
-            ),
-            const _HelpFeature(
-              icon: Icons.timer_rounded,
-              title: 'Reloj Pomodoro',
-              subtitle: 'Un solo temporizador para concentrarse juntos.',
-            ),
-
-            const SizedBox(height: 32),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                foregroundColor: kColorInk,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-              ),
-              child: const Text(
-                'Entendido',
-                style: TextStyle(fontWeight: AppType.weightSemiBold),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HelpFeature extends StatelessWidget {
-  const _HelpFeature({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: kColorSageSoft,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: kColorDeepSage, size: 28),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: kColorInk,
-                    fontWeight: AppType.weightSemiBold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(subtitle, style: AppType.secondaryItalic()),
-              ],
             ),
           ),
         ],

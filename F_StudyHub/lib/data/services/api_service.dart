@@ -5,15 +5,19 @@ import 'package:http/http.dart' as http;
 import '../../core/constants.dart';
 import '../models/room_model.dart';
 
+const Duration _requestTimeout = Duration(seconds: 8);
+
 class ApiService {
   const ApiService();
 
   Future<Room> createRoom({required String name, required String hostId}) async {
-    final response = await http.post(
-      Uri.parse('$kApiBaseUrl/api/rooms'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'hostId': hostId}),
-    );
+    final response = await http
+        .post(
+          Uri.parse('$kApiBaseUrl/api/rooms'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'name': name, 'hostId': hostId}),
+        )
+        .timeout(_requestTimeout);
 
     if (response.statusCode != 201) {
       String errMsg = 'Error al crear la sala';
@@ -29,9 +33,11 @@ class ApiService {
   }
 
   Future<Room> getRoom(String roomId) async {
-    final response = await http.get(
-      Uri.parse('$kApiBaseUrl/api/rooms/${Uri.encodeComponent(roomId)}'),
-    );
+    final response = await http
+        .get(
+          Uri.parse('$kApiBaseUrl/api/rooms/${Uri.encodeComponent(roomId)}'),
+        )
+        .timeout(_requestTimeout);
 
     if (response.statusCode != 200) {
       String errMsg = 'Error al obtener la sala';

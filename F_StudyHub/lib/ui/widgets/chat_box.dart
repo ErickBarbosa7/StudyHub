@@ -167,6 +167,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                                   : AppType.sizeBodyMedium,
                             ),
                           ),
+                          const SizedBox(height: 12),
                         ],
                       ),
                     )

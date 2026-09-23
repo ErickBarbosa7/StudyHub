@@ -9,6 +9,7 @@ import 'package:lottie/lottie.dart';
 import '../../core/theme.dart';
 import '../../data/models/user_model.dart';
 import '../../logic/chat_provider.dart';
+import '../../logic/onboarding_provider.dart';
 import '../../logic/pomodoro_provider.dart';
 import '../../logic/room_provider.dart';
 import '../../logic/task_provider.dart';
@@ -17,6 +18,8 @@ import '../widgets/chat_box.dart';
 import '../widgets/connection_banner.dart';
 import '../widgets/pomodoro_timer.dart';
 import '../widgets/folder_tabs.dart';
+import '../widgets/mascot/mascot_bubble.dart';
+import '../widgets/mascot/onboarding_tour.dart';
 import '../widgets/qr_display.dart';
 import '../widgets/qr_scanner.dart';
 import '../widgets/task_list.dart';
@@ -338,6 +341,24 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     final bool inRoom = roomState.room != null;
 
     ref.listen<RoomState>(roomProvider, (previous, next) {
+      // Sesión terminada por conexión perdida: volver al inicio.
+      if (next.sessionEnded && !(previous?.sessionEnded ?? false)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                next.error ??
+                    'Se perdió la conexión. Tu sesión se cerró.',
+              ),
+            ),
+          );
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          ref.read(roomProvider.notifier).clearSessionEnded();
+        });
+        return;
+      }
+
       if (next.error != null &&
           next.error != previous?.error &&
           !next.isCreating) {
@@ -415,7 +436,20 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           elevation: 0,
           iconTheme: const IconThemeData(color: kColorInk),
           title: const Text(''),
-          actions: [],
+          actions: [
+            TextButton.icon(
+              onPressed: () => showOnboardingTour(
+                context,
+                ref.read(onboardingProvider.notifier),
+              ),
+              icon: const Icon(Icons.help_outline_rounded, size: 20),
+              label: const Text('¿Cómo funciona?'),
+              style: TextButton.styleFrom(
+                foregroundColor: kColorTextSecondary,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+            ),
+          ],
         ),
         body: Column(
           children: [
@@ -1056,9 +1090,20 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           ),
           SizedBox(height: compact ? 8 : 12),
           if (roomState.users.isEmpty)
-            Text(
-              'Esperando a que tu equipo se una...',
-              style: AppType.secondaryItalic(size: AppType.sizeCaption),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Esperando a que tu equipo se una...',
+                  style: AppType.secondaryItalic(size: AppType.sizeCaption),
+                ),
+                const SizedBox(height: 4),
+                const MascotTip(
+                  compact: true,
+                  message:
+                      'Comparte el código o el QR de la sala para que entren tus amigos.',
+                ),
+              ],
             )
           else
             SizedBox(
