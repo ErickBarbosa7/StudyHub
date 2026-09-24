@@ -24,7 +24,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(socketServiceProvider).connect();
-      ref.read(onboardingProvider.notifier).load();
       final restored = await ref
           .read(roomProvider.notifier)
           .restoreSavedSession();
@@ -41,19 +40,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final roomState = ref.watch(roomProvider);
-
-    // Primera vez en la app: abrir la guía con la mascota.
-    ref.listen<OnboardingState>(onboardingProvider, (previous, next) {
-      if (next.hasChecked && !next.isCompleted && !next.isOpen) {
-        Future<void>.delayed(const Duration(milliseconds: 600), () {
-          if (!context.mounted) return;
-          showOnboardingTour(
-            context,
-            ref.read(onboardingProvider.notifier),
-          );
-        });
-      }
-    });
 
     ref.listen<RoomState>(roomProvider, (previous, next) {
       if (next.error != null && next.error != previous?.error) {
