@@ -27,6 +27,8 @@ abstract final class AppIcons {
   static const IconData copy = IconData(57502, fontFamily: _family);
   /// door-open
   static const IconData doorOpen = IconData(58326, fontFamily: _family);
+  /// grip-vertical
+  static const IconData gripVertical = IconData(57579, fontFamily: _family);
   /// house
   static const IconData house = IconData(57589, fontFamily: _family);
   /// info

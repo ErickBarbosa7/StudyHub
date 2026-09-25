@@ -252,12 +252,21 @@ class _TaskListState extends ConsumerState<TaskList> {
 
     final listArea = tasks.isEmpty
         ? _EmptyTasks(solo: solo)
-        : ListView.builder(
+        : ReorderableListView.builder(
+            buildDefaultDragHandles: false,
             itemCount: tasks.length,
+            onReorderItem: ref.read(taskProvider.notifier).reorderTasks,
+            proxyDecorator: (child, index, animation) => Material(
+              color: kRoomSurface,
+              elevation: 4,
+              borderRadius: BorderRadius.circular(12),
+              child: child,
+            ),
             itemBuilder: (context, index) {
               final task = tasks[index];
               return _TaskTile(
                 key: ValueKey(task.taskId),
+                index: index,
                 task: task,
                 showCreator: !solo,
                 onToggleComplete: () => _toggleComplete(task),
@@ -482,12 +491,14 @@ class _EmptyTasks extends StatelessWidget {
 class _TaskTile extends StatelessWidget {
   const _TaskTile({
     super.key,
+    required this.index,
     required this.task,
     required this.showCreator,
     required this.onToggleComplete,
     required this.onOpenMenu,
   });
 
+  final int index;
   final Task task;
   final bool showCreator;
   final VoidCallback onToggleComplete;
@@ -506,6 +517,22 @@ class _TaskTile extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Asa de arrastre para reordenar.
+          ReorderableDragStartListener(
+            index: index,
+            child: const MouseRegion(
+              cursor: SystemMouseCursors.grab,
+              child: SizedBox(
+                width: 32,
+                height: 44,
+                child: Icon(
+                  AppIcons.gripVertical,
+                  size: 18,
+                  color: kRoomDisabled,
+                ),
+              ),
+            ),
+          ),
           // Acción rápida: marcar/desmarcar. Área táctil de 44x44.
           Semantics(
             button: true,

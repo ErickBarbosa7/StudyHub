@@ -371,8 +371,8 @@ class _Setup extends StatelessWidget {
             Expanded(
               child: Text(
                 isLong
-                    ? 'Descanso de ${kLongBreakSeconds ~/ 60} min. Te lo ganaste, desconecta un rato.'
-                    : 'Descanso de ${kShortBreakSeconds ~/ 60} min. Aprovecha para estirarte y tomar agua.',
+                    ? '${kLongBreakSeconds ~/ 60} min. Tómatelos sin pensar en lo que sigue.'
+                    : '${kShortBreakSeconds ~/ 60} min. Estírate, toma agua y vuelve cuando quieras.',
                 style: TextStyle(
                   color: style.ink,
                   fontSize: AppType.sizeLabel,

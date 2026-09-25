@@ -29,6 +29,11 @@ interface EditTaskPayload {
   title: string;
 }
 
+interface ReorderTasksPayload {
+  roomId: string;
+  taskIds: string[];
+}
+
 const STATE_ORDER = ['PENDING', 'IN_PROGRESS', 'COMPLETED'] as const;
 const MAX_TASK_TITLE_LENGTH = 100;
 
@@ -208,6 +213,46 @@ export function registerTaskHandler(io: Server, socket: Socket): void {
       await sendTaskSync(io, roomId, room.toObject().tasks);
     } catch (error) {
       console.error('[tasks] Error in edit_task:', error);
+    }
+  });
+
+  socket.on('reorder_tasks', async (payload: ReorderTasksPayload) => {
+    try {
+      const { roomId, taskIds } = payload;
+
+      if (
+        !roomId ||
+        !Array.isArray(taskIds) ||
+        taskIds.some((id) => typeof id !== 'string')
+      ) {
+        return;
+      }
+
+      const room = await RoomModel.findOne({ roomId });
+      if (!room) return;
+
+      // El cliente envía el orden que ve. Las tareas que no menciona (por
+      // ejemplo, agregadas por otro usuario mientras arrastraba) se conservan
+      // al final; los ids desconocidos se ignoran.
+      const current = room.toObject().tasks;
+      const byId = new Map(current.map((task) => [task.taskId, task]));
+      const ordered: TaskSubDoc[] = [];
+      for (const id of taskIds) {
+        const task = byId.get(id);
+        if (task) {
+          ordered.push(task);
+          byId.delete(id);
+        }
+      }
+      ordered.push(...byId.values());
+
+      room.set('tasks', ordered);
+      await room.save();
+
+      console.log(`[tasks] Tareas reordenadas en ${roomId}`);
+      await sendTaskSync(io, roomId, room.toObject().tasks);
+    } catch (error) {
+      console.error('[tasks] Error in reorder_tasks:', error);
     }
   });
 

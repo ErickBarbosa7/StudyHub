@@ -136,6 +136,30 @@ class TaskNotifier extends StateNotifier<TaskState> {
     });
   }
 
+  /// Reordena localmente (respuesta inmediata) y avisa al servidor, que
+  /// confirma con `task_sync`. [newIndex] ya viene ajustado, como en
+  /// `ReorderableListView.onReorderItem`.
+  void reorderTasks(int oldIndex, int newIndex) {
+    final roomId = _roomId;
+    if (roomId == null) {
+      state = state.copyWith(error: 'No se pudo reordenar las tareas.');
+      return;
+    }
+
+    final tasks = List<Task>.of(state.tasks);
+    if (oldIndex < 0 || oldIndex >= tasks.length) return;
+    newIndex = newIndex.clamp(0, tasks.length - 1);
+    if (newIndex == oldIndex) return;
+
+    tasks.insert(newIndex, tasks.removeAt(oldIndex));
+    state = state.copyWith(tasks: tasks);
+
+    _socketService.emit('reorder_tasks', {
+      'roomId': roomId,
+      'taskIds': tasks.map((t) => t.taskId).toList(),
+    });
+  }
+
   void editTask(String taskId, String newTitle) {
     final roomId = _roomId;
     if (roomId == null || newTitle.trim().isEmpty) {
