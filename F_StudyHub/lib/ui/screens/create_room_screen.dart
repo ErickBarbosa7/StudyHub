@@ -5,24 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme.dart';
 import '../../data/models/user_model.dart';
-import '../../logic/chat_provider.dart';
 import '../../logic/onboarding_provider.dart';
 import '../../logic/pomodoro_provider.dart';
 import '../../logic/room_provider.dart';
 import '../../logic/task_provider.dart';
 import '../../data/services/sound_service.dart';
-import '../widgets/chat_box.dart';
 import '../widgets/connection_banner.dart';
-import '../widgets/pomodoro_timer.dart';
-import '../widgets/folder_tabs.dart';
-import '../widgets/mascot/mascot_bubble.dart';
+import '../room/room_workspace.dart';
 import '../widgets/mascot/onboarding_tour.dart';
-import '../widgets/qr_display.dart';
 import '../widgets/qr_scanner.dart';
-import '../widgets/task_list.dart';
 
 enum _FormMode { create, join }
 
@@ -390,8 +385,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           showCustomNotification(
             context,
             title: '$titlePrefix ${next.lastAddedTaskTitle ?? 'Agregada'}',
-            icon: Icons.add_task_rounded,
-            iconColor: kColorGold,
+            icon: LucideIcons.listPlus,
+            iconColor: kRoomStudy,
           );
           ref.read(taskProvider.notifier).consumeNewTask();
         });
@@ -402,22 +397,33 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       if (next.isFinished && !(previous?.isFinished ?? false)) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
+          final breakEnded = next.finishedMode != null &&
+              next.finishedMode != kModeFocus;
           showCustomNotification(
             context,
-            title: '¡Tiempo completado! Tómate un descanso.',
-            icon: Icons.alarm_on_rounded,
+            title: breakEnded
+                ? 'Descanso terminado. ¡De vuelta al estudio!'
+                : '¡Tiempo completado! Tu descanso está listo.',
+            icon: breakEnded ? LucideIcons.bookOpen : LucideIcons.coffee,
+            iconColor: breakEnded ? kRoomStudy : kRoomBreak,
           );
         });
       }
       
-      if (next.isRunning && !(previous?.isRunning ?? false)) {
+      // También avisa si la flecha cambió de fase con el reloj corriendo.
+      final phaseChangedWhileRunning =
+          next.isRunning && previous != null && previous.mode != next.mode;
+      if ((next.isRunning && !(previous?.isRunning ?? false)) ||
+          phaseChangedWhileRunning) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           showCustomNotification(
             context,
-            title: 'Pomodoro iniciado. ¡A concentrarse!',
-            icon: Icons.timer_rounded,
-            iconColor: kColorDeepSage,
+            title: next.isBreak
+                ? 'Descanso iniciado. ¡Relájate!'
+                : 'Pomodoro iniciado. ¡A concentrarse!',
+            icon: next.isBreak ? LucideIcons.coffee : LucideIcons.timer,
+            iconColor: next.isBreak ? kRoomBreak : kRoomStudy,
           );
         });
       }
@@ -430,8 +436,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         _leaveRoom();
       },
       child: Scaffold(
-        backgroundColor: kColorPaper,
-        appBar: AppBar(
+        backgroundColor: inRoom ? kRoomBg : kColorPaper,
+        appBar: inRoom
+            ? null
+            : AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           iconTheme: const IconThemeData(color: kColorInk),
@@ -442,7 +450,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 context,
                 ref.read(onboardingProvider.notifier),
               ),
-              icon: const Icon(Icons.help_outline_rounded, size: 20),
+              icon: const Icon(LucideIcons.circleHelp, size: 20),
               label: const Text('¿Cómo funciona?'),
               style: TextButton.styleFrom(
                 foregroundColor: kColorTextSecondary,
@@ -451,15 +459,19 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             ),
           ],
         ),
-        body: Column(
-          children: [
-            const ConnectionBanner(),
-            Expanded(
-              child: inRoom
-                  ? _buildWorkspace(roomState)
-                  : _buildCreateForm(roomState),
-            ),
-          ],
+        body: SafeArea(
+          top: inRoom,
+          bottom: false,
+          child: Column(
+            children: [
+              const ConnectionBanner(),
+              Expanded(
+                child: inRoom
+                    ? _buildWorkspace(roomState)
+                    : _buildCreateForm(roomState),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -496,14 +508,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
                   color: kColorCard,
-                  borderRadius: BorderRadius.circular(32),
-                  boxShadow: [
-                    BoxShadow(
-                      color: kColorTintedShadow,
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                  border: Border.all(color: kColorBorder),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: Form(
                   key: _formKey,
@@ -520,7 +526,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                         controller: _userNameController,
                         label: 'Tu nombre',
                         hint: 'ej. Ana',
-                        icon: Icons.person_outline_rounded,
+                        icon: LucideIcons.user,
                         maxLength: _maxUserNameLength,
                       ),
 
@@ -531,7 +537,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                           controller: _roomNameController,
                           label: 'Nombre de la sala',
                           hint: 'ej. Sesión de Física',
-                          icon: Icons.meeting_room_rounded,
+                          icon: LucideIcons.doorOpen,
                           textCapitalization: TextCapitalization.sentences,
                           keyboardType: TextInputType.text,
                           maxLength: _maxRoomNameLength,
@@ -551,7 +557,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                               }
                             },
                             icon: const Icon(
-                              Icons.qr_code_scanner_rounded,
+                              LucideIcons.scanQrCode,
                               size: 22,
                             ),
                             label: const Text(
@@ -579,8 +585,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                               ? const SizedBox.shrink()
                               : Icon(
                                   _mode == _FormMode.create
-                                      ? Icons.add_rounded
-                                      : Icons.login_rounded,
+                                      ? LucideIcons.plus
+                                      : LucideIcons.logIn,
                                 ),
                           label: roomState.isCreating
                               ? const SizedBox(
@@ -733,8 +739,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       children: [
         Icon(
           isCreate
-              ? Icons.info_outline_rounded
-              : Icons.lightbulb_outline_rounded,
+              ? LucideIcons.info
+              : LucideIcons.lightbulb,
           size: 16,
           color: kColorTextSecondary,
         ),
@@ -819,363 +825,16 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   }
 
   Widget _buildWorkspace(RoomState roomState) {
-    final bool compact = MediaQuery.sizeOf(context).width < 600;
-    final bool isWide = MediaQuery.sizeOf(context).width >= 800;
-    return Column(
-      children: [
-        _buildUsersHeader(roomState),
-        
-        Expanded(
-          child: DefaultTabController(
-            length: 2,
-            child: Stack(
-              children: [
-                // Unified Content Container
-                Positioned.fill(
-                  top: 56, // Height of the tabs
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: kColorCard,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(0), // flush with the tabs
-                        bottom: Radius.circular(0),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: kColorTintedShadow,
-                          blurRadius: 24,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: TabBarView(
-                      children: [
-                        _StudyTabContent(
-                          isWide: isWide,
-                          compact: compact,
-                        ),
-                      Builder(
-                        builder: (context) {
-                          final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-                          final padding = EdgeInsets.fromLTRB(
-                            compact ? 16 : 24,
-                            compact ? 16 : 24,
-                            compact ? 16 : 24,
-                            bottomInset > 0 ? 8 : (compact ? 16 : 24),
-                          );
-
-                          final hasTasks = ref.watch(
-                            taskProvider.select((s) => s.tasks.isNotEmpty),
-                          );
-
-                          if (isWide && hasTasks) {
-                            return Padding(
-                              padding: padding,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Expanded(
-                                    flex: 7,
-                                    child: ChatBox(),
-                                  ),
-                                  Container(
-                                    width: 1,
-                                    margin: const EdgeInsets.symmetric(horizontal: 24),
-                                    color: kColorBorder,
-                                  ),
-                                  const Expanded(
-                                    flex: 3,
-                                    child: _AllTasksSidePanel(),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          return Padding(
-                            padding: padding,
-                            child: const ChatBox(),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                ), // Closes Positioned.fill(child: Container)
-                // Tabs paint ON TOP of the container to cover the shadow seam!
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 56,
-                  child: Builder(
-                    builder: (context) {
-                      final tabController = DefaultTabController.of(context);
-                      return AnimatedBuilder(
-                        animation: tabController,
-                        builder: (context, child) {
-                          return FolderTabs(
-                            currentIndex: tabController.index,
-                            firstTab: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [Icon(Icons.alarm_rounded), SizedBox(width: 8), Text('Estudio')],
-                            ),
-                            secondTab: const _ChatTabBadge(),
-                            onChanged: (index) {
-                              tabController.animateTo(index);
-                            },
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoomCodePill(String roomId) {
-    final bool compact = MediaQuery.sizeOf(context).width < 600;
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 16,
-        vertical: compact ? 8 : 10,
-      ),
-      decoration: BoxDecoration(
-        color: kColorCard,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: kColorTintedShadow,
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Código:',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: kColorTextSecondary,
-              fontWeight: AppType.weightSemiBold,
-            ),
-          ),
-          SizedBox(width: compact ? 6 : 8),
-          Text(
-            roomId,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: kColorInk,
-              fontWeight: AppType.weightBold,
-              letterSpacing: 1.2,
-            ),
-          ),
-          SizedBox(width: compact ? 12 : 16),
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () async {
-                await Clipboard.setData(ClipboardData(text: roomId));
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Código $roomId copiado al portapapeles'),
-                  ),
-                );
-              },
-              child: Icon(
-                Icons.copy_rounded,
-                size: compact ? 16 : 18,
-                color: kColorTextSecondary,
-              ),
-            ),
-          ),
-        ],
+    return RoomWorkspace(
+      onLeave: _leaveRoom,
+      onKick: _showKickDialog,
+      onHelp: () => showOnboardingTour(
+        context,
+        ref.read(onboardingProvider.notifier),
       ),
     );
   }
 
-  Widget _buildQrBtn(String roomId) {
-    final bool compact = MediaQuery.sizeOf(context).width < 600;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => QrDisplaySheet.show(context, roomId),
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: kColorSageSoft,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            Icons.qr_code_2_rounded,
-            size: compact ? 22 : 26,
-            color: kColorDeepSage,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUsersHeader(RoomState roomState) {
-    final room = roomState.room;
-    final bool compact = MediaQuery.sizeOf(context).width < 600;
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        compact ? 16 : 24,
-        compact ? 6 : 8,
-        compact ? 16 : 24,
-        compact ? 24 : 32,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (room != null) ...[
-            Text(
-              room.name,
-              style: const TextStyle(
-                fontSize: 32, // Large and prominent
-                fontWeight: AppType.weightBold,
-                color: kColorInk,
-                letterSpacing: -0.5,
-                height: 1.1,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            SizedBox(height: compact ? 12 : 16),
-          ],
-          Row(
-            children: [
-              if (room != null) _buildRoomCodePill(room.roomId),
-              if (room != null) SizedBox(width: compact ? 8 : 12),
-              if (room != null) _buildQrBtn(room.roomId),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: kColorSageSoft,
-                  borderRadius: BorderRadius.circular(12), // matched QR radius
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.people_rounded,
-                      size: compact ? 22 : 26, // matched QR size
-                      color: kColorDeepSage,
-                    ),
-                    SizedBox(width: compact ? 6 : 8),
-                    Text(
-                      '${roomState.users.length}',
-                      style: TextStyle(
-                        color: kColorDeepSage,
-                        fontWeight: AppType.weightBold,
-                        fontSize: compact ? 16 : 18,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: compact ? 8 : 12),
-          if (roomState.users.isEmpty)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Esperando a que tu equipo se una...',
-                  style: AppType.secondaryItalic(size: AppType.sizeCaption),
-                ),
-                const SizedBox(height: 4),
-                const MascotTip(
-                  compact: true,
-                  message:
-                      'Comparte el código o el QR de la sala para que entren tus amigos.',
-                ),
-              ],
-            )
-          else
-            SizedBox(
-              height: compact ? 40 : 44,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: roomState.users.length,
-                separatorBuilder: (context, index) =>
-                    SizedBox(width: compact ? 8 : 10),
-                itemBuilder: (context, index) {
-                  final user = roomState.users[index];
-                  final bool isHost = room?.hostId == user.id;
-                  final bool isLocal = roomState.localUser?.id == user.id;
-                  final bool canKick =
-                      !isHost &&
-                      !isLocal &&
-                      room?.hostId == roomState.localUser?.id;
-
-                  return GestureDetector(
-                    onLongPress: canKick ? () => _showKickDialog(user) : null,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: compact ? 14 : 18,
-                        vertical: compact ? 8 : 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isHost ? kColorGoldSoft : kColorSageSoft,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isHost ? kColorGold : kColorDeepSage,
-                            ),
-                          ),
-                          SizedBox(width: compact ? 8 : 10),
-                          Text(
-                            user.name,
-                            style: TextStyle(
-                              color: kColorInk,
-                              fontWeight: AppType.weightSemiBold,
-                              fontSize: compact
-                                  ? AppType.sizeBody
-                                  : AppType.sizeBodyMedium,
-                            ),
-                          ),
-                          if (isHost) ...[
-                            SizedBox(width: compact ? 4 : 6),
-                            Icon(
-                              Icons.workspace_premium_rounded,
-                              size: 14,
-                              color: kColorGold,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // --- WIDGET ACTUALIZADO ---
   Widget _buildOrganicTextField({
     required TextEditingController controller,
     required String label,
@@ -1237,240 +896,5 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         return null;
       },
     );
-  }
-}
-
-class _ChatTabBadge extends ConsumerStatefulWidget {
-  const _ChatTabBadge();
-
-  @override
-  ConsumerState<_ChatTabBadge> createState() => _ChatTabBadgeState();
-}
-
-class _ChatTabBadgeState extends ConsumerState<_ChatTabBadge> {
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final controller = DefaultTabController.of(context);
-    controller.removeListener(_onTabChange);
-    controller.addListener(_onTabChange);
-  }
-
-  @override
-  void dispose() {
-    DefaultTabController.of(context).removeListener(_onTabChange);
-    super.dispose();
-  }
-
-  void _onTabChange() {
-    if (!mounted) return;
-    ref
-        .read(chatProvider.notifier)
-        .setChatVisible(DefaultTabController.of(context).index == 1);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final unreadCount = ref.watch(chatProvider.select((s) => s.unreadCount));
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.forum_rounded),
-            SizedBox(width: 8),
-            Text('Chat de equipo'),
-          ],
-        ),
-        if (unreadCount > 0)
-          Positioned(
-            top: -2,
-            right: -8,
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: kColorError,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _AllTasksSidePanel extends ConsumerWidget {
-  const _AllTasksSidePanel();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tasks = ref.watch(taskProvider.select((s) => s.tasks));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Tareas',
-          style: TextStyle(
-            fontSize: AppType.sizeTitle,
-            fontWeight: AppType.weightBold,
-            color: kColorInk,
-          ),
-        ),
-        const SizedBox(height: 16),
-        if (tasks.isEmpty)
-          const Text(
-            'No hay tareas creadas.',
-            style: TextStyle(color: kColorTextSecondary),
-          )
-        else
-          Expanded(
-            child: ListView.separated(
-              itemCount: tasks.length,
-              separatorBuilder: (context, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final task = tasks[index];
-                final isDone = task.stateCode == 'COMPLETED';
-                final isInProgress = task.stateCode == 'IN_PROGRESS';
-
-                final baseColor = isDone
-                    ? kColorTextSecondary
-                    : (isInProgress ? kColorDeepSage : kColorInk);
-                final bgColor = isDone
-                    ? kColorPaper
-                    : (isInProgress ? kColorSageSoft : Colors.transparent);
-                final borderColor = isDone
-                    ? kColorBorder
-                    : (isInProgress ? kColorDeepSage : kColorBorder);
-                final icon = isDone
-                    ? Icons.check_circle_rounded
-                    : (isInProgress ? Icons.play_circle_outline_rounded : Icons.radio_button_unchecked_rounded);
-
-                // Colores vivos SOLO para la etiqueta del estado
-                final pillColor = isDone
-                    ? kColorStateDone
-                    : (isInProgress ? kColorStateInProgress : kColorStatePending);
-
-                return MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Material(
-                    color: Colors.transparent,
-                    clipBehavior: Clip.antiAlias,
-                    borderRadius: BorderRadius.circular(16),
-                    child: InkWell(
-                      onTap: () {
-                        DefaultTabController.of(context).animateTo(0);
-                      },
-                      hoverColor: baseColor.withValues(alpha: 0.1),
-                      splashColor: baseColor.withValues(alpha: 0.2),
-                      highlightColor: baseColor.withValues(alpha: 0.1),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: borderColor, width: isInProgress ? 1.5 : 1.0),
-                          borderRadius: BorderRadius.circular(16),
-                          color: bgColor,
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(icon, color: baseColor, size: 20),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                task.title,
-                                style: TextStyle(
-                                  fontWeight: isDone ? AppType.weightMedium : AppType.weightSemiBold,
-                                  color: baseColor,
-                                  decoration: isDone ? TextDecoration.lineThrough : null,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: pillColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                task.stateLabel,
-                                style: TextStyle(
-                                  fontSize: AppType.sizeCaption,
-                                  fontWeight: AppType.weightSemiBold,
-                                  color: pillColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-
-
-
-
-class _StudyTabContent extends StatefulWidget {
-  const _StudyTabContent({required this.isWide, required this.compact});
-  final bool isWide;
-  final bool compact;
-
-  @override
-  State<_StudyTabContent> createState() => _StudyTabContentState();
-}
-
-class _StudyTabContentState extends State<_StudyTabContent> with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    if (widget.isWide) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 1,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: const PomodoroTimer(),
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: const TaskList(),
-            ),
-          ),
-        ],
-      );
-    } else {
-      return SingleChildScrollView(
-        padding: EdgeInsets.all(widget.compact ? 16 : 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: const [
-            PomodoroTimer(),
-            SizedBox(height: 16),
-            TaskList(),
-          ],
-        ),
-      );
-    }
   }
 }

@@ -152,10 +152,11 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 
 ##### Dominio: Pomodoro (Regla: El Servidor es la Fuente Única de Verdad)
 
-- *(Emite Cliente)* `pomodoro_action`: `{ roomId, action: 'START' | 'PAUSE' | 'RESET', duration?: number }`.
-- *(Backend Logic)* El servidor gestiona un mapa en memoria `Map<roomId, NodeJS.Timeout>`. Maneja el `setInterval` de 1000ms. `duration` es opcional (default 30 min = 1800s).
-- *(Emite Servidor)* `timer_tick`: `{ roomId, timeRemaining: number, totalSeconds: number, status: string }`. Flutter **solo** dibuja este `timeRemaining`.
-- *(Emite Servidor)* `pomodoro_finished`: `{ roomId, totalSeconds: number }` -> Emite cuando el timer llega a 0.
+- *(Emite Cliente)* `pomodoro_action`: `{ roomId, action: 'START' | 'PAUSE' | 'RESET' | 'SKIP' | 'SET_MODE', duration?: number, mode?: 'FOCUS' | 'SHORT_BREAK' | 'LONG_BREAK' }`.
+- *(Backend Logic)* El servidor gestiona un mapa en memoria `Map<roomId, PomodoroSession>`. Maneja el `setInterval` de 1000ms. `duration` es opcional (default 30 min = 1800s) y solo aplica en modo `FOCUS`; los descansos son fijos (corto 5 min, largo 15 min).
+- *(Modos / Descansos)* Al terminar una fase el servidor prepara la siguiente **en pausa**: estudio -> descanso corto (cada 4 rondas, descanso largo); descanso -> estudio. `SKIP` (flecha ⏭) adelanta a la siguiente fase y, si el reloj corría, la inicia de inmediato. `SET_MODE` cambia de modo manualmente (pausa el reloj).
+- *(Emite Servidor)* `timer_tick`: `{ roomId, timeRemaining: number, totalSeconds: number, status: string, mode: string, completedFocus: number }`. Flutter **solo** dibuja este `timeRemaining`.
+- *(Emite Servidor)* `pomodoro_finished`: `{ roomId, totalSeconds: number, mode: string }` -> Emite cuando el timer llega a 0 (`mode` = fase que terminó).
 
 ##### Matriz Completa de Eventos
 
@@ -181,6 +182,15 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 | `timer_tick` | -- | EMIT (broadcast sala) |
 | `pomodoro_finished` | -- | EMIT (broadcast sala) |
 
+##### Sala rediseñada (paleta "Estudio" + iconos Lucide)
+
+- `lib/ui/room/room_workspace.dart`: contenedor de la sala. Elige distribución por ancho (`RoomLayout`): **wide** ≥1100 (reloj · tareas · chat), **tablet** ≥700 (reloj + pestañas Tareas/Chat), **phone** (navegación inferior Foco/Tareas/Chat + mini reloj). El chat se puede ocultar (pref `chat_hidden`).
+- `lib/ui/room/room_header.dart`: barra superior (salir, nombre, código, QR, avatares, chat, ayuda) y hoja de miembros/invitación (`showRoomMembersSheet`, aquí el anfitrión expulsa).
+- `lib/ui/room/room_widgets.dart`: `RoomCard`, `RoomIconButton`, `RoomChip`, `RoomAvatar`, `RoomLayout`.
+- Paleta de la sala: constantes `kRoom*` en `theme.dart` (un color por modo: estudio verde azulado, descanso corto ámbar, largo índigo). Los `kColor*` de toda la app apuntan a esa paleta; el valor anterior ("Focus & Paper") quedó comentado junto a cada constante (`// antes: ...`). Sin chat en laptop, reloj y tareas ocupan 50/50.
+- Iconos: paquete `lucide_icons_flutter` (`LucideIcons.*`) en la sala.
+- `PomodoroTimer`, `TaskList` y `ChatBox` ya no dibujan su propia tarjeta: van dentro de `RoomCard`. Requieren alto acotado.
+
 #### 6. PROVIDERS Y ESTADO (RIVERPod)
 
 | Provider | StateNotifier | State Fields | Archivo |
@@ -188,7 +198,7 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 | `roomProvider` | `RoomNotifier` | `room: Room?`, `localUser: User?`, `users: List<User>`, `isCreating: bool`, `isRestoring: bool`, `error: String?` | `room_provider.dart` |
 | `chatProvider` | `ChatNotifier` | `messages: List<Message>`, `isLoadingHistory: bool`, `error: String?`, `unreadCount: int` | `chat_provider.dart` |
 | `taskProvider` | `TaskNotifier` | `tasks: List<Task>`, `error: String?`, `newTaskCount: int`, `lastAddedTaskTitle: String?` | `task_provider.dart` |
-| `pomodoroProvider` | `PomodoroNotifier` | `timeRemaining: int` (1800), `totalSeconds: int` (1800), `status: String` ('PAUSED'), `isFinished: bool` | `pomodoro_provider.dart` |
+| `pomodoroProvider` | `PomodoroNotifier` | `timeRemaining: int` (1800), `totalSeconds: int` (1800), `status: String` ('PAUSED'), `isFinished: bool`, `mode: String` ('FOCUS'), `completedFocus: int` (0), `finishedMode: String?` | `pomodoro_provider.dart` |
 | `socketServiceProvider` | -- (Provider) | `WebSocketService` | `socket_provider.dart` |
 | `soundProvider` | `SoundNotifier` | `isEnabled: bool` (true) | `sound_service.dart` |
 

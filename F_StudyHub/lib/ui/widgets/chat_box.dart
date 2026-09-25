@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme.dart';
 import '../../data/models/message_model.dart';
 import '../../logic/chat_provider.dart';
 import '../../logic/room_provider.dart';
-import 'help_icon.dart';
+import '../room/room_widgets.dart';
 
+/// Chat de la sala. Necesita alto acotado: la lista hace scroll por dentro.
 class ChatBox extends ConsumerStatefulWidget {
-  const ChatBox({super.key});
+  const ChatBox({super.key, this.showTitle = true});
+
+  /// Sin título cuando una pestaña ya dice "Chat".
+  final bool showTitle;
 
   @override
   ConsumerState<ChatBox> createState() => _ChatBoxState();
@@ -52,7 +57,9 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
     final chatState = ref.watch(chatProvider);
     final messages = chatState.messages;
     final isLoadingHistory = chatState.isLoadingHistory;
-    final localUserId = ref.watch(roomProvider.select((s) => s.localUser?.id ?? ''));
+    final localUserId = ref.watch(
+      roomProvider.select((s) => s.localUser?.id ?? ''),
+    );
 
     if (chatState.messages.length > _lastMessageCount) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -73,194 +80,159 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
       }
     });
 
-    final double padding = MediaQuery.sizeOf(context).width < 600 ? 16 : 24;
-    final bool compact = MediaQuery.sizeOf(context).width < 600;
-    final double bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final messagesArea = isLoadingHistory
+        ? const Center(
+            child: SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: kRoomStudy,
+              ),
+            ),
+          )
+        : messages.isEmpty
+        ? const _EmptyChat()
+        : ListView.builder(
+            controller: _scrollController,
+            itemCount: messages.length,
+            itemBuilder: (context, index) => _MessageBubble(
+              message: messages[index],
+              isOwn: messages[index].isOwn(localUserId),
+            ),
+          );
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        padding,
-        padding,
-        padding,
-        padding + bottomInset,
-      ),
-      decoration: const BoxDecoration(color: Colors.transparent),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.forum_rounded,
-                color: kColorDeepSage,
-                size: compact ? 24 : 28,
-              ),
-              SizedBox(width: compact ? 12 : 16),
-              Expanded(
-                child: Text(
-                  'Chat',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: kColorInk,
-                    fontWeight: AppType.weightSemiBold,
-                    fontSize: compact ? AppType.sizeTitle : null,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Con muy poco alto (celular horizontal) todo el panel hace scroll.
+        final bool tight =
+            constraints.hasBoundedHeight && constraints.maxHeight < 320;
+        final column = Column(
+          mainAxisSize: tight ? MainAxisSize.min : MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (widget.showTitle) ...[
+              const Row(
+                children: [
+                  Icon(LucideIcons.messageSquare, size: 20, color: kRoomStudy),
+                  SizedBox(width: 10),
+                  Text(
+                    'Chat',
+                    style: TextStyle(
+                      color: kRoomInk,
+                      fontSize: AppType.sizeTitle - 2,
+                      fontWeight: AppType.weightBold,
+                    ),
                   ),
-                ),
+                ],
               ),
-              HelpIcon(
-                title: 'Chat del equipo',
-                description: 'Habla con tu equipo aquí. Todos los mensajes se borran al salir de la sala.',
-                compact: compact,
-              ),
+              const SizedBox(height: 16),
             ],
-          ),
-          SizedBox(height: compact ? 16 : 24),
-
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              decoration: BoxDecoration(
-                color: kColorPaper,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: isLoadingHistory
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(
-                            width: 32,
-                            height: 32,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: kColorDeepSage,
-                            ),
-                          ),
-                          SizedBox(height: compact ? 10 : 14),
-                          Text(
-                            'Cargando historial del chat...',
-                            style: AppType.secondaryItalic(
-                              size: compact
-                                  ? AppType.sizeBody
-                                  : AppType.sizeBodyMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : messages.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.chat_bubble_outline_rounded,
-                            size: compact ? 32 : 40,
-                            color: kColorSage,
-                          ),
-                          SizedBox(height: compact ? 8 : 12),
-                          Text(
-                            'Todavía no hay mensajes.\n¡Inicia la conversación!',
-                            textAlign: TextAlign.center,
-                            style: AppType.secondaryItalic(
-                              size: compact
-                                  ? AppType.sizeBody
-                                  : AppType.sizeBodyMedium,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) => _MessageBubble(
-                        message: messages[index],
-                        isOwn: messages[index].isOwn(localUserId),
-                      ),
-                    ),
-            ),
-          ),
-          SizedBox(height: compact ? 12 : 16),
-
-          Form(
-            key: _formKey,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _messageController,
-                    textCapitalization: TextCapitalization.sentences,
-                    style: const TextStyle(color: kColorInk),
-                    maxLength: 1000,
-                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
-                    decoration: InputDecoration(
-                      counterText: '',
-                      labelText: 'Escribe un mensaje',
-                      hintText: 'ej. ¿Listos para estudiar?',
-                      labelStyle: const TextStyle(color: kColorTextSecondary),
-                      hintStyle: TextStyle(
-                        color: kColorTextSecondary.withValues(alpha: 0.5),
-                      ),
-                      filled: true,
-                      fillColor: kColorPaper,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: compact ? 16 : 24,
-                        vertical: compact ? 14 : 18,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(
-                          color: kColorDeepSage,
+            tight
+                ? SizedBox(height: 220, child: messagesArea)
+                : Expanded(child: messagesArea),
+            const SizedBox(height: 12),
+            Form(
+              key: _formKey,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _messageController,
+                      textCapitalization: TextCapitalization.sentences,
+                      style: const TextStyle(color: kRoomInk, fontSize: 15),
+                      maxLength: 1000,
+                      maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                      decoration: InputDecoration(
+                        counterText: '',
+                        hintText: 'Escribe un mensaje',
+                        hintStyle: const TextStyle(color: kRoomMuted),
+                        filled: true,
+                        fillColor: kRoomSurface,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 17,
+                        ),
+                        border: _fieldBorder(kRoomLine),
+                        enabledBorder: _fieldBorder(kRoomLine),
+                        focusedBorder: _fieldBorder(kRoomStudy, width: 1.5),
+                        errorBorder: _fieldBorder(kRoomError),
+                        focusedErrorBorder: _fieldBorder(
+                          kRoomError,
                           width: 1.5,
                         ),
                       ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(
-                          color: kColorErrorBorder,
-                          width: 1.5,
-                        ),
-                      ),
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                          ? 'Escribe algo antes de enviar'
+                          : null,
+                      onFieldSubmitted: (_) => _send(),
                     ),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? '¡Escribe algo antes de enviar!'
-                        : null,
-                    onFieldSubmitted: (_) => _send(),
                   ),
-                ),
-                SizedBox(width: compact ? 8 : 12),
-                SizedBox(
-                  height: compact ? 48 : 56,
-                  width: compact ? 48 : 56,
-                  child: ElevatedButton(
+                  const SizedBox(width: 10),
+                  RoomIconButton(
+                    size: 52,
+                    iconSize: 20,
+                    icon: LucideIcons.send,
+                    tooltip: 'Enviar',
+                    foreground: Colors.white,
+                    background: kRoomStudy,
+                    bordered: false,
                     onPressed: _send,
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      backgroundColor: kColorDeepSage,
-                      foregroundColor: kColorPaper,
-                      elevation: 0,
-                    ),
-                    child: Icon(Icons.send_rounded, size: compact ? 20 : 24),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        );
+        return tight ? SingleChildScrollView(child: column) : column;
+      },
+    );
+  }
+
+  OutlineInputBorder _fieldBorder(Color color, {double width = 1}) {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(color: color, width: width),
+    );
+  }
+}
+
+class _EmptyChat extends StatelessWidget {
+  const _EmptyChat();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.messageSquare, size: 28, color: kRoomDisabled),
+            SizedBox(height: 12),
+            Text(
+              'Aún no hay mensajes. Saluda al equipo o comparte un enlace.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: kRoomMuted,
+                fontSize: AppType.sizeBody,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'Los mensajes se borran al salir de la sala.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: kRoomMuted,
+                fontSize: AppType.sizeCaption,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -277,53 +249,50 @@ class _MessageBubble extends StatelessWidget {
     return Align(
       alignment: isOwn ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-        constraints: const BoxConstraints(maxWidth: 280),
+        margin: const EdgeInsets.symmetric(vertical: 5),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+        constraints: const BoxConstraints(maxWidth: 320),
         decoration: BoxDecoration(
-          color: isOwn ? kColorDeepSage : kColorSageSoft,
+          color: isOwn ? kRoomStudy : kRoomTrack,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(isOwn ? 20 : 4),
-            topRight: Radius.circular(isOwn ? 4 : 20),
-            bottomLeft: const Radius.circular(20),
-            bottomRight: const Radius.circular(20),
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isOwn ? 16 : 4),
+            bottomRight: Radius.circular(isOwn ? 4 : 16),
           ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: Text(
-                isOwn ? 'Tú' : message.senderName,
-                style: TextStyle(
-                  color: isOwn
-                      ? kColorPaper.withValues(alpha: 0.75)
-                      : kColorDeepSage,
-                  fontWeight: AppType.weightBold,
-                  fontSize: AppType.sizeCaption,
+            if (!isOwn)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Text(
+                  message.senderName,
+                  style: const TextStyle(
+                    color: kRoomMuted,
+                    fontWeight: AppType.weightSemiBold,
+                    fontSize: AppType.sizeCaption,
+                  ),
                 ),
               ),
-            ),
             Text(
               message.text,
               style: TextStyle(
-                color: isOwn ? kColorPaper : kColorInk,
-                height: 1.3,
+                color: isOwn ? Colors.white : kRoomInk,
+                fontSize: AppType.sizeBody,
+                height: 1.4,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Align(
               alignment: Alignment.centerRight,
               child: Text(
                 _formatHour(message.timestamp),
                 style: TextStyle(
-                  color: isOwn
-                      ? kColorPaper.withValues(alpha: 0.75)
-                      : kColorTextSecondary,
+                  color: isOwn ? const Color(0xB3FFFFFF) : kRoomMuted,
                   fontSize: AppType.sizeMicro,
                   fontFamily: kFontFamilyMono,
-                  fontVariations: const [AppType.italicSlant],
                 ),
               ),
             ),

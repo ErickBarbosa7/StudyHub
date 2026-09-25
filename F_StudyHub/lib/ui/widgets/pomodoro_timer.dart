@@ -1,278 +1,540 @@
-import "package:shared_preferences/shared_preferences.dart";
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme.dart';
 import '../../data/services/sound_service.dart';
 import '../../logic/pomodoro_provider.dart';
-import 'help_icon.dart';
+import '../room/room_widgets.dart';
 
 const _durationPresets = [5 * 60, 15 * 60, 30 * 60];
 
 const _kMinCustomMinutes = 1;
 const _kMaxCustomMinutes = 180;
 
-class PomodoroTimer extends ConsumerStatefulWidget {
-  const PomodoroTimer({super.key});
+/// Colores, textos e icono de cada modo del reloj.
+class _ModeStyle {
+  const _ModeStyle({
+    required this.mode,
+    required this.accent,
+    required this.soft,
+    required this.ink,
+    required this.label,
+    required this.icon,
+  });
 
-  @override
-  ConsumerState<PomodoroTimer> createState() => _PomodoroTimerState();
+  final String mode;
+  final Color accent;
+  final Color soft;
+  final Color ink;
+  final String label;
+  final IconData icon;
+
+  static const focus = _ModeStyle(
+    mode: kModeFocus,
+    accent: kRoomStudy,
+    soft: kRoomStudySoft,
+    ink: kRoomStudy,
+    label: 'Estudio',
+    icon: LucideIcons.bookOpen,
+  );
+  static const shortBreak = _ModeStyle(
+    mode: kModeShortBreak,
+    accent: kRoomBreak,
+    soft: kRoomBreakSoft,
+    ink: kRoomBreakInk,
+    label: 'Descanso corto',
+    icon: LucideIcons.coffee,
+  );
+  static const longBreak = _ModeStyle(
+    mode: kModeLongBreak,
+    accent: kRoomLong,
+    soft: kRoomLongSoft,
+    ink: kRoomLong,
+    label: 'Descanso largo',
+    icon: LucideIcons.moon,
+  );
+
+  static const all = [focus, shortBreak, longBreak];
+
+  static _ModeStyle of(String mode) => switch (mode) {
+    kModeShortBreak => shortBreak,
+    kModeLongBreak => longBreak,
+    _ => focus,
+  };
 }
 
-class _PomodoroTimerState extends ConsumerState<PomodoroTimer> {
-  bool _isExpanded = true;
-  bool _isFirstLoad = true;
-  static const _prefsKey = 'pomodoro_expanded';
+String _formatTime(int totalSeconds) {
+  final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
+  final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
+  return '$minutes:$seconds';
+}
+
+String _statusText(PomodoroState state) {
+  if (state.isFinished) {
+    return state.isBreak
+        ? 'Buen trabajo, tu descanso está listo'
+        : 'Descanso terminado. ¡A estudiar!';
+  }
+  if (!state.isRunning) {
+    return state.isBreak ? 'Descanso en pausa' : 'En pausa';
+  }
+  return switch (state.mode) {
+    kModeShortBreak => 'Estás en descanso',
+    kModeLongBreak => 'Descanso largo, te lo ganaste',
+    _ => 'Concentrándote',
+  };
+}
+
+/// Explica qué hará la flecha de adelantar.
+String _nextHint(PomodoroState state) {
+  if (state.isBreak) {
+    return 'Siguiente: volver a estudiar';
+  }
+  final isLong = (state.completedFocus + 1) % kFocusRoundsBeforeLong == 0;
+  return isLong
+      ? 'Siguiente: descanso largo · ${kLongBreakSeconds ~/ 60} min'
+      : 'Siguiente: descanso corto · ${kShortBreakSeconds ~/ 60} min';
+}
+
+/// Rondas de estudio hechas dentro del ciclo actual (0..4).
+int _roundsDone(PomodoroState state) {
+  final completed = state.completedFocus;
+  if (state.isBreak) {
+    return completed == 0 ? 0 : (completed - 1) % kFocusRoundsBeforeLong + 1;
+  }
+  return completed % kFocusRoundsBeforeLong;
+}
+
+/// Reloj Pomodoro de la sala. Con [showTitle] dibuja su propio encabezado
+/// (para usarlo dentro de una tarjeta); sin él, solo el contenido.
+class PomodoroTimer extends ConsumerWidget {
+  const PomodoroTimer({super.key, this.showTitle = true});
+
+  final bool showTitle;
 
   @override
-  void initState() {
-    super.initState();
-    _loadState();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(pomodoroProvider);
+    final notifier = ref.read(pomodoroProvider.notifier);
+    final style = _ModeStyle.of(state.mode);
+    // Los descansos tienen duración fija: no se envía duración al servidor.
+    final int? focusDuration = state.isBreak ? null : state.totalSeconds;
 
-  Future<void> _loadState() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      setState(() {
-        if (prefs.containsKey(_prefsKey)) {
-          _isExpanded = prefs.getBool(_prefsKey) ?? true;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double width = constraints.maxWidth;
+        final bool bounded =
+            constraints.hasBoundedHeight && constraints.maxHeight >= 460;
+
+        final dialSize = math.min(bounded ? 280.0 : 240.0, width);
+
+        final List<Widget> top = [
+          if (showTitle) ...[_Title(style: style), const SizedBox(height: 16)],
+          _ModeSelector(
+            selectedMode: state.mode,
+            enabled: !state.isRunning,
+            showIcons: width >= 400,
+            onSelected: notifier.setMode,
+          ),
+          const SizedBox(height: 12),
+          _Setup(state: state, style: style, onSelectDuration: notifier.reset),
+        ];
+
+        final dial = _Dial(size: dialSize, state: state, style: style);
+
+        final List<Widget> bottom = [
+          const SizedBox(height: 16),
+          _Controls(
+            state: state,
+            style: style,
+            onReset: () => notifier.reset(focusDuration),
+            onToggle: () {
+              if (state.isRunning) {
+                notifier.pause();
+              } else {
+                ref.read(soundProvider.notifier).unlock();
+                notifier.start(focusDuration);
+              }
+            },
+            onSkip: () {
+              ref.read(soundProvider.notifier).unlock();
+              notifier.skip();
+            },
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _nextHint(state),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: kRoomMuted,
+              fontSize: AppType.sizeLabel,
+            ),
+          ),
+        ];
+
+        if (bounded) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ...top,
+              // El reloj se encoge si falta alto, así nunca hay scroll.
+              Expanded(
+                child: Center(
+                  child: FittedBox(fit: BoxFit.scaleDown, child: dial),
+                ),
+              ),
+              ...bottom,
+            ],
+          );
         }
-        _isFirstLoad = false;
-      });
-    }
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ...top,
+              const SizedBox(height: 16),
+              Center(child: dial),
+              ...bottom,
+            ],
+          ),
+        );
+      },
+    );
   }
+}
 
-  Future<void> _toggleExpanded() async {
-    setState(() {
-      _isExpanded = !_isExpanded;
-      _isFirstLoad = false;
-    });
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_prefsKey, _isExpanded);
-  }
+class _Title extends StatelessWidget {
+  const _Title({required this.style});
 
-  String _formatTime(int totalSeconds) {
-    final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
-    final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
+  final _ModeStyle style;
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(pomodoroProvider);
-    final bool finished = state.isFinished;
-    final bool compact = MediaQuery.sizeOf(context).width < 600;
+    return Row(
+      children: [
+        Icon(LucideIcons.timer, size: 20, color: style.accent),
+        const SizedBox(width: 10),
+        const Expanded(
+          child: Text(
+            'Pomodoro',
+            style: TextStyle(
+              color: kRoomInk,
+              fontSize: AppType.sizeTitle - 2,
+              fontWeight: AppType.weightBold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
+/// Selector de modo: Estudio · Descanso corto · Descanso largo.
+class _ModeSelector extends StatelessWidget {
+  const _ModeSelector({
+    required this.selectedMode,
+    required this.enabled,
+    required this.showIcons,
+    required this.onSelected,
+  });
+
+  final String selectedMode;
+  final bool enabled;
+  final bool showIcons;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(compact ? 16 : 24),
-      decoration: const BoxDecoration(color: Colors.transparent),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: kRoomTrack,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
         children: [
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: _toggleExpanded,
-              behavior: HitTestBehavior.opaque,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final bool layoutCompact = constraints.maxWidth < 310;
-                  return Row(
-                    children: [
-                      Icon(
-                        Icons.alarm_rounded,
-                        color: kColorGold,
-                        size: compact ? 24 : 32,
-                      ),
-                      SizedBox(width: layoutCompact ? 12 : 16),
-                      Expanded(
-                        child: Text(
-                          'Pomodoro',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
-                                color: kColorInk,
-                                fontWeight: AppType.weightSemiBold,
-                                fontSize: compact ? AppType.sizeTitle : null,
-                              ),
+          for (final style in _ModeStyle.all)
+            Expanded(child: _segment(style, style.mode == selectedMode)),
+        ],
+      ),
+    );
+  }
+
+  Widget _segment(_ModeStyle style, bool selected) {
+    final Color foreground = selected ? style.accent : kRoomMuted;
+    return Semantics(
+      button: true,
+      selected: selected,
+      enabled: enabled,
+      label: style.label,
+      excludeSemantics: true,
+      child: Opacity(
+        // Mientras corre el reloj solo se destaca el modo actual.
+        opacity: enabled || selected ? 1 : 0.5,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: enabled && !selected ? () => onSelected(style.mode) : null,
+          child: MouseRegion(
+            cursor: enabled && !selected
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.basic,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              constraints: const BoxConstraints(minHeight: 48),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+              decoration: BoxDecoration(
+                color: selected ? kRoomSurface : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: selected
+                    ? const [
+                        BoxShadow(
+                          color: Color(0x1A1C2321),
+                          blurRadius: 2,
+                          offset: Offset(0, 1),
                         ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (showIcons) ...[
+                    Icon(style.icon, size: 18, color: foreground),
+                    const SizedBox(width: 8),
+                  ],
+                  Flexible(
+                    child: Text(
+                      style.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      style: TextStyle(
+                        color: foreground,
+                        fontWeight: AppType.weightSemiBold,
+                        fontSize: showIcons
+                            ? AppType.sizeBody
+                            : AppType.sizeLabel,
+                        height: 1.15,
                       ),
-                      const SizedBox(width: 4),
-                      HelpIcon(
-                        title: 'Reloj de estudio',
-                        description:
-                            'Es un reloj para concentrarse. Dale a "Iniciar" y empezará a contar para todos. Cuando el tiempo acabe, sonará una alarma para descansar.',
-                        compact: compact,
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        _isExpanded
-                            ? Icons.expand_less_rounded
-                            : Icons.expand_more_rounded,
-                        color: kColorTextSecondary,
-                        size: 24,
-                      ),
-                    ],
-                  );
-                },
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          AnimatedSize(
-            duration: _isFirstLoad
-                ? Duration.zero
-                : const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            child: !_isExpanded
-                ? const SizedBox(width: double.infinity)
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+        ),
+      ),
+    );
+  }
+}
+
+/// Zona bajo el selector: aviso si corre, info del descanso o duraciones.
+class _Setup extends StatelessWidget {
+  const _Setup({
+    required this.state,
+    required this.style,
+    required this.onSelectDuration,
+  });
+
+  final PomodoroState state;
+  final _ModeStyle style;
+  final ValueChanged<int> onSelectDuration;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.isRunning) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 10),
+        child: Text(
+          'Pausa el reloj para cambiar de modo',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: kRoomMuted, fontSize: AppType.sizeLabel),
+        ),
+      );
+    }
+    if (state.isBreak) {
+      final isLong = state.isLongBreak;
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: style.soft,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(style.icon, size: 20, color: style.ink),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                isLong
+                    ? 'Descanso de ${kLongBreakSeconds ~/ 60} min. Te lo ganaste, desconecta un rato.'
+                    : 'Descanso de ${kShortBreakSeconds ~/ 60} min. Aprovecha para estirarte y tomar agua.',
+                style: TextStyle(
+                  color: style.ink,
+                  fontSize: AppType.sizeLabel,
+                  fontWeight: AppType.weightSemiBold,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return _DurationPills(
+      selectedSeconds: state.totalSeconds,
+      accent: style.accent,
+      soft: style.soft,
+      onSelected: onSelectDuration,
+    );
+  }
+}
+
+/// Anillo con mascota, tiempo y estado; debajo, los puntos de ronda.
+class _Dial extends StatelessWidget {
+  const _Dial({required this.size, required this.state, required this.style});
+
+  final double size;
+  final PomodoroState state;
+  final _ModeStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final double progress = state.totalSeconds > 0
+        ? (state.timeRemaining / state.totalSeconds).clamp(0.0, 1.0)
+        : 0;
+    final double crab = size * 0.34;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: size,
+          height: size,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(end: progress),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.linear,
+            builder: (context, value, child) => CustomPaint(
+              painter: _RingPainter(
+                progress: value,
+                color: style.accent,
+                track: kRoomRingTrack,
+                stroke: 8,
+              ),
+              child: child,
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(size * 0.12),
+              // Si el texto no cabe (fuentes grandes), todo el interior escala.
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: SizedBox(
+                  width: size * 0.76,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(height: compact ? 16 : 24),
-                      if (!state.isRunning) ...[
-                        _DurationPills(
-                          selectedSeconds: state.totalSeconds,
-                          onSelected: (seconds) => ref
-                              .read(pomodoroProvider.notifier)
-                              .reset(seconds),
-                        ),
-                        SizedBox(height: compact ? 16 : 24),
-                      ],
-                      Container(
-                        padding: EdgeInsets.only(
-                          top: compact ? 10 : 16,
-                          bottom: compact ? 14 : 24,
-                          left: compact ? 14 : 24,
-                          right: compact ? 14 : 24,
-                        ),
-                        decoration: BoxDecoration(
-                          color: state.isRunning
-                              ? kColorSageSoft
-                              : finished
-                              ? kColorGoldSoft
-                              : kColorPaper,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: compact ? 140 : 224,
-                              height: compact ? 100 : 150,
-                              child: FittedBox(
-                                fit: BoxFit.contain,
-                                child: Lottie.asset(
-                                  'assets/Lottie/claude.json',
-                                  repeat: true,
-                                  width: compact ? 140 : 224,
-                                  height: compact ? 100 : 150,
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: compact ? 2 : 8),
-                            Text(
-                              _formatTime(state.timeRemaining),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppType.monoTimer(
-                                color: finished ? kColorDeepSage : kColorInk,
-                                fontSize: compact
-                                    ? AppType.sizeTimerCompact
-                                    : AppType.sizeTimerLarge,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            SizedBox(
-                              height: compact ? 24 : 32,
-                              child: Center(
-                                child: finished
-                                    ? Text(
-                                        '¡Tiempo completado!',
-                                        style:
-                                            AppType.secondaryItalic(
-                                              color: kColorInk,
-                                              size: compact
-                                                  ? AppType.sizeBody
-                                                  : AppType.sizeBodyMedium,
-                                            ).copyWith(
-                                              fontWeight:
-                                                  AppType.weightSemiBold,
-                                            ),
-                                        textAlign: TextAlign.center,
-                                      )
-                                    : state.isRunning
-                                    ? Transform.scale(
-                                        scale: 1.5,
-                                        child: Lottie.asset(
-                                          'assets/Lottie/Loading.json',
-                                          repeat: true,
-                                        ),
-                                      )
-                                    : Text(
-                                        'En pausa',
-                                        style:
-                                            AppType.secondaryItalic(
-                                              color: kColorTextSecondary,
-                                              size: compact
-                                                  ? AppType.sizeBody
-                                                  : AppType.sizeBodyMedium,
-                                            ).copyWith(
-                                              fontWeight:
-                                                  AppType.weightSemiBold,
-                                            ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                              ),
-                            ),
-                          ],
+                      // Mascota: cangrejo de Claude.
+                      SizedBox(
+                        width: crab * 1.4,
+                        height: crab,
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: Lottie.asset(
+                            'assets/Lottie/claude.json',
+                            repeat: true,
+                            width: crab * 1.4,
+                            height: crab,
+                          ),
                         ),
                       ),
-                      SizedBox(height: compact ? 16 : 24),
-                      if (state.isRunning)
-                        SizedBox(
-                          height: compact ? 48 : 56,
-                          child: ElevatedButton.icon(
-                            onPressed: () =>
-                                ref.read(pomodoroProvider.notifier).pause(),
-                            icon: const Icon(Icons.pause_rounded, size: 24),
-                            label: const Text('Pausar'),
-                          ),
-                        )
-                      else
-                        SizedBox(
-                          height: compact ? 48 : 56,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              ref.read(soundProvider.notifier).unlock();
-                              ref
-                                  .read(pomodoroProvider.notifier)
-                                  .start(state.totalSeconds);
-                            },
-                            icon: const Icon(
-                              Icons.play_arrow_rounded,
-                              size: 24,
-                            ),
-                            label: const Text('Iniciar'),
+                      const SizedBox(height: 6),
+                      Text(
+                        _formatTime(state.timeRemaining),
+                        maxLines: 1,
+                        style: AppType.monoTimer(
+                          color: state.isBreak ? style.accent : kRoomInk,
+                          fontSize: size * 0.19,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: Text(
+                          _statusText(state),
+                          key: ValueKey(_statusText(state)),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          style: TextStyle(
+                            color: state.isFinished
+                                ? kRoomInk
+                                : state.isRunning
+                                ? style.accent
+                                : kRoomMuted,
+                            fontWeight: AppType.weightSemiBold,
+                            fontSize: AppType.sizeBody,
+                            height: 1.2,
                           ),
                         ),
-                      if (state.timeRemaining < state.totalSeconds) ...[
-                        const SizedBox(height: 8),
-                        TextButton.icon(
-                          onPressed: () => ref
-                              .read(pomodoroProvider.notifier)
-                              .reset(state.totalSeconds),
-                          icon: const Icon(Icons.restart_alt_rounded, size: 20),
-                          label: const Text('Reiniciar'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: kColorTextSecondary,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                        ),
-                      ],
+                      ),
                     ],
                   ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _RoundDots(state: state, accent: style.accent),
+      ],
+    );
+  }
+}
+
+/// Puntos de progreso del ciclo: tras [kFocusRoundsBeforeLong] rondas de
+/// estudio toca un descanso largo.
+class _RoundDots extends StatelessWidget {
+  const _RoundDots({required this.state, required this.accent});
+
+  final PomodoroState state;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final int done = _roundsDone(state);
+    final String caption = state.isBreak
+        ? '$done de $kFocusRoundsBeforeLong rondas'
+        : 'Ronda ${done + 1} de $kFocusRoundsBeforeLong';
+
+    return Semantics(
+      label: caption,
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < kFocusRoundsBeforeLong; i++)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: i < done ? accent : kRoomLine,
+              ),
+            ),
+          const SizedBox(width: 8),
+          Text(
+            caption,
+            style: const TextStyle(
+              color: kRoomMuted,
+              fontWeight: AppType.weightSemiBold,
+              fontSize: AppType.sizeLabel,
+            ),
           ),
         ],
       ),
@@ -280,100 +542,284 @@ class _PomodoroTimerState extends ConsumerState<PomodoroTimer> {
   }
 }
 
+/// Reiniciar · Iniciar/Pausar · Siguiente.
+class _Controls extends StatelessWidget {
+  const _Controls({
+    required this.state,
+    required this.style,
+    required this.onReset,
+    required this.onToggle,
+    required this.onSkip,
+  });
+
+  final PomodoroState state;
+  final _ModeStyle style;
+  final VoidCallback onReset;
+  final VoidCallback onToggle;
+  final VoidCallback onSkip;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool canReset = state.timeRemaining < state.totalSeconds;
+    return Row(
+      children: [
+        RoomIconButton(
+          size: 52,
+          icon: LucideIcons.rotateCcw,
+          tooltip: 'Reiniciar',
+          onPressed: canReset ? onReset : null,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: SizedBox(
+            height: 52,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: style.accent,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              onPressed: onToggle,
+              icon: Icon(
+                state.isRunning ? LucideIcons.pause : LucideIcons.play,
+                size: 20,
+              ),
+              label: Text(
+                state.isRunning
+                    ? 'Pausar'
+                    : state.isBreak
+                    ? 'Iniciar descanso'
+                    : 'Iniciar',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        RoomIconButton(
+          size: 52,
+          icon: LucideIcons.skipForward,
+          tooltip: state.isBreak ? 'Volver a estudiar' : 'Adelantar descanso',
+          foreground: style.accent,
+          background: style.soft,
+          bordered: false,
+          onPressed: onSkip,
+        ),
+      ],
+    );
+  }
+}
+
+/// Barra compacta del reloj, para mostrarlo cuando se está en otra sección.
+class MiniTimerBar extends ConsumerWidget {
+  const MiniTimerBar({super.key, this.onOpen});
+
+  final VoidCallback? onOpen;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(pomodoroProvider);
+    final notifier = ref.read(pomodoroProvider.notifier);
+    final style = _ModeStyle.of(state.mode);
+    final int done = _roundsDone(state);
+    final String label = state.isBreak
+        ? style.label
+        : 'Estudio · Ronda ${done + 1} de $kFocusRoundsBeforeLong';
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      decoration: BoxDecoration(
+        color: kRoomSurface,
+        border: Border.all(color: kRoomLine),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onOpen,
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: style.accent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: kRoomMuted,
+                            fontSize: AppType.sizeCaption,
+                            fontWeight: AppType.weightSemiBold,
+                          ),
+                        ),
+                        Text(
+                          _formatTime(state.timeRemaining),
+                          style: AppType.monoTimer(
+                            color: kRoomInk,
+                            fontSize: 24,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          RoomIconButton(
+            icon: state.isRunning ? LucideIcons.pause : LucideIcons.play,
+            tooltip: state.isRunning ? 'Pausar' : 'Iniciar',
+            onPressed: () {
+              if (state.isRunning) {
+                notifier.pause();
+              } else {
+                ref.read(soundProvider.notifier).unlock();
+                notifier.start(state.isBreak ? null : state.totalSeconds);
+              }
+            },
+          ),
+          const SizedBox(width: 6),
+          RoomIconButton(
+            icon: LucideIcons.skipForward,
+            tooltip: state.isBreak ? 'Volver a estudiar' : 'Adelantar descanso',
+            foreground: style.accent,
+            background: style.soft,
+            bordered: false,
+            onPressed: notifier.skip,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Anillo de progreso: se vacía conforme avanza el tiempo.
+class _RingPainter extends CustomPainter {
+  const _RingPainter({
+    required this.progress,
+    required this.color,
+    required this.track,
+    required this.stroke,
+  });
+
+  final double progress;
+  final Color color;
+  final Color track;
+  final double stroke;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = (math.min(size.width, size.height) - stroke) / 2;
+    final base = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, base..color = track);
+    if (progress <= 0) return;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      2 * math.pi * progress,
+      false,
+      base..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) =>
+      old.progress != progress || old.color != color || old.stroke != stroke;
+}
+
 class _DurationPills extends StatelessWidget {
   const _DurationPills({
     required this.selectedSeconds,
+    required this.accent,
+    required this.soft,
     required this.onSelected,
   });
 
   final int selectedSeconds;
+  final Color accent;
+  final Color soft;
   final ValueChanged<int> onSelected;
-
-  String _formatMinutes(int seconds) => '${seconds ~/ 60} min';
 
   @override
   Widget build(BuildContext context) {
-    final bool compact = MediaQuery.sizeOf(context).width < 600;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final bool customSelected = !_durationPresets.contains(selectedSeconds);
+    return Row(
       children: [
-        Text(
-          'Duración',
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: kColorTextSecondary,
-            fontWeight: AppType.weightSemiBold,
-            fontSize: compact ? AppType.sizeCaption : null,
+        for (final seconds in _durationPresets) ...[
+          Expanded(
+            child: _pill(
+              label: '${seconds ~/ 60} min',
+              selected: seconds == selectedSeconds,
+              onTap: () => onSelected(seconds),
+            ),
           ),
-        ),
-        SizedBox(height: compact ? 6 : 10),
-        Wrap(
-          spacing: compact ? 6 : 8,
-          runSpacing: compact ? 6 : 8,
-          children: [
-            ..._durationPresets.map((seconds) {
-              final bool selected = seconds == selectedSeconds;
-              return MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () => onSelected(seconds),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: compact ? 12 : 16,
-                      vertical: compact ? 8 : 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selected ? kColorDeepSage : kColorSageSoft,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _formatMinutes(seconds),
-                      style: TextStyle(
-                        color: selected ? kColorPaper : kColorTextSecondary,
-                        fontWeight: AppType.weightSemiBold,
-                        fontSize: compact
-                            ? AppType.sizeCaption
-                            : AppType.sizeLabel,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
-            _buildCustomPill(context),
-          ],
+          const SizedBox(width: 8),
+        ],
+        Expanded(
+          child: _pill(
+            label: customSelected ? '${selectedSeconds ~/ 60} min' : 'Otro',
+            selected: customSelected,
+            onTap: () => _promptCustomDuration(context),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildCustomPill(BuildContext context) {
-    final bool selected = !_durationPresets.contains(selectedSeconds);
-    final bool compact = MediaQuery.sizeOf(context).width < 600;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
+  Widget _pill({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      excludeSemantics: true,
       child: GestureDetector(
-        onTap: () => _promptCustomDuration(context),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 12 : 16,
-            vertical: compact ? 8 : 10,
-          ),
-          decoration: BoxDecoration(
-            color: selected ? kColorDeepSage : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected ? kColorDeepSage : kColorBorder,
-              width: 1.2,
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: selected ? soft : kRoomSurface,
+              border: Border.all(color: selected ? accent : kRoomLine),
+              borderRadius: BorderRadius.circular(999),
             ),
-          ),
-          child: Text(
-            'Personalizado',
-            style: TextStyle(
-              color: selected ? kColorPaper : kColorTextSecondary,
-              fontWeight: AppType.weightSemiBold,
-              fontSize: compact ? AppType.sizeCaption : AppType.sizeLabel,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(
+                color: selected ? accent : kRoomMuted,
+                fontWeight: AppType.weightSemiBold,
+                fontSize: AppType.sizeLabel,
+              ),
             ),
           ),
         ),
@@ -445,7 +891,7 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
               constraints: const BoxConstraints(maxWidth: 340),
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
               decoration: BoxDecoration(
-                color: kColorPaper,
+                color: kRoomSurface,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
@@ -462,7 +908,7 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
                   Text(
                     'Duración personalizada',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: kColorInk,
+                      color: kRoomInk,
                       fontWeight: AppType.weightSemiBold,
                     ),
                   ),
@@ -481,11 +927,11 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(3),
                       ],
-                      style: const TextStyle(color: kColorInk),
+                      style: const TextStyle(color: kRoomInk),
                       decoration: const InputDecoration(
                         labelText: 'Minutos',
                         hintText: 'ej. 30',
-                        labelStyle: TextStyle(color: kColorTextSecondary),
+                        labelStyle: TextStyle(color: kRoomMuted),
                         counterText: '',
                       ),
                       validator: (value) {
@@ -511,7 +957,7 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: TextButton.styleFrom(
-                          foregroundColor: kColorTextSecondary,
+                          foregroundColor: kRoomMuted,
                         ),
                         child: const Text('Cancelar'),
                       ),
@@ -519,7 +965,7 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
                       TextButton(
                         onPressed: _submit,
                         style: TextButton.styleFrom(
-                          foregroundColor: kColorDeepSage,
+                          foregroundColor: kRoomStudy,
                         ),
                         child: const Text(
                           'Aceptar',

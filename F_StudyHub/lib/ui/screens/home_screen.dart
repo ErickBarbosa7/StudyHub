@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
@@ -71,22 +72,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [kColorSage, kColorDeepSage],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ).createShader(bounds),
-                        child: const Text(
-                          'StudyHub',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: AppType.sizeGiant,
-                            fontWeight: AppType.weightBold,
-                            letterSpacing: -1,
-                            height: 1.1,
-                            color: kColorInk,
-                          ),
+                      const Text(
+                        'StudyHub',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: AppType.sizeGiant,
+                          fontWeight: AppType.weightBold,
+                          letterSpacing: -1,
+                          height: 1.1,
+                          color: kColorInk,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -147,7 +141,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     context,
                                   ).pushNamed(CreateRoomScreen.routeName);
                                 },
-                          icon: const Icon(Icons.add_rounded),
+                          icon: const Icon(LucideIcons.plus),
                           label: const Text('Crear o unirse a una sala'),
                           style: ElevatedButton.styleFrom(
                             shape: RoundedRectangleBorder(
@@ -167,7 +161,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 context,
                               ).pushNamed(CreateRoomScreen.routeName);
                             },
-                            icon: const Icon(Icons.arrow_back_rounded),
+                            icon: const Icon(LucideIcons.arrowLeft),
                             label: const Text('Volver a la sala'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: kColorDeepSage,
@@ -185,7 +179,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const SizedBox(height: 16),
                       TextButton.icon(
                         onPressed: _showHowItWorks,
-                        icon: const Icon(Icons.help_outline_rounded, size: 20),
+                        icon: const Icon(LucideIcons.circleHelp, size: 20),
                         label: const Text('¿Cómo funciona?'),
                         style: TextButton.styleFrom(
                           foregroundColor: kColorTextSecondary,

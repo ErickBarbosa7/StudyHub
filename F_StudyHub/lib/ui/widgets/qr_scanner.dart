@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/theme.dart';
@@ -143,7 +144,7 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(
-                    Icons.qr_code_scanner_rounded,
+                    LucideIcons.scanQrCode,
                     color: kColorDeepSage,
                     size: 22,
                   ),
@@ -242,7 +243,7 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
       child: Column(
         children: [
           const Icon(
-            Icons.videocam_off_rounded,
+            LucideIcons.videoOff,
             size: 48,
             color: kColorTextSecondary,
           ),
@@ -258,7 +259,7 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
           const SizedBox(height: 20),
           OutlinedButton.icon(
             onPressed: _retryCamera,
-            icon: const Icon(Icons.refresh_rounded, size: 20),
+            icon: const Icon(LucideIcons.refreshCw, size: 20),
             label: const Text('Reintentar'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

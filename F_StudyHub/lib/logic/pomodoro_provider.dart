@@ -9,6 +9,13 @@ import 'room_provider.dart';
 import 'socket_provider.dart';
 
 const int kDefaultPomodoroSeconds = 30 * 60;
+const int kShortBreakSeconds = 5 * 60;
+const int kLongBreakSeconds = 15 * 60;
+const int kFocusRoundsBeforeLong = 4;
+
+const String kModeFocus = 'FOCUS';
+const String kModeShortBreak = 'SHORT_BREAK';
+const String kModeLongBreak = 'LONG_BREAK';
 
 class PomodoroState {
   const PomodoroState({
@@ -16,26 +23,41 @@ class PomodoroState {
     this.totalSeconds = kDefaultPomodoroSeconds,
     this.status = 'PAUSED',
     this.isFinished = false,
+    this.mode = kModeFocus,
+    this.completedFocus = 0,
+    this.finishedMode,
   });
 
   final int timeRemaining;
   final int totalSeconds;
   final String status;
   final bool isFinished;
+  final String mode;
+  final int completedFocus;
+  // Fase que acaba de terminar (para mostrar el mensaje adecuado).
+  final String? finishedMode;
 
   bool get isRunning => status == 'RUNNING';
+  bool get isBreak => mode != kModeFocus;
+  bool get isLongBreak => mode == kModeLongBreak;
 
   PomodoroState copyWith({
     int? timeRemaining,
     int? totalSeconds,
     String? status,
     bool? isFinished,
+    String? mode,
+    int? completedFocus,
+    String? finishedMode,
   }) {
     return PomodoroState(
       timeRemaining: timeRemaining ?? this.timeRemaining,
       totalSeconds: totalSeconds ?? this.totalSeconds,
       status: status ?? this.status,
       isFinished: isFinished ?? this.isFinished,
+      mode: mode ?? this.mode,
+      completedFocus: completedFocus ?? this.completedFocus,
+      finishedMode: finishedMode ?? this.finishedMode,
     );
   }
 }
@@ -60,17 +82,29 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
       final status = map['status'] as String;
       final totalSeconds =
           map.containsKey('totalSeconds') ? (map['totalSeconds'] as num).round() : null;
+      final mode = map['mode'] as String? ?? state.mode;
+      final completedFocus = map.containsKey('completedFocus')
+          ? (map['completedFocus'] as num).round()
+          : state.completedFocus;
       final wasRunning = state.isRunning;
       final finishedAtZero = timeRemaining == 0 && wasRunning;
       if (finishedAtZero && !state.isFinished) {
         _roomProvider.read(soundProvider.notifier).playPomodoroFinishedSound();
       }
+      // Si el modo cambia por algo distinto a terminar la fase actual
+      // (flecha o selector), el 'completado' previo ya no aplica.
+      final modeChangedManually =
+          mode != state.mode && state.finishedMode != state.mode;
       state = state.copyWith(
         timeRemaining: timeRemaining,
         status: status,
         totalSeconds: totalSeconds ?? state.totalSeconds,
+        mode: mode,
+        completedFocus: completedFocus,
         // Nueva sesión en curso: descarta un 'completado' previo.
-        isFinished: status == 'RUNNING' ? false : (finishedAtZero || state.isFinished),
+        isFinished: status == 'RUNNING' || modeChangedManually
+            ? false
+            : (finishedAtZero || state.isFinished),
       );
     });
 
@@ -78,7 +112,8 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
       final map = data as Map<String, dynamic>;
       final totalSeconds =
           map.containsKey('totalSeconds') ? (map['totalSeconds'] as num).round() : null;
-      debugPrint('[pomodoro] Sesión completada');
+      final finishedMode = map['mode'] as String? ?? state.mode;
+      debugPrint('[pomodoro] Fase $finishedMode completada');
       if (!state.isFinished) {
         _roomProvider.read(soundProvider.notifier).playPomodoroFinishedSound();
       }
@@ -86,6 +121,7 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
         timeRemaining: 0,
         status: 'PAUSED',
         isFinished: true,
+        finishedMode: finishedMode,
         totalSeconds: totalSeconds ?? state.totalSeconds,
       );
     });
@@ -96,7 +132,7 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
 
   String? get _roomId => _roomProvider.read(roomProvider).room?.roomId;
 
-  void _action(String action, [int? durationSeconds]) {
+  void _action(String action, [int? durationSeconds, String? mode]) {
     final roomId = _roomId;
     if (roomId == null) return;
 
@@ -104,6 +140,7 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
       'roomId': roomId,
       'action': action,
       'duration': ?durationSeconds,
+      'mode': ?mode,
     });
   }
 
@@ -117,6 +154,18 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
   void reset([int? durationSeconds]) {
     state = state.copyWith(isFinished: false);
     _action('RESET', durationSeconds);
+  }
+
+  /// Adelanta a la siguiente fase: estudio -> descanso, descanso -> estudio.
+  void skip() {
+    state = state.copyWith(isFinished: false);
+    _action('SKIP');
+  }
+
+  void setMode(String mode) {
+    if (mode == state.mode) return;
+    state = state.copyWith(isFinished: false);
+    _action('SET_MODE', null, mode);
   }
 }
 

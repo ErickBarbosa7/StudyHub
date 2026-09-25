@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 
 // ─────────────────────────────────────────────────────────────
-// PALETA DE COLOR — "Focus & Paper"
+// PALETA DE COLOR — "Estudio"
 // ─────────────────────────────────────────────────────────────
 //
+// Los kColor* de abajo apuntan a la paleta nueva (kRoom*, definida más
+// abajo). Junto a cada uno queda comentado su valor anterior de la paleta
+// "Focus & Paper" (verde salvia, crema y dorado) por si se quiere volver:
+// basta con restaurar ese Color(0x...) en cada línea.
+//
+// Paleta anterior — filosofía:
 // Filosofía:
 // • Neutros cálidos como base → reducen ruido visual.
 // • Verde profundo → foco, acciones e interacción.
@@ -21,28 +27,28 @@ import 'package:flutter/material.dart';
 // COLORES PRINCIPALES
 // ═════════════════════════════════════════════════════════════
 
-const Color kColorPaper = Color(0xFFFAFAF7);
+const Color kColorPaper = kRoomBg; // antes: Color(0xFFFAFAF7)
 // Fondo principal.
 // Blanco ligeramente cálido para evitar la sensación clínica
 // de un blanco puro.
 
-const Color kColorCard = Color(0xFFF2F3ED);
+const Color kColorCard = kRoomSurface; // antes: Color(0xFFF2F3ED)
 // Superficies secundarias.
 // Sutilmente diferenciadas del fondo.
 
-const Color kColorSage = Color(0xFF9BAF9D);
+const Color kColorSage = kColorSageMid; // antes: Color(0xFF9BAF9D)
 // Verde salvia suave.
 // Uso decorativo, estados secundarios y superficies.
 
-const Color kColorDeepSage = Color(0xFF486B52);
+const Color kColorDeepSage = kRoomStudy; // antes: Color(0xFF486B52)
 // Verde principal.
 // Acciones, botones, foco, elementos activos e interacción.
 
-const Color kColorGold = Color(0xFFC5A15A);
+const Color kColorGold = kRoomBreak; // antes: Color(0xFFC5A15A)
 // Dorado.
 // Reservado para progreso, logros y elementos completados.
 
-const Color kColorInk = Color(0xFF29312B);
+const Color kColorInk = kRoomInk; // antes: Color(0xFF29312B)
 // Texto principal.
 // Alto contraste sin llegar al negro puro.
 
@@ -51,19 +57,19 @@ const Color kColorInk = Color(0xFF29312B);
 // COLORES DE APOYO
 // ═════════════════════════════════════════════════════════════
 
-const Color kColorTextSecondary = Color(0xFF687268);
+const Color kColorTextSecondary = kRoomMuted; // antes: Color(0xFF687268)
 // Texto secundario.
 // Descripciones, timestamps y metadata.
 
-const Color kColorBorder = Color(0xFFDFE3DA);
+const Color kColorBorder = kRoomLine; // antes: Color(0xFFDFE3DA)
 // Bordes y divisores.
 // Muy sutil para evitar ruido visual.
 
-const Color kColorSageSoft = Color(0xFFE8EEE8);
+const Color kColorSageSoft = kRoomStudySoft; // antes: Color(0xFFE8EEE8)
 // Verde muy suave.
 // Chips, iconos, estados informativos y pequeños fondos.
 
-const Color kColorGoldSoft = Color(0xFFF3EEDF);
+const Color kColorGoldSoft = kRoomBreakSoft; // antes: Color(0xFFF3EEDF)
 // Dorado lavado.
 // Fondos asociados a logros y progreso.
 
@@ -72,14 +78,50 @@ const Color kColorGoldSoft = Color(0xFFF3EEDF);
 // ESTADOS
 // ═════════════════════════════════════════════════════════════
 
-const Color kColorError = Color(0xFFC94A4A);
+const Color kColorError = kRoomError; // antes: Color(0xFFC94A4A)
 
 const Color kColorErrorBorder = Color(0xFFE9A6A6);
 
-const Color kColorStateDone = Color(0xFF10B981); // Emerald 500
-const Color kColorStateInProgress = Color(0xFFF59E0B); // Amber 500
-const Color kColorStatePending = Color(0xFFF43F5E); // Rose 500
+const Color kColorStateDone = kRoomStudy; // antes: Color(0xFF10B981)
+const Color kColorStateInProgress = kRoomBreak; // antes: Color(0xFFF59E0B)
+const Color kColorStatePending = kRoomMuted; // antes: Color(0xFFF43F5E)
 
+
+// ═════════════════════════════════════════════════════════════
+// PALETA DE LA SALA — "Estudio" (rediseño de sala)
+// ═════════════════════════════════════════════════════════════
+//
+// Solo se usa dentro de la sala (lib/ui/room, pomodoro, tareas y chat).
+// La paleta anterior "Focus & Paper" sigue intacta arriba (kColorPaper,
+// kColorDeepSage, kColorGold, ...) y la usan inicio y crear/unirse.
+// Para volver a ella basta con apuntar los widgets de la sala a esas
+// constantes en lugar de estas.
+//
+// Regla: un solo color por modo del reloj; todo lo demás es neutro.
+
+const Color kRoomBg = Color(0xFFF3F2EE); // fondo de pantalla
+const Color kRoomSurface = Color(0xFFFFFFFF); // tarjetas
+const Color kRoomInk = Color(0xFF1C2321); // texto principal
+const Color kRoomMuted = Color(0xFF5D6763); // texto secundario
+const Color kRoomLine = Color(0xFFE3E1DA); // bordes
+const Color kRoomTrack = Color(0xFFEEEDE8); // fondos neutros (selector, chips)
+const Color kRoomRingTrack = Color(0xFFE9E7E1); // pista del anillo
+const Color kRoomDisabled = Color(0xFFC9C6BC);
+
+const Color kRoomStudy = Color(0xFF1F6B5C); // estudio
+const Color kRoomStudySoft = Color(0xFFE3EFEB);
+
+const Color kRoomBreak = Color(0xFFA65A00); // descanso corto
+const Color kRoomBreakSoft = Color(0xFFFAEBD5);
+const Color kRoomBreakInk = Color(0xFF8A4B00); // texto sobre kRoomBreakSoft
+
+const Color kRoomLong = Color(0xFF484C9B); // descanso largo
+const Color kRoomLongSoft = Color(0xFFE8E9F6);
+
+const Color kRoomError = Color(0xFFB3372F);
+
+// Tono medio del verde azulado (decorativo, antes salvia #9BAF9D).
+const Color kColorSageMid = Color(0xFF8DB8AC);
 
 
 // ═════════════════════════════════════════════════════════════

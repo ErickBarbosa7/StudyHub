@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
@@ -41,7 +42,7 @@ class ConnectionBanner extends ConsumerWidget {
         color: kColorErrorBorder,
         child: Row(
           children: [
-            const Icon(Icons.cloud_off_rounded, color: kColorError, size: 20),
+            const Icon(LucideIcons.cloudOff, color: kColorError, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -63,7 +64,7 @@ class ConnectionBanner extends ConsumerWidget {
             IconButton(
               onPressed: () =>
                   ref.read(socketStateProvider.notifier).clearError(),
-              icon: const Icon(Icons.close_rounded, size: 18),
+              icon: const Icon(LucideIcons.x, size: 18),
               color: kColorTextSecondary,
               visualDensity: VisualDensity.compact,
             ),

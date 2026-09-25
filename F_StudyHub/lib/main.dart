@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'ui/widgets/inactivity_detector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,7 +27,7 @@ Widget _buildErrorWidget(FlutterErrorDetails errorDetails) {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Icon(
-                    Icons.error_outline_rounded,
+                    LucideIcons.circleAlert,
                     color: kColorDeepSage,
                     size: 40,
                   ),
@@ -57,7 +58,7 @@ Widget _buildErrorWidget(FlutterErrorDetails errorDetails) {
                         (route) => false,
                       );
                     },
-                    icon: const Icon(Icons.home_rounded),
+                    icon: const Icon(LucideIcons.house),
                     label: const Text('Volver al inicio'),
                   ),
                 ),

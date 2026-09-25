@@ -34,7 +34,8 @@ const List<OnboardingStep> kOnboardingSteps = [
     title: 'Pomodoro',
     message:
         'Un solo temporizador para concentrarse juntos: enciéndelo y '
-        'estudien al mismo ritmo con pausas sincronizadas.',
+        'estudien al mismo ritmo. Al terminar llega un descanso corto o '
+        'largo, y con la flecha ⏭ puedes adelantarlo.',
   ),
   OnboardingStep(
     title: 'Chat',

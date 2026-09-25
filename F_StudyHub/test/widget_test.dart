@@ -40,9 +40,6 @@ void main() {
     await tester.pump();
 
     expect(find.text('StudyHub'), findsOneWidget);
-    expect(
-      find.text('Crea una sala o únete con un código.'),
-      findsOneWidget,
-    );
+    expect(find.text('Crear o unirse a una sala'), findsOneWidget);
   });
 }
