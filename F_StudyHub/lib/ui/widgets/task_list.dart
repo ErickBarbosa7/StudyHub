@@ -337,7 +337,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 17,
+                          vertical: 16,
                         ),
                         border: _fieldBorder(kRoomLine),
                         enabledBorder: _fieldBorder(kRoomLine),
@@ -368,6 +368,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                     foreground: kRoomStudy,
                     background: kRoomStudySoft,
                     bordered: false,
+                    iconOffset: const Offset(0, 3),
                     onPressed: _addTask,
                   ),
                 ],

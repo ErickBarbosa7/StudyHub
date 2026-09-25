@@ -155,7 +155,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 17,
+                          vertical: 16,
                         ),
                         border: _fieldBorder(kRoomLine),
                         enabledBorder: _fieldBorder(kRoomLine),

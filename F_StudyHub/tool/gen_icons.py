@@ -66,6 +66,19 @@ font = TTFont(ROOT / "tool/lucide/lucide.ttf")
 sub = subset.Subsetter(options)
 sub.populate(unicodes=[CODEPOINTS[kebab(n)] for n in icons])
 sub.subset(font)
+
+# Al recalcular los límites de cada glifo (xMin) el margen lateral guardado en
+# hmtx (lsb) queda desactualizado, y FreeType/Skia desplazan el dibujo esa
+# diferencia: los iconos salían corridos a la izquierda. Se igualan lsb y xMin.
+glyf = font["glyf"]
+hmtx = font["hmtx"]
+for name in font.getGlyphOrder():
+    glyph = glyf[name]
+    glyph.recalcBounds(glyf)
+    if glyph.numberOfContours != 0:
+        advance, _ = hmtx[name]
+        hmtx[name] = (advance, glyph.xMin)
+
 out = ROOT / "assets/fonts/Lucide.ttf"
 font.save(out)
 print(f"{len(icons)} iconos -> {out} ({out.stat().st_size} bytes)")

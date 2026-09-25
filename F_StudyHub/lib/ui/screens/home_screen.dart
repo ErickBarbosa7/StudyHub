@@ -85,8 +85,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            LandingBrandRow(
-                              trailing: IconButton(
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: IconButton(
                                 onPressed: _showHowItWorks,
                                 tooltip: '¿Cómo funciona?',
                                 icon: const Icon(
@@ -95,7 +96,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 8),
                             LandingWordmark(maxWidth: width),
                             SizedBox(
                               height: math.max(

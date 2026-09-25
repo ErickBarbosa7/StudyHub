@@ -40,6 +40,7 @@ class RoomIconButton extends StatelessWidget {
     this.background = kRoomSurface,
     this.bordered = true,
     this.borderColor = kRoomLine,
+    this.iconOffset = Offset.zero,
   });
 
   final IconData icon;
@@ -51,6 +52,7 @@ class RoomIconButton extends StatelessWidget {
   final Color background;
   final bool bordered;
   final Color borderColor;
+  final Offset iconOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -75,10 +77,15 @@ class RoomIconButton extends StatelessWidget {
               button: true,
               label: tooltip,
               excludeSemantics: true,
-              child: Icon(
-                icon,
-                size: iconSize,
-                color: enabled ? foreground : kRoomDisabled,
+              child: Center(
+                child: Transform.translate(
+                  offset: iconOffset,
+                  child: Icon(
+                    icon,
+                    size: iconSize,
+                    color: enabled ? foreground : kRoomDisabled,
+                  ),
+                ),
               ),
             ),
           ),
