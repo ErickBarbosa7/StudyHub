@@ -1,7 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../core/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lottie/lottie.dart';
 
 import '../../core/theme.dart';
 import '../../data/services/sound_service.dart';
@@ -9,6 +10,7 @@ import '../../logic/onboarding_provider.dart';
 import '../../logic/room_provider.dart';
 import '../../logic/socket_provider.dart';
 import '../../ui/widgets/connection_banner.dart';
+import '../../ui/widgets/landing_hero.dart';
 import '../../ui/widgets/mascot/onboarding_tour.dart';
 import 'create_room_screen.dart';
 
@@ -28,7 +30,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final restored = await ref
           .read(roomProvider.notifier)
           .restoreSavedSession();
-      if (restored && mounted) {
+      // En pantallas anchas el inicio ya muestra la sala restaurada.
+      if (restored &&
+          mounted &&
+          MediaQuery.sizeOf(context).width < kLandingBreakpoint) {
         Navigator.of(context).pushNamed(CreateRoomScreen.routeName);
       }
     });
@@ -40,6 +45,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Laptop: el inicio es directamente el formulario, sin clic intermedio.
+    if (MediaQuery.sizeOf(context).width >= kLandingBreakpoint) {
+      return const CreateRoomScreen(landing: true);
+    }
+
     final roomState = ref.watch(roomProvider);
 
     ref.listen<RoomState>(roomProvider, (previous, next) {
@@ -55,143 +65,180 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
 
     return Scaffold(
-      backgroundColor: kColorPaper,
-      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
-      body: Column(
-        children: [
-          const ConnectionBanner(),
-          Expanded(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
+      backgroundColor: kRoomStudy,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const ConnectionBanner(),
+            Expanded(
+              child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 400),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'StudyHub',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: AppType.sizeGiant,
-                          fontWeight: AppType.weightBold,
-                          letterSpacing: -1,
-                          height: 1.1,
-                          color: kColorInk,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Lottie.asset(
-                        'assets/Lottie/STUDENT.json',
-                        height: 240,
-                        repeat: true,
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        'Estudia y concéntrate\nen equipo',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(
-                              color: kColorInk,
-                              fontWeight: AppType.weightSemiBold,
-                              height: 1.2,
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final bool roomy = constraints.maxHeight >= 660;
+                        final double width = constraints.maxWidth;
+
+                        final header = Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            LandingBrandRow(
+                              trailing: IconButton(
+                                onPressed: _showHowItWorks,
+                                tooltip: '¿Cómo funciona?',
+                                icon: const Icon(
+                                  AppIcons.circleHelp,
+                                  color: kLandingSoft,
+                                ),
+                              ),
                             ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Una app para estudiar a distancia. Crea una sala con tus amigos, anoten sus tareas y usen el temporizador para no distraerse.',
-                        textAlign: TextAlign.center,
-                        style: AppType.secondaryItalic(),
-                      ),
+                            const SizedBox(height: 20),
+                            LandingWordmark(maxWidth: width),
+                            SizedBox(
+                              height: math.max(
+                                10,
+                                LandingWordmark.sizeFor(width) * 0.16,
+                              ),
+                            ),
+                            LandingTagline(width: width),
+                            const SizedBox(height: 20),
+                            const LandingFeatures(),
+                          ],
+                        );
 
-                      const SizedBox(height: 48),
-
-                      if (roomState.isRestoring) ...[
-                        const SizedBox(
-                          width: 28,
-                          height: 28,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: kColorDeepSage,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Restaurando tu sesión anterior...',
-                          textAlign: TextAlign.center,
-                          style: AppType.secondaryItalic(
-                            color: kColorTextSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton.icon(
-                          onPressed: roomState.isRestoring
-                              ? null
-                              : () {
-                                  ref.read(soundProvider.notifier).unlock();
-                                  Navigator.of(
+                        final actions = Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (roomState.isRestoring) ...[
+                              const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    'Restaurando tu sesión anterior...',
+                                    style: TextStyle(color: kLandingSoft),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            SizedBox(
+                              height: 56,
+                              child: ElevatedButton.icon(
+                                onPressed: roomState.isRestoring
+                                    ? null
+                                    : () {
+                                        ref
+                                            .read(soundProvider.notifier)
+                                            .unlock();
+                                        Navigator.of(
+                                          context,
+                                        ).pushNamed(CreateRoomScreen.routeName);
+                                      },
+                                icon: const Icon(AppIcons.plus),
+                                label: const Text('Crear o unirse a una sala'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: kRoomStudy,
+                                  disabledBackgroundColor: const Color(
+                                    0x80FFFFFF,
+                                  ),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (roomState.room != null) ...[
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: 56,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => Navigator.of(
                                     context,
-                                  ).pushNamed(CreateRoomScreen.routeName);
+                                  ).pushNamed(CreateRoomScreen.routeName),
+                                  icon: const Icon(AppIcons.arrowLeft),
+                                  label: const Text('Volver a la sala'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    side: const BorderSide(
+                                      color: Color(0x80FFFFFF),
+                                      width: 1.5,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+
+                        if (!roomy) {
+                          // Pantalla baja: todo en una columna con scroll.
+                          return SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                header,
+                                const SizedBox(height: 28),
+                                actions,
+                              ],
+                            ),
+                          );
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            header,
+                            // La animación usa el alto que sobre.
+                            Expanded(
+                              child: LayoutBuilder(
+                                builder: (context, box) {
+                                  if (box.maxHeight < 170) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 20,
+                                      ),
+                                      child: LandingIllustration(
+                                        height: math.min(
+                                          box.maxHeight - 40,
+                                          width / LandingIllustration.aspect,
+                                        ),
+                                      ),
+                                    ),
+                                  );
                                 },
-                          icon: const Icon(LucideIcons.plus),
-                          label: const Text('Crear o unirse a una sala'),
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (roomState.room != null) ...[
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.of(
-                                context,
-                              ).pushNamed(CreateRoomScreen.routeName);
-                            },
-                            icon: const Icon(LucideIcons.arrowLeft),
-                            label: const Text('Volver a la sala'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: kColorDeepSage,
-                              side: const BorderSide(
-                                color: kColorSage,
-                                width: 1.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
                               ),
                             ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      TextButton.icon(
-                        onPressed: _showHowItWorks,
-                        icon: const Icon(LucideIcons.circleHelp, size: 20),
-                        label: const Text('¿Cómo funciona?'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: kColorTextSecondary,
-                        ),
-                      ),
-                    ],
+                            actions,
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

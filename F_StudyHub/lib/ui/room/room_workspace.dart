@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../core/app_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme.dart';
@@ -221,15 +221,27 @@ class _RoomWorkspaceState extends ConsumerState<RoomWorkspace> {
     return Column(
       children: [
         Expanded(
+          // Las secciones fuera de vista conservan su estado (texto escrito,
+          // scroll) pero sin animar: TickerMode las deja en pausa.
           child: IndexedStack(
             index: index,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 4, 16, 16),
-                child: PomodoroTimer(showTitle: false),
+              TickerMode(
+                enabled: index == 0,
+                child: const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  child: PomodoroTimer(showTitle: false),
+                ),
               ),
-              withMiniTimer(const TaskList()),
-              if (!_chatHidden) withMiniTimer(const ChatBox()),
+              TickerMode(
+                enabled: index == 1,
+                child: withMiniTimer(const TaskList()),
+              ),
+              if (!_chatHidden)
+                TickerMode(
+                  enabled: index == 2,
+                  child: withMiniTimer(const ChatBox()),
+                ),
             ],
           ),
         ),
@@ -263,7 +275,7 @@ class _PanelTabs extends ConsumerWidget {
         children: [
           Expanded(
             child: _tab(
-              icon: LucideIcons.listChecks,
+              icon: AppIcons.listChecks,
               label: 'Tareas',
               selected: !chatSelected,
               onTap: () => onSelect(false),
@@ -271,7 +283,7 @@ class _PanelTabs extends ConsumerWidget {
           ),
           Expanded(
             child: _tab(
-              icon: LucideIcons.messageSquare,
+              icon: AppIcons.messageSquare,
               label: 'Chat',
               selected: chatSelected,
               badge: unread,
@@ -372,14 +384,14 @@ class _BottomNav extends ConsumerWidget {
   final ValueChanged<_Section> onSelect;
 
   static const _meta = {
-    _Section.focus: (LucideIcons.timer, 'Foco'),
-    _Section.tasks: (LucideIcons.listChecks, 'Tareas'),
-    _Section.chat: (LucideIcons.messageSquare, 'Chat'),
+    _Section.focus: (AppIcons.timer, 'Foco'),
+    _Section.tasks: (AppIcons.listChecks, 'Tareas'),
+    _Section.chat: (AppIcons.messageSquare, 'Chat'),
   };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final unread = ref.watch(chatProvider.select((s) => s.unreadCount)) > 0;
+    final unread = ref.watch(chatProvider.select((s) => s.unreadCount > 0));
     return Container(
       decoration: const BoxDecoration(
         color: kRoomSurface,

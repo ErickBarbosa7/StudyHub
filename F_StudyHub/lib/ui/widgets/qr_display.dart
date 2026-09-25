@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../core/app_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -40,7 +40,7 @@ class QrDisplaySheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(
-                    LucideIcons.qrCode,
+                    AppIcons.qrCode,
                     color: kColorDeepSage,
                     size: 22,
                   ),
@@ -121,7 +121,7 @@ class QrDisplaySheet extends StatelessWidget {
                     SnackBar(content: Text('Código $roomId copiado al portapapeles')),
                   );
                 },
-                icon: const Icon(LucideIcons.copy, size: 20),
+                icon: const Icon(AppIcons.copy, size: 20),
                 label: const Text('Copiar código'),
               ),
             ),

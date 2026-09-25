@@ -89,7 +89,9 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
       final wasRunning = state.isRunning;
       final finishedAtZero = timeRemaining == 0 && wasRunning;
       if (finishedAtZero && !state.isFinished) {
-        _roomProvider.read(soundProvider.notifier).playPomodoroFinishedSound();
+        _roomProvider.read(soundProvider.notifier).playPomodoroFinishedSound(
+              focusFinished: state.mode == kModeFocus,
+            );
       }
       // Si el modo cambia por algo distinto a terminar la fase actual
       // (flecha o selector), el 'completado' previo ya no aplica.
@@ -115,7 +117,9 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
       final finishedMode = map['mode'] as String? ?? state.mode;
       debugPrint('[pomodoro] Fase $finishedMode completada');
       if (!state.isFinished) {
-        _roomProvider.read(soundProvider.notifier).playPomodoroFinishedSound();
+        _roomProvider.read(soundProvider.notifier).playPomodoroFinishedSound(
+              focusFinished: finishedMode == kModeFocus,
+            );
       }
       state = state.copyWith(
         timeRemaining: 0,

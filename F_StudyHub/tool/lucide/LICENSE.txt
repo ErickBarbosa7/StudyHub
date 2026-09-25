@@ -1,0 +1,4 @@
+Iconos Lucide (https://lucide.dev), licencia ISC.
+Empaquetados como fuente por lucide_icons_flutter (licencia MIT, (c) 2024 vqhapp).
+Esta carpeta guarda la fuente completa y el mapa de códigos, solo como origen para
+tool/gen_icons.py; a la app solo llega el subconjunto de iconos que se usan.

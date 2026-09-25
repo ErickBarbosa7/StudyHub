@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/theme.dart';
 import '../../data/models/user_model.dart';
@@ -41,16 +41,17 @@ class RoomHeader extends ConsumerWidget {
     final roomState = ref.watch(roomProvider);
     final room = roomState.room;
     final users = roomState.users;
-    final unread =
-        chatHidden && ref.watch(chatProvider.select((s) => s.unreadCount)) > 0;
+    // Se observa solo "hay o no hay no leídos", no cada cambio del contador.
+    final hasUnread = ref.watch(chatProvider.select((s) => s.unreadCount > 0));
+    final unread = chatHidden && hasUnread;
 
     final chatToggle = Stack(
       clipBehavior: Clip.none,
       children: [
         RoomIconButton(
           icon: chatHidden
-              ? LucideIcons.messageSquareOff
-              : LucideIcons.messageSquare,
+              ? AppIcons.messageSquareOff
+              : AppIcons.messageSquare,
           tooltip: chatHidden ? 'Mostrar chat' : 'Ocultar chat',
           foreground: chatHidden ? kRoomMuted : kRoomInk,
           onPressed: onToggleChat,
@@ -82,7 +83,7 @@ class RoomHeader extends ConsumerWidget {
           child: Row(
             children: [
               RoomIconButton(
-                icon: LucideIcons.arrowLeft,
+                icon: AppIcons.arrowLeft,
                 tooltip: 'Salir de la sala',
                 bordered: false,
                 background: Colors.transparent,
@@ -123,7 +124,7 @@ class RoomHeader extends ConsumerWidget {
                             ),
                             const SizedBox(width: 6),
                             const Icon(
-                              LucideIcons.copy,
+                              AppIcons.copy,
                               size: 13,
                               color: kRoomMuted,
                             ),
@@ -150,7 +151,7 @@ class RoomHeader extends ConsumerWidget {
         child: Row(
           children: [
             RoomIconButton(
-              icon: LucideIcons.logOut,
+              icon: AppIcons.logOut,
               tooltip: 'Salir de la sala',
               onPressed: onLeave,
             ),
@@ -187,7 +188,7 @@ class RoomHeader extends ConsumerWidget {
               _CodeChip(roomId: room.roomId, showLabel: wide),
               const SizedBox(width: 10),
               RoomIconButton(
-                icon: LucideIcons.qrCode,
+                icon: AppIcons.qrCode,
                 tooltip: 'Mostrar código QR',
                 onPressed: () => QrDisplaySheet.show(context, room.roomId),
               ),
@@ -198,7 +199,7 @@ class RoomHeader extends ConsumerWidget {
             chatToggle,
             const SizedBox(width: 10),
             RoomIconButton(
-              icon: LucideIcons.circleHelp,
+              icon: AppIcons.circleHelp,
               tooltip: '¿Cómo funciona?',
               onPressed: onHelp,
             ),
@@ -256,7 +257,7 @@ class _CodeChip extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Icon(LucideIcons.copy, size: 17, color: kRoomMuted),
+                  const Icon(AppIcons.copy, size: 17, color: kRoomMuted),
                 ],
               ),
             ),
@@ -378,7 +379,7 @@ class _PeopleButton extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(LucideIcons.users, size: 18, color: kRoomInk),
+                  const Icon(AppIcons.users, size: 18, color: kRoomInk),
                   const SizedBox(width: 8),
                   Text(
                     '$count',
@@ -461,7 +462,7 @@ class _MembersSheet extends ConsumerWidget {
                   ),
                   const SizedBox(width: 10),
                   RoomIconButton(
-                    icon: LucideIcons.qrCode,
+                    icon: AppIcons.qrCode,
                     tooltip: 'Mostrar código QR',
                     onPressed: () => QrDisplaySheet.show(context, room.roomId),
                   ),
@@ -555,7 +556,7 @@ class _MemberRow extends StatelessWidget {
           if (canKick) ...[
             const SizedBox(width: 8),
             RoomIconButton(
-              icon: LucideIcons.userX,
+              icon: AppIcons.userX,
               tooltip: 'Expulsar a ${user.name}',
               foreground: kRoomError,
               onPressed: onKick,

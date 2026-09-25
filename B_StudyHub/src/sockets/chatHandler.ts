@@ -25,13 +25,15 @@ const HISTORY_LIMIT = 100;
 const MAX_MESSAGE_LENGTH = 1000;
 
 async function sendHistory(socket: Socket, roomId: string) {
+  // Los HISTORY_LIMIT más recientes (antes se devolvían los más antiguos), y se
+  // invierten para entregarlos en orden cronológico.
   const messages = await MessageModel.find({ roomId })
-    .sort({ timestamp: 1 })
+    .sort({ timestamp: -1 })
     .limit(HISTORY_LIMIT)
     .lean();
   socket.emit(
     'chat_history',
-    messages.map((message) => mapToChatMessage(message)),
+    messages.reverse().map((message) => mapToChatMessage(message)),
   );
 }
 

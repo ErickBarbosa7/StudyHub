@@ -32,24 +32,37 @@ interface EditTaskPayload {
 const STATE_ORDER = ['PENDING', 'IN_PROGRESS', 'COMPLETED'] as const;
 const MAX_TASK_TITLE_LENGTH = 100;
 
-async function getRoomTasks(roomId: string): Promise<Array<TaskSubDoc & {
-  stateCode: string;
-  stateLabel: string;
-}> | null> {
-  const room = await RoomModel.findOne({ roomId }).lean();
-  if (!room) return null;
+type CatalogEntry = { _id: { toString(): string }; code: string; label: string };
 
-  const tasks = room.tasks ?? [];
-  const stateRefs = tasks.map((task) => task.stateRef);
-  const states = await CatalogTaskStateModel.find({
-    _id: { $in: stateRefs },
-  }).lean();
-  const stateByRef = new Map(
-    states.map((state) => [state._id.toString(), state]),
-  );
+interface Catalog {
+  byCode: Map<string, CatalogEntry>;
+  byId: Map<string, CatalogEntry>;
+}
 
+// El catálogo de estados son 3 filas fijas (se siembran al arrancar): se lee
+// una sola vez y se reutiliza, en lugar de consultarlo en cada acción.
+let catalogPromise: Promise<Catalog> | null = null;
+
+function getCatalog(): Promise<Catalog> {
+  catalogPromise ??= CatalogTaskStateModel.find()
+    .lean()
+    .then((states) => ({
+      byCode: new Map(states.map((s) => [s.code, s])),
+      byId: new Map(states.map((s) => [s._id.toString(), s])),
+    }))
+    .catch((error) => {
+      catalogPromise = null; // reintenta en la próxima llamada
+      throw error;
+    });
+  return catalogPromise;
+}
+
+type TaskPayload = TaskSubDoc & { stateCode: string; stateLabel: string };
+
+async function toTaskPayload(tasks: TaskSubDoc[]): Promise<TaskPayload[]> {
+  const { byId } = await getCatalog();
   return tasks.map((task) => {
-    const state = stateByRef.get(task.stateRef.toString());
+    const state = byId.get(task.stateRef.toString());
     return {
       ...task,
       stateCode: state?.code ?? 'PENDING',
@@ -58,11 +71,19 @@ async function getRoomTasks(roomId: string): Promise<Array<TaskSubDoc & {
   });
 }
 
-async function sendTaskSync(io: Server, roomId: string): Promise<void> {
-  const tasks = await getRoomTasks(roomId);
-  if (tasks !== null) {
-    io.to(roomId).emit('task_sync', tasks);
-  }
+async function getRoomTasks(roomId: string): Promise<TaskPayload[] | null> {
+  const room = await RoomModel.findOne({ roomId }, { tasks: 1 }).lean();
+  if (!room) return null;
+  return toTaskPayload(room.tasks ?? []);
+}
+
+// Tras guardar se reutiliza la sala ya cargada: evita releerla de la base.
+async function sendTaskSync(
+  io: Server,
+  roomId: string,
+  tasks: TaskSubDoc[],
+): Promise<void> {
+  io.to(roomId).emit('task_sync', await toTaskPayload(tasks));
 }
 
 export function registerTaskHandler(io: Server, socket: Socket): void {
@@ -79,7 +100,7 @@ export function registerTaskHandler(io: Server, socket: Socket): void {
         return;
       }
 
-      const pending = await CatalogTaskStateModel.findOne({ code: 'PENDING' });
+      const pending = (await getCatalog()).byCode.get('PENDING');
       if (!pending) return;
 
       const room = await RoomModel.findOne({ roomId });
@@ -98,7 +119,7 @@ export function registerTaskHandler(io: Server, socket: Socket): void {
       await room.save();
 
       console.log(`[tasks] Tarea agregada en ${roomId}`);
-      await sendTaskSync(io, roomId);
+      await sendTaskSync(io, roomId, room.toObject().tasks);
     } catch (error) {
       console.error('[tasks] Error in add_task:', error);
     }
@@ -112,7 +133,7 @@ export function registerTaskHandler(io: Server, socket: Socket): void {
         return;
       }
 
-      const target = await CatalogTaskStateModel.findOne({ code: newStateRef });
+      const target = (await getCatalog()).byCode.get(newStateRef);
       if (!target) return;
 
       const room = await RoomModel.findOne({ roomId });
@@ -121,11 +142,11 @@ export function registerTaskHandler(io: Server, socket: Socket): void {
       const task = room.tasks.find((item) => item.taskId === taskId);
       if (!task) return;
 
-      task.stateRef = target._id;
+      task.stateRef = target._id as typeof task.stateRef;
       await room.save();
 
       console.log(`[tasks] Estado actualizado en ${roomId}`);
-      await sendTaskSync(io, roomId);
+      await sendTaskSync(io, roomId, room.toObject().tasks);
     } catch (error) {
       console.error('[tasks] Error in update_task_status:', error);
     }
@@ -149,7 +170,7 @@ export function registerTaskHandler(io: Server, socket: Socket): void {
       await room.save();
 
       console.log(`[tasks] Tarea eliminada en ${roomId}`);
-      await sendTaskSync(io, roomId);
+      await sendTaskSync(io, roomId, room.toObject().tasks);
     } catch (error) {
       console.error('[tasks] Error in delete_task:', error);
     }
@@ -179,7 +200,7 @@ export function registerTaskHandler(io: Server, socket: Socket): void {
       await room.save();
 
       console.log(`[tasks] Tarea editada en ${roomId}`);
-      await sendTaskSync(io, roomId);
+      await sendTaskSync(io, roomId, room.toObject().tasks);
     } catch (error) {
       console.error('[tasks] Error in edit_task:', error);
     }

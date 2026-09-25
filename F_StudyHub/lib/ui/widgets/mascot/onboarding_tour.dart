@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../core/app_icons.dart';
 
 import '../../../core/theme.dart';
 import '../../../logic/onboarding_provider.dart';
@@ -184,7 +184,7 @@ class _OnboardingTourViewState extends State<_OnboardingTourView> {
                 ),
               ),
               RoomIconButton(
-                icon: LucideIcons.x,
+                icon: AppIcons.x,
                 tooltip: 'Cerrar guía',
                 bordered: false,
                 background: Colors.transparent,
@@ -313,7 +313,7 @@ class _PreviewView extends StatelessWidget {
         children: [
           Expanded(
             child: _Tile(
-              icon: LucideIcons.plus,
+              icon: AppIcons.plus,
               label: 'Crear sala',
               detail: 'Con nombre',
               accent: kRoomStudy,
@@ -323,7 +323,7 @@ class _PreviewView extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: _Tile(
-              icon: LucideIcons.logIn,
+              icon: AppIcons.logIn,
               label: 'Unirme',
               detail: 'Con código',
               accent: kRoomLong,
@@ -333,7 +333,7 @@ class _PreviewView extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: _Tile(
-              icon: LucideIcons.scanQrCode,
+              icon: AppIcons.scanQrCode,
               label: 'Escanear',
               detail: 'Código QR',
               accent: kRoomBreakInk,
@@ -346,7 +346,7 @@ class _PreviewView extends StatelessWidget {
         children: [
           Expanded(
             child: _Tile(
-              icon: LucideIcons.bookOpen,
+              icon: AppIcons.bookOpen,
               label: 'Estudio',
               detail: '5 a 180 min',
               accent: kRoomStudy,
@@ -356,7 +356,7 @@ class _PreviewView extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: _Tile(
-              icon: LucideIcons.coffee,
+              icon: AppIcons.coffee,
               label: 'Descanso corto',
               detail: '5 min',
               accent: kRoomBreak,
@@ -366,7 +366,7 @@ class _PreviewView extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: _Tile(
-              icon: LucideIcons.moon,
+              icon: AppIcons.moon,
               label: 'Descanso largo',
               detail: '15 min',
               accent: kRoomLong,
@@ -383,7 +383,7 @@ class _PreviewView extends StatelessWidget {
             _Captioned(
               caption: 'Reiniciar',
               child: _MiniSquare(
-                icon: LucideIcons.rotateCcw,
+                icon: AppIcons.rotateCcw,
                 foreground: kRoomInk,
                 background: kRoomSurface,
                 bordered: true,
@@ -395,7 +395,7 @@ class _PreviewView extends StatelessWidget {
             _Captioned(
               caption: 'Adelantar',
               child: _MiniSquare(
-                icon: LucideIcons.skipForward,
+                icon: AppIcons.skipForward,
                 foreground: kRoomStudy,
                 background: kRoomStudySoft,
                 bordered: false,
@@ -436,7 +436,7 @@ class _PreviewView extends StatelessWidget {
             _Captioned(
               caption: 'Chat visible',
               child: _MiniSquare(
-                icon: LucideIcons.messageSquare,
+                icon: AppIcons.messageSquare,
                 foreground: kRoomInk,
                 background: kRoomSurface,
                 bordered: true,
@@ -449,7 +449,7 @@ class _PreviewView extends StatelessWidget {
             _Captioned(
               caption: 'Chat oculto',
               child: _MiniSquare(
-                icon: LucideIcons.messageSquareOff,
+                icon: AppIcons.messageSquareOff,
                 foreground: kRoomMuted,
                 background: kRoomSurface,
                 bordered: true,
@@ -465,7 +465,7 @@ class _PreviewView extends StatelessWidget {
             _MiniCode(),
             SizedBox(width: 10),
             _MiniSquare(
-              icon: LucideIcons.qrCode,
+              icon: AppIcons.qrCode,
               foreground: kRoomInk,
               background: kRoomSurface,
               bordered: true,
@@ -556,7 +556,7 @@ class _Arrow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const Padding(
     padding: EdgeInsets.symmetric(horizontal: 4),
-    child: Icon(LucideIcons.chevronRight, size: 16, color: kRoomMuted),
+    child: Icon(AppIcons.chevronRight, size: 16, color: kRoomMuted),
   );
 }
 
@@ -628,7 +628,7 @@ class _MiniPrimary extends StatelessWidget {
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(LucideIcons.play, size: 18, color: Colors.white),
+          Icon(AppIcons.play, size: 18, color: Colors.white),
           SizedBox(width: 8),
           Text(
             'Iniciar',
@@ -670,7 +670,7 @@ class _MiniCode extends StatelessWidget {
             ),
           ),
           SizedBox(width: 8),
-          Icon(LucideIcons.copy, size: 16, color: kRoomMuted),
+          Icon(AppIcons.copy, size: 16, color: kRoomMuted),
         ],
       ),
     );

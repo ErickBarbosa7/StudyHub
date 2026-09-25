@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/theme.dart';
 import '../../data/models/user_model.dart';
@@ -16,13 +16,18 @@ import '../../logic/task_provider.dart';
 import '../../data/services/sound_service.dart';
 import '../widgets/connection_banner.dart';
 import '../room/room_workspace.dart';
+import '../widgets/landing_hero.dart';
 import '../widgets/mascot/onboarding_tour.dart';
 import '../widgets/qr_scanner.dart';
 
 enum _FormMode { create, join }
 
 class CreateRoomScreen extends ConsumerStatefulWidget {
-  const CreateRoomScreen({super.key});
+  const CreateRoomScreen({super.key, this.landing = false});
+
+  /// Como pantalla de inicio en laptop: presentación a la izquierda y el
+  /// formulario (crear / unirse) a la derecha, sin paso intermedio.
+  final bool landing;
 
   static const String routeName = '/create-room';
 
@@ -334,6 +339,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   Widget build(BuildContext context) {
     final roomState = ref.watch(roomProvider);
     final bool inRoom = roomState.room != null;
+    final bool showLanding = widget.landing && !inRoom;
 
     ref.listen<RoomState>(roomProvider, (previous, next) {
       // Sesión terminada por conexión perdida: volver al inicio.
@@ -385,7 +391,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           showCustomNotification(
             context,
             title: '$titlePrefix ${next.lastAddedTaskTitle ?? 'Agregada'}',
-            icon: LucideIcons.listPlus,
+            icon: AppIcons.listPlus,
             iconColor: kRoomStudy,
           );
           ref.read(taskProvider.notifier).consumeNewTask();
@@ -404,7 +410,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             title: breakEnded
                 ? 'Descanso terminado. ¡De vuelta al estudio!'
                 : '¡Tiempo completado! Tu descanso está listo.',
-            icon: breakEnded ? LucideIcons.bookOpen : LucideIcons.coffee,
+            icon: breakEnded ? AppIcons.bookOpen : AppIcons.coffee,
             iconColor: breakEnded ? kRoomStudy : kRoomBreak,
           );
         });
@@ -422,7 +428,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             title: next.isBreak
                 ? 'Descanso iniciado. ¡Relájate!'
                 : 'Pomodoro iniciado. ¡A concentrarse!',
-            icon: next.isBreak ? LucideIcons.coffee : LucideIcons.timer,
+            icon: next.isBreak ? AppIcons.coffee : AppIcons.timer,
             iconColor: next.isBreak ? kRoomBreak : kRoomStudy,
           );
         });
@@ -436,8 +442,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         _leaveRoom();
       },
       child: Scaffold(
-        backgroundColor: inRoom ? kRoomBg : kColorPaper,
-        appBar: inRoom
+        backgroundColor: inRoom || showLanding ? kRoomBg : kColorPaper,
+        appBar: inRoom || showLanding
             ? null
             : AppBar(
           backgroundColor: Colors.transparent,
@@ -450,7 +456,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 context,
                 ref.read(onboardingProvider.notifier),
               ),
-              icon: const Icon(LucideIcons.circleHelp, size: 20),
+              icon: const Icon(AppIcons.circleHelp, size: 20),
               label: const Text('¿Cómo funciona?'),
               style: TextButton.styleFrom(
                 foregroundColor: kColorTextSecondary,
@@ -460,7 +466,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           ],
         ),
         body: SafeArea(
-          top: inRoom,
+          top: inRoom || showLanding,
           bottom: false,
           child: Column(
             children: [
@@ -468,6 +474,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               Expanded(
                 child: inRoom
                     ? _buildWorkspace(roomState)
+                    : showLanding
+                    ? _buildLanding(roomState)
                     : _buildCreateForm(roomState),
               ),
             ],
@@ -477,7 +485,63 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     );
   }
 
-  Widget _buildCreateForm(RoomState roomState) {
+  /// Inicio en pantallas anchas: presentación a la izquierda y, a la derecha,
+  /// el formulario a la vista (sin pulsar "Crear o unirse" primero).
+  Widget _buildLanding(RoomState roomState) {
+    return Row(
+      children: [
+        const Expanded(flex: 11, child: LandingHero()),
+        Expanded(
+          flex: 9,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: kRoomSurface,
+              border: Border(left: BorderSide(color: kRoomLine)),
+            ),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: roomState.isRestoring
+                      ? const _RestoringView()
+                      : _buildCreateForm(roomState, embedded: true),
+                ),
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: TextButton.icon(
+                    onPressed: () => showOnboardingTour(
+                      context,
+                      ref.read(onboardingProvider.notifier),
+                    ),
+                    icon: const Icon(AppIcons.circleHelp, size: 20),
+                    label: const Text('¿Cómo funciona?'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: kColorTextSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _formShell({required bool embedded, required Widget child}) {
+    if (embedded) return child;
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: kColorCard,
+        border: Border.all(color: kColorBorder),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildCreateForm(RoomState roomState, {bool embedded = false}) {
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
@@ -487,30 +551,47 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'StudyHub',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: kColorInk,
-                  fontWeight: AppType.weightBold,
-                  fontSize: AppType.sizeHero,
+              if (embedded) ...[
+                const Text(
+                  'Empieza ahora',
+                  style: TextStyle(
+                    color: kRoomInk,
+                    fontSize: 28,
+                    fontWeight: AppType.weightBold,
+                    letterSpacing: -0.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Crea tu sala y coordina a tu equipo en tiempo real.',
-                textAlign: TextAlign.center,
-                style: AppType.secondaryItalic(),
-              ),
-              const SizedBox(height: 48),
+                const SizedBox(height: 8),
+                const Text(
+                  'Crea una sala nueva o entra a una con su código.',
+                  style: TextStyle(
+                    color: kRoomMuted,
+                    fontSize: AppType.sizeBodyMedium,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 28),
+              ] else ...[
+                Text(
+                  'StudyHub',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: kColorInk,
+                    fontWeight: AppType.weightBold,
+                    fontSize: AppType.sizeHero,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Crea tu sala y coordina a tu equipo en tiempo real.',
+                  textAlign: TextAlign.center,
+                  style: AppType.secondaryItalic(),
+                ),
+                const SizedBox(height: 48),
+              ],
 
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  color: kColorCard,
-                  border: Border.all(color: kColorBorder),
-                  borderRadius: BorderRadius.circular(24),
-                ),
+              _formShell(
+                embedded: embedded,
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -526,7 +607,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                         controller: _userNameController,
                         label: 'Tu nombre',
                         hint: 'ej. Ana',
-                        icon: LucideIcons.user,
+                        icon: AppIcons.user,
                         maxLength: _maxUserNameLength,
                       ),
 
@@ -537,7 +618,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                           controller: _roomNameController,
                           label: 'Nombre de la sala',
                           hint: 'ej. Sesión de Física',
-                          icon: LucideIcons.doorOpen,
+                          icon: AppIcons.doorOpen,
                           textCapitalization: TextCapitalization.sentences,
                           keyboardType: TextInputType.text,
                           maxLength: _maxRoomNameLength,
@@ -557,7 +638,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                               }
                             },
                             icon: const Icon(
-                              LucideIcons.scanQrCode,
+                              AppIcons.scanQrCode,
                               size: 22,
                             ),
                             label: const Text(
@@ -585,8 +666,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                               ? const SizedBox.shrink()
                               : Icon(
                                   _mode == _FormMode.create
-                                      ? LucideIcons.plus
-                                      : LucideIcons.logIn,
+                                      ? AppIcons.plus
+                                      : AppIcons.logIn,
                                 ),
                           label: roomState.isCreating
                               ? const SizedBox(
@@ -739,8 +820,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       children: [
         Icon(
           isCreate
-              ? LucideIcons.info
-              : LucideIcons.lightbulb,
+              ? AppIcons.info
+              : AppIcons.lightbulb,
           size: 16,
           color: kColorTextSecondary,
         ),
@@ -896,6 +977,35 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         }
         return null;
       },
+    );
+  }
+}
+
+/// Mientras se recupera la sesión anterior, en lugar del formulario.
+class _RestoringView extends StatelessWidget {
+  const _RestoringView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: kRoomStudy,
+            ),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Restaurando tu sesión anterior...',
+            style: TextStyle(color: kRoomMuted, fontSize: AppType.sizeBody),
+          ),
+        ],
+      ),
     );
   }
 }

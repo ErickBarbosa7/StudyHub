@@ -16,16 +16,21 @@ class ClawdAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     const double canvasAspect = 2750 / 1850;
     final double width = height * canvasAspect;
-    return SizedBox(
-      width: width,
-      height: height,
-      child: FittedBox(
-        fit: BoxFit.contain,
-        child: Lottie.asset(
-          kClawdAsset,
-          repeat: true,
-          width: width,
-          height: height,
+    // Capa de repintado propia y frame rate de la animación (12 fps) en vez
+    // de repintar a 60 fps.
+    return RepaintBoundary(
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: Lottie.asset(
+            kClawdAsset,
+            repeat: true,
+            width: width,
+            height: height,
+            frameRate: FrameRate.composition,
+          ),
         ),
       ),
     );

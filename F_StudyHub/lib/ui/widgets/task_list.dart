@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/theme.dart';
 import '../../data/models/task_model.dart';
@@ -102,7 +102,7 @@ class _TaskListState extends ConsumerState<TaskList> {
               ),
               const SizedBox(height: 8),
               _SheetAction(
-                icon: LucideIcons.pencil,
+                icon: AppIcons.pencil,
                 label: 'Editar nombre',
                 onTap: () {
                   Navigator.of(sheetContext).pop();
@@ -111,7 +111,7 @@ class _TaskListState extends ConsumerState<TaskList> {
               ),
               const SizedBox(height: 10),
               _SheetAction(
-                icon: LucideIcons.trash2,
+                icon: AppIcons.trash2,
                 label: 'Eliminar esta tarea',
                 color: kRoomError,
                 onTap: () {
@@ -257,6 +257,7 @@ class _TaskListState extends ConsumerState<TaskList> {
             itemBuilder: (context, index) {
               final task = tasks[index];
               return _TaskTile(
+                key: ValueKey(task.taskId),
                 task: task,
                 showCreator: !solo,
                 onToggleComplete: () => _toggleComplete(task),
@@ -278,7 +279,7 @@ class _TaskListState extends ConsumerState<TaskList> {
               children: [
                 if (widget.showTitle) ...[
                   const Icon(
-                    LucideIcons.listChecks,
+                    AppIcons.listChecks,
                     size: 20,
                     color: kRoomStudy,
                   ),
@@ -362,7 +363,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                   RoomIconButton(
                     size: 52,
                     iconSize: 22,
-                    icon: LucideIcons.plus,
+                    icon: AppIcons.plus,
                     tooltip: 'Agregar tarea',
                     foreground: kRoomStudy,
                     background: kRoomStudySoft,
@@ -438,7 +439,7 @@ class _EmptyTasks extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: const Icon(
-                  LucideIcons.listChecks,
+                  AppIcons.listChecks,
                   size: 26,
                   color: kRoomStudy,
                 ),
@@ -479,6 +480,7 @@ class _EmptyTasks extends StatelessWidget {
 
 class _TaskTile extends StatelessWidget {
   const _TaskTile({
+    super.key,
     required this.task,
     required this.showCreator,
     required this.onToggleComplete,
@@ -532,7 +534,7 @@ class _TaskTile extends StatelessWidget {
                       ),
                       child: done
                           ? const Icon(
-                              LucideIcons.check,
+                              AppIcons.check,
                               size: 15,
                               color: Colors.white,
                             )
@@ -700,7 +702,7 @@ class _StateOption extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              if (selected) Icon(LucideIcons.check, color: accent, size: 18),
+              if (selected) Icon(AppIcons.check, color: accent, size: 18),
             ],
           ),
         ),

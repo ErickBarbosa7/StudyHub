@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/theme.dart';
 import '../../data/models/message_model.dart';
@@ -54,19 +54,21 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
 
   @override
   Widget build(BuildContext context) {
-    final chatState = ref.watch(chatProvider);
-    final messages = chatState.messages;
-    final isLoadingHistory = chatState.isLoadingHistory;
+    // Solo se observa lo que se dibuja: los no leídos y errores no la reconstruyen.
+    final messages = ref.watch(chatProvider.select((s) => s.messages));
+    final isLoadingHistory = ref.watch(
+      chatProvider.select((s) => s.isLoadingHistory),
+    );
     final localUserId = ref.watch(
       roomProvider.select((s) => s.localUser?.id ?? ''),
     );
 
-    if (chatState.messages.length > _lastMessageCount) {
+    if (messages.length > _lastMessageCount) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
       });
     }
-    _lastMessageCount = chatState.messages.length;
+    _lastMessageCount = messages.length;
 
     ref.listen<ChatState>(chatProvider, (previous, next) {
       if (next.error != null && next.error != previous?.error) {
@@ -114,7 +116,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
             if (widget.showTitle) ...[
               const Row(
                 children: [
-                  Icon(LucideIcons.messageSquare, size: 20, color: kRoomStudy),
+                  Icon(AppIcons.messageSquare, size: 20, color: kRoomStudy),
                   SizedBox(width: 10),
                   Text(
                     'Chat',
@@ -175,7 +177,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                   RoomIconButton(
                     size: 52,
                     iconSize: 20,
-                    icon: LucideIcons.send,
+                    icon: AppIcons.send,
                     tooltip: 'Enviar',
                     foreground: Colors.white,
                     background: kRoomStudy,
@@ -211,7 +213,7 @@ class _EmptyChat extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.messageSquare, size: 28, color: kRoomDisabled),
+            Icon(AppIcons.messageSquare, size: 28, color: kRoomDisabled),
             SizedBox(height: 12),
             Text(
               'Aún no hay mensajes. Saluda al equipo o comparte un enlace.',

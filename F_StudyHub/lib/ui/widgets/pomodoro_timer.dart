@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/theme.dart';
 import '../../data/services/sound_service.dart';
@@ -40,7 +40,7 @@ class _ModeStyle {
     soft: kRoomStudySoft,
     ink: kRoomStudy,
     label: 'Estudio',
-    icon: LucideIcons.bookOpen,
+    icon: AppIcons.bookOpen,
   );
   static const shortBreak = _ModeStyle(
     mode: kModeShortBreak,
@@ -48,7 +48,7 @@ class _ModeStyle {
     soft: kRoomBreakSoft,
     ink: kRoomBreakInk,
     label: 'Descanso corto',
-    icon: LucideIcons.coffee,
+    icon: AppIcons.coffee,
   );
   static const longBreak = _ModeStyle(
     mode: kModeLongBreak,
@@ -56,7 +56,7 @@ class _ModeStyle {
     soft: kRoomLongSoft,
     ink: kRoomLong,
     label: 'Descanso largo',
-    icon: LucideIcons.moon,
+    icon: AppIcons.moon,
   );
 
   static const all = [focus, shortBreak, longBreak];
@@ -217,7 +217,7 @@ class _Title extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(LucideIcons.timer, size: 20, color: style.accent),
+        Icon(AppIcons.timer, size: 20, color: style.accent),
         const SizedBox(width: 10),
         const Expanded(
           child: Text(
@@ -415,82 +415,114 @@ class _Dial extends StatelessWidget {
         SizedBox(
           width: size,
           height: size,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(end: progress),
-            duration: const Duration(milliseconds: 900),
-            curve: Curves.linear,
-            builder: (context, value, child) => CustomPaint(
-              painter: _RingPainter(
-                progress: value,
-                color: style.accent,
-                track: kRoomRingTrack,
-                stroke: 8,
-              ),
-              child: child,
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(size * 0.12),
-              // Si el texto no cabe (fuentes grandes), todo el interior escala.
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: SizedBox(
-                  width: size * 0.76,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Mascota: cangrejo de Claude.
-                      SizedBox(
-                        width: crab * 1.4,
-                        height: crab,
-                        child: FittedBox(
-                          fit: BoxFit.contain,
-                          child: Lottie.asset(
-                            'assets/Lottie/claude.json',
-                            repeat: true,
-                            width: crab * 1.4,
-                            height: crab,
+          child: Stack(
+            fit: StackFit.expand,
+            clipBehavior: Clip.none,
+            children: [
+              TweenAnimationBuilder<double>(
+                tween: Tween(end: progress),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.linear,
+                builder: (context, value, child) => CustomPaint(
+                  painter: _RingPainter(
+                    progress: value,
+                    color: style.accent,
+                    track: kRoomRingTrack,
+                    stroke: 8,
+                  ),
+                  child: child,
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(size * 0.12),
+                  // Si el texto no cabe (fuentes grandes), todo el interior escala.
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: SizedBox(
+                      width: size * 0.76,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Mascota: cangrejo de Claude.
+                          // Capa propia + 12 fps (los de la animación): el anillo
+                          // y el resto no se repintan con cada cuadro del cangrejo.
+                          RepaintBoundary(
+                            child: SizedBox(
+                              width: crab * 1.4,
+                              height: crab,
+                              child: FittedBox(
+                                fit: BoxFit.contain,
+                                child: Lottie.asset(
+                                  'assets/Lottie/claude.json',
+                                  repeat: true,
+                                  frameRate: FrameRate.composition,
+                                  width: crab * 1.4,
+                                  height: crab,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _formatTime(state.timeRemaining),
-                        maxLines: 1,
-                        style: AppType.monoTimer(
-                          color: state.isBreak ? style.accent : kRoomInk,
-                          fontSize: size * 0.19,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
-                        child: Text(
-                          _statusText(state),
-                          key: ValueKey(_statusText(state)),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          style: TextStyle(
-                            color: state.isFinished
-                                ? kRoomInk
-                                : state.isRunning
-                                ? style.accent
-                                : kRoomMuted,
-                            fontWeight: AppType.weightSemiBold,
-                            fontSize: AppType.sizeBody,
-                            height: 1.2,
+                          const SizedBox(height: 6),
+                          Text(
+                            _formatTime(state.timeRemaining),
+                            maxLines: 1,
+                            style: AppType.monoTimer(
+                              color: state.isBreak ? style.accent : kRoomInk,
+                              fontSize: size * 0.19,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 4),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 250),
+                            child: Text(
+                              _statusText(state),
+                              key: ValueKey(_statusText(state)),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              style: TextStyle(
+                                color: state.isFinished
+                                    ? kRoomInk
+                                    : state.isRunning
+                                    ? style.accent
+                                    : kRoomMuted,
+                                fontWeight: AppType.weightSemiBold,
+                                fontSize: AppType.sizeBody,
+                                height: 1.2,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
+              // Silenciar o activar el sonido de fin de fase.
+              const Positioned(top: -6, right: -6, child: _SoundToggle()),
+            ],
           ),
         ),
         const SizedBox(height: 14),
         _RoundDots(state: state, accent: style.accent),
       ],
+    );
+  }
+}
+
+/// Botón para activar o silenciar el sonido de fin de fase. Al activarlo suena
+/// un aviso corto, para confirmar que se oye.
+class _SoundToggle extends ConsumerWidget {
+  const _SoundToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = ref.watch(soundProvider.select((s) => s.isEnabled));
+    return RoomIconButton(
+      icon: enabled ? AppIcons.volume2 : AppIcons.volumeX,
+      tooltip: enabled ? 'Silenciar sonido' : 'Activar sonido',
+      foreground: enabled ? kRoomMuted : kRoomDisabled,
+      bordered: false,
+      background: Colors.transparent,
+      onPressed: () => ref.read(soundProvider.notifier).toggleSound(),
     );
   }
 }
@@ -565,7 +597,7 @@ class _Controls extends StatelessWidget {
       children: [
         RoomIconButton(
           size: 52,
-          icon: LucideIcons.rotateCcw,
+          icon: AppIcons.rotateCcw,
           tooltip: 'Reiniciar',
           onPressed: canReset ? onReset : null,
         ),
@@ -585,7 +617,7 @@ class _Controls extends StatelessWidget {
               ),
               onPressed: onToggle,
               icon: Icon(
-                state.isRunning ? LucideIcons.pause : LucideIcons.play,
+                state.isRunning ? AppIcons.pause : AppIcons.play,
                 size: 20,
               ),
               label: Text(
@@ -603,7 +635,7 @@ class _Controls extends StatelessWidget {
         const SizedBox(width: 10),
         RoomIconButton(
           size: 52,
-          icon: LucideIcons.skipForward,
+          icon: AppIcons.skipForward,
           tooltip: state.isBreak ? 'Volver a estudiar' : 'Adelantar descanso',
           foreground: style.accent,
           background: style.soft,
@@ -684,7 +716,7 @@ class MiniTimerBar extends ConsumerWidget {
             ),
           ),
           RoomIconButton(
-            icon: state.isRunning ? LucideIcons.pause : LucideIcons.play,
+            icon: state.isRunning ? AppIcons.pause : AppIcons.play,
             tooltip: state.isRunning ? 'Pausar' : 'Iniciar',
             onPressed: () {
               if (state.isRunning) {
@@ -697,7 +729,7 @@ class MiniTimerBar extends ConsumerWidget {
           ),
           const SizedBox(width: 6),
           RoomIconButton(
-            icon: LucideIcons.skipForward,
+            icon: AppIcons.skipForward,
             tooltip: state.isBreak ? 'Volver a estudiar' : 'Adelantar descanso',
             foreground: style.accent,
             background: style.soft,

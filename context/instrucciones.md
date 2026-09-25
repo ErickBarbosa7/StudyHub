@@ -56,7 +56,7 @@ F_StudyHub/lib/
     services/
       api_service.dart    # REST API: createRoom, getRoom
       websocket_service.dart # Socket.IO client wrapper
-      sound_service.dart  # Audio playback (pomodoro bell) + SoundProvider
+      sound_service.dart  # Audio (campanas de fin de fase, aviso de tarea) + SoundProvider
   ui/
     screens/
       home_screen.dart         # Landing / Home
@@ -69,7 +69,9 @@ F_StudyHub/lib/
       qr_scanner.dart          # QrScannerScreen (escanea QR para unirse)
       task_list.dart           # TaskList widget con edit/delete
   assets/
-    audio/pomodoro_bell.mp3    # Sonido Pomodoro
+    audio/focus_end.mp3        # Fin de estudio (3 notas que bajan)
+    audio/break_end.mp3        # Fin de descanso (2 notas que suben)
+    audio/task_notification.mp3 # Aviso de tarea nueva
     fonts/CascadiaCode.ttf     # Fuente monoespaciada
     fonts/Recursive-VF.ttf     # Fuente principal (variable)
     Lottie/STUDENT.json        # Animación home
@@ -182,13 +184,27 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 | `timer_tick` | -- | EMIT (broadcast sala) |
 | `pomodoro_finished` | -- | EMIT (broadcast sala) |
 
+##### Inicio responsivo
+
+- `HomeScreen` decide por ancho (`kLandingBreakpoint` = 960 px, en `landing_hero.dart`):
+  - **≥ 960 (laptop, tablet horizontal):** el inicio es directamente `CreateRoomScreen(landing: true)`: a la izquierda `LandingHero` (panel verde con "StudyHub" en grande, la frase, 3 etiquetas y, si sobra alto, la animación del chico estudiando `STUDENT.json` directo sobre el verde, con una tarjeta de muestra de una sala con los componentes de la app al frente) y a la derecha el formulario Crear / Unirte a la vista, sin clic intermedio. Si hay sesión restaurada, la misma pantalla pasa a la sala (no se empuja otra ruta).
+  - **< 960 (celular, tablet vertical):** mismo lenguaje visual (panel verde, nombre grande, frase, etiquetas, animación) con el botón blanco "Crear o unirse a una sala", que abre `CreateRoomScreen` como ruta. Las piezas compartidas (`LandingBrandRow`, `LandingWordmark`, `LandingTagline`, `LandingFeatures`, `LandingIllustration`, `LandingRoomPreview`) viven en `landing_hero.dart`.
+
 ##### Sala rediseñada (paleta "Estudio" + iconos Lucide)
 
 - `lib/ui/room/room_workspace.dart`: contenedor de la sala. Elige distribución por ancho (`RoomLayout`): **wide** ≥1100 (reloj · tareas · chat), **tablet** ≥700 (reloj + pestañas Tareas/Chat), **phone** (navegación inferior Foco/Tareas/Chat + mini reloj). El chat se puede ocultar (pref `chat_hidden`).
 - `lib/ui/room/room_header.dart`: barra superior (salir, nombre, código, QR, avatares, chat, ayuda) y hoja de miembros/invitación (`showRoomMembersSheet`, aquí el anfitrión expulsa).
 - `lib/ui/room/room_widgets.dart`: `RoomCard`, `RoomIconButton`, `RoomChip`, `RoomAvatar`, `RoomLayout`.
 - Paleta de la sala: constantes `kRoom*` en `theme.dart` (un color por modo: estudio verde azulado, descanso corto ámbar, largo índigo). Los `kColor*` de toda la app apuntan a esa paleta; el valor anterior ("Focus & Paper") quedó comentado junto a cada constante (`// antes: ...`). Sin chat en laptop, reloj y tareas ocupan 50/50.
-- Iconos: paquete `lucide_icons_flutter` (`LucideIcons.*`) en la sala.
+- Iconos: Lucide, con fuente propia recortada. Se usan como `AppIcons.circleHelp` (camelCase del nombre Lucide). `lib/core/app_icons.dart` y `assets/fonts/Lucide.ttf` se generan con `python3 tool/gen_icons.py` (requiere `pip install fonttools`) a partir de los `AppIcons.*` que aparecen en el código. No se usa el paquete `lucide_icons_flutter`: declaraba 7 fuentes (3.7 MB) que el navegador descargaba al arrancar.
+
+##### Rendimiento (web)
+
+- **Fuentes:** `assets/fonts/*` están recortadas por `tool/subset_fonts.sh` (originales en `tool/fonts/original`): Recursive con solo los ejes `wght` y `slnt` y glifos Latin (2.4 MB → 0.43 MB), Cascadia con ASCII (0.74 MB → 0.08 MB). Hay que conservar la característica `rvrn` (elige el cero liso). Solo se declaran los pesos usados (400-800); cada entrada del `pubspec` es una descarga y una copia en memoria.
+- **Animaciones Lottie:** siempre con `frameRate: FrameRate.composition` (12 y 25 fps en lugar de 60) y dentro de un `RepaintBoundary`, para que no repinten el resto de la pantalla en cada cuadro. En celular, las secciones fuera de vista se pausan con `TickerMode`.
+- **Reconstrucciones:** `ref.watch(x.select(...))` para observar solo lo que se dibuja (chat, no leídos). Tareas con `ValueKey(taskId)`.
+- **InactivityDetector:** guarda una marca de tiempo por evento y revisa cada 30 s; antes creaba un `Timer` por cada evento de puntero.
+- **Backend:** el catálogo de estados de tarea se lee una vez y se guarda en memoria; tras guardar una tarea se reutiliza la sala ya cargada (de 5 consultas a 2 por acción). El historial del chat devuelve los 100 mensajes más recientes (antes los más antiguos) con índice `{roomId, timestamp}`.
 - `PomodoroTimer`, `TaskList` y `ChatBox` ya no dibujan su propia tarjeta: van dentro de `RoomCard`. Requieren alto acotado.
 
 #### 6. PROVIDERS Y ESTADO (RIVERPod)
@@ -246,7 +262,7 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 
 - **iOS** (`Info.plist`): `NSCameraUsageDescription` = "StudyHub necesita acceso a la camara para escanear codigos QR de salas."
 - **Android** (`AndroidManifest.xml`): `android.permission.CAMERA`
-- **iOS Audio:** `audioplayers` requiere `AudioContext(iOS: AudioContextIOS(category: AVAudioSessionCategory.playback))` para reproducir audio en modo silencio. Esto se configura en `sound_service.dart` constructor, `unlock()`, y antes de `playPomodoroFinishedSound()`.
+- **iOS Audio:** `audioplayers` requiere `AudioContext(iOS: AudioContextIOS(category: AVAudioSessionCategory.playback))` para reproducir audio en modo silencio. Esto se configura en el constructor de `sound_service.dart` y en `unlock()`.
 - **`mobile_scanner` v5.2.3:** Usa `MobileScannerErrorCode` enum (`permissionDenied`, `controllerAlreadyInitialized`, `controllerDisposed`, `controllerUninitialized`, `genericError`, `unsupported`). NO tiene `hasCameraPermission` en state.
 
 #### 10. PATRONES DE ERROR Y NOTIFICACIONES
@@ -306,7 +322,8 @@ ref.listen<XState>(provider, (previous, next) {
 | **Fix teclado chat** | `chat_box.dart` | Eliminado `FocusScope.unfocus()` del botón enviar |
 | **Banner conexión/errores** | `connection_banner.dart`, `websocket_service.dart`, `socket_provider.dart` | `SocketConnectionStatus` + `ValueNotifier`, `SocketState`, `ensureConnected`, banner "Conectando…"/error con Reintentar |
 | **Límites de caracteres** | `chat_box.dart`, `roomHandler.ts`, `chatHandler.ts`, `taskHandler.ts`, `roomController.ts` | Chat 1000, feedback 100, tarea 100, sala 20, usuario 15 |
-| **Sound unlock iOS (edit)** | `sound_service.dart`, `pomodoro_timer.dart` | `unlock()` prime el `_player` compartido con clip mudo (vol 0) dentro del gesto → activa sesión de audio iOS + autoplay web para el repr. del sonido de fin de pomodoro |
+| **Sound unlock (edit)** | `sound_service.dart`, `inactivity_detector.dart` | `unlock()` prima los dos reproductores (alarma y aviso) con un clip mudo en el primer toque de cualquier parte de la app (`InactivityDetector`), no solo al pulsar Iniciar; si falla se reintenta en el siguiente toque. Un reproductor por tipo de sonido para que no se pisen |
+| **Sonido por fase + silenciar** | `sound_service.dart`, `pomodoro_provider.dart`, `pomodoro_timer.dart` | `playPomodoroFinishedSound(focusFinished:)` elige la campana según la fase que terminó; botón de volumen en la esquina del reloj (`_SoundToggle`) |
 | **Pomodoro bottom sheet (edit)** | `pomodoro_timer.dart` | `_promptCustomDuration` en `showModalBottomSheet` con `AnimatedPadding` (sigue al teclado), sin `SingleChildScrollView`, input numérico (`digitsOnly`, max 3). Fix salto iOS al abrir |
 | **Traspaso de dueño** | `roomHandler.ts`, `room_provider.dart`, `room_model.dart` | Al irse el dueño y quedar 1+ usuario, el 1ro que se queda pasa a ser dueño (Mongo + evento `host_transferred`) |
 | **Eliminar sala vacía** | `roomHandler.ts` | Al quedar 0 usuarios conectados se borra `Room` + `Message` del chat |
