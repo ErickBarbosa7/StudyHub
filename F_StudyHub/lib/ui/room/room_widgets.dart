@@ -39,6 +39,7 @@ class RoomIconButton extends StatelessWidget {
     this.foreground = kRoomInk,
     this.background = kRoomSurface,
     this.bordered = true,
+    this.borderColor = kRoomLine,
   });
 
   final IconData icon;
@@ -49,6 +50,7 @@ class RoomIconButton extends StatelessWidget {
   final Color foreground;
   final Color background;
   final bool bordered;
+  final Color borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -62,9 +64,7 @@ class RoomIconButton extends StatelessWidget {
           color: background,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(size > 48 ? 16 : 14),
-            side: bordered
-                ? const BorderSide(color: kRoomLine)
-                : BorderSide.none,
+            side: bordered ? BorderSide(color: borderColor) : BorderSide.none,
           ),
           child: InkWell(
             onTap: onPressed,

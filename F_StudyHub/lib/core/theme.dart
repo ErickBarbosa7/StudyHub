@@ -119,6 +119,8 @@ const Color kRoomLong = Color(0xFF484C9B); // descanso largo
 const Color kRoomLongSoft = Color(0xFFE8E9F6);
 
 const Color kRoomError = Color(0xFFB3372F);
+const Color kRoomErrorSoft = Color(0xFFF9E7E4);
+const Color kRoomErrorLine = Color(0xFFE8C6C1);
 
 // Tono medio del verde azulado (decorativo, antes salvia #9BAF9D).
 const Color kColorSageMid = Color(0xFF8DB8AC);
