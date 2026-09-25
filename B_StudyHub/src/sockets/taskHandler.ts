@@ -163,10 +163,15 @@ export function registerTaskHandler(io: Server, socket: Socket): void {
       const room = await RoomModel.findOne({ roomId });
       if (!room) return;
 
-      const target = room.tasks.find((item) => item.taskId === taskId);
-      if (!target) return;
+      // TaskSubSchema usa `_id: false`, así que `pull({ taskId })` castea un
+      // subdocumento stub y lo compara con `Document#equals`, que sin `_id`
+      // cae a deepEqual de todo el objeto y nunca coincide: la tarea se
+      // borraba en Mongo pero no en memoria, y el task_sync salía stale.
+      // Se quita por índice para que memoria y base queden de acuerdo.
+      const index = room.tasks.findIndex((item) => item.taskId === taskId);
+      if (index === -1) return;
 
-      room.tasks.pull({ taskId });
+      room.tasks.splice(index, 1);
       await room.save();
 
       console.log(`[tasks] Tarea eliminada en ${roomId}`);

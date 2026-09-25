@@ -7,6 +7,8 @@ export interface RoomUser {
   id: string;
   name: string;
   socketId: string;
+  /** true mientras el socket está caído pero dentro del periodo de gracia. */
+  disconnected?: boolean;
 }
 
 interface JoinRoomPayload {
@@ -31,8 +33,28 @@ interface KickUserPayload {
 const usersByRoom = new Map<string, Map<string, RoomUser>>();
 const MAX_USER_NAME_LENGTH = 15;
 
+// Tiempo que se conserva a un usuario (y su sala) tras perder el socket, para
+// que pueda volver tras inactividad o recargar la página (F5).
+const DISCONNECT_GRACE_MS = 60 * 60 * 1000;
+const pendingRemovals = new Map<string, NodeJS.Timeout>();
+
+function removalKey(roomId: string, userId: string): string {
+  return `${roomId}:${userId}`;
+}
+
+function cancelPendingRemoval(roomId: string, userId: string): void {
+  const key = removalKey(roomId, userId);
+  const timer = pendingRemovals.get(key);
+  if (timer) {
+    clearTimeout(timer);
+    pendingRemovals.delete(key);
+  }
+}
+
 function getRoomUsers(roomId: string): RoomUser[] {
-  return Array.from(usersByRoom.get(roomId)?.values() ?? []);
+  return Array.from(usersByRoom.get(roomId)?.values() ?? []).filter(
+    (u) => !u.disconnected,
+  );
 }
 
 function sendUsersUpdate(io: Server, roomId: string): void {
@@ -47,19 +69,30 @@ export function getRoomUserName(
   return usersByRoom.get(roomId)?.get(userId)?.name;
 }
 
-function removeUserFromAllRooms(io: Server, socket: Socket): void {
+function markUserDisconnected(io: Server, socket: Socket): void {
   for (const [roomId, users] of usersByRoom) {
     let changed = false;
     for (const [userId, user] of users) {
-      if (user.socketId === socket.id) {
-        users.delete(userId);
-        changed = true;
-      }
+      if (user.socketId !== socket.id || user.disconnected) continue;
+      user.disconnected = true;
+      changed = true;
+
+      cancelPendingRemoval(roomId, userId);
+      const timer = setTimeout(() => {
+        pendingRemovals.delete(removalKey(roomId, userId));
+        const current = usersByRoom.get(roomId)?.get(userId);
+        // Si volvió (nuevo socket) ya no está marcado como desconectado.
+        if (!current?.disconnected) return;
+        usersByRoom.get(roomId)?.delete(userId);
+        void handleRoomAfterLeave(io, roomId).catch((error) => {
+          console.error('[rooms] Error tras remoción por desconexión:', error);
+        });
+      }, DISCONNECT_GRACE_MS);
+      timer.unref();
+      pendingRemovals.set(removalKey(roomId, userId), timer);
     }
     if (changed) {
-      void handleRoomAfterLeave(io, roomId).catch((error) => {
-        console.error('[rooms] Error tras remoción por desconexión:', error);
-      });
+      sendUsersUpdate(io, roomId);
     }
   }
 }
@@ -139,6 +172,7 @@ export function registerRoomHandler(io: Server, socket: Socket): void {
     void socket.join(roomId);
 
     const roomUsers = usersByRoom.get(roomId) ?? new Map<string, RoomUser>();
+    cancelPendingRemoval(roomId, user.id);
     roomUsers.set(user.id, { ...user, socketId: socket.id });
     usersByRoom.set(roomId, roomUsers);
 
@@ -154,6 +188,7 @@ export function registerRoomHandler(io: Server, socket: Socket): void {
     }
 
     void socket.leave(roomId);
+    cancelPendingRemoval(roomId, userId);
     usersByRoom.get(roomId)?.delete(userId);
 
     void handleRoomAfterLeave(io, roomId).catch((error) => {
@@ -162,8 +197,8 @@ export function registerRoomHandler(io: Server, socket: Socket): void {
   });
 
   socket.on('disconnect', () => {
-    removeUserFromAllRooms(io, socket);
-    console.log('[rooms] Cliente desconectado y removido de sus salas');
+    markUserDisconnected(io, socket);
+    console.log('[rooms] Cliente desconectado; se conserva su lugar en la sala');
   });
 
   socket.on('kick_user', async (payload: KickUserPayload) => {
@@ -186,6 +221,7 @@ export function registerRoomHandler(io: Server, socket: Socket): void {
         return;
       }
 
+      cancelPendingRemoval(roomId, userId);
       roomUsers?.delete(userId);
 
       io.to(targetUser.socketId).emit('kicked', { roomId });
