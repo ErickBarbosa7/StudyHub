@@ -831,6 +831,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       onHelp: () => showOnboardingTour(
         context,
         ref.read(onboardingProvider.notifier),
+        inRoom: true,
       ),
     );
   }
