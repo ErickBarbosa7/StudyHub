@@ -1,6 +1,7 @@
 import type { Server, Socket } from 'socket.io';
 import { MessageModel } from '../models/Message.js';
 import { RoomModel } from '../models/Room.js';
+import { cleanupPomodoroSession } from './pomodoroHandler.js';
 
 export interface RoomUser {
   id: string;
@@ -69,6 +70,7 @@ async function handleRoomAfterLeave(io: Server, roomId: string): Promise<void> {
     usersByRoom.delete(roomId);
     await RoomModel.deleteOne({ roomId });
     await MessageModel.deleteMany({ roomId });
+    cleanupPomodoroSession(roomId);
     console.log(`[rooms] Sala ${roomId} eliminada por quedar vacía`);
     return;
   }
@@ -106,13 +108,31 @@ async function handleRoomAfterLeave(io: Server, roomId: string): Promise<void> {
 }
 
 export function registerRoomHandler(io: Server, socket: Socket): void {
-  socket.on('join_room', (payload: JoinRoomPayload) => {
+  socket.on('join_room', async (payload: JoinRoomPayload) => {
     const { roomId, user } = payload;
 
     if (!roomId || !user?.id || !user?.name) {
       return;
     }
     if (user.name.trim().length > MAX_USER_NAME_LENGTH) {
+      return;
+    }
+
+    // Validar que la sala siga existiendo: evita "revivir" salas fantasma
+    // ya borradas cuando se restaura una sesión vieja.
+    let roomExists = true;
+    try {
+      const room = await RoomModel.findOne({ roomId }).lean();
+      roomExists = room !== null;
+    } catch (error) {
+      console.error('[rooms] Error al validar la sala:', error);
+    }
+
+    if (!roomExists) {
+      console.log(
+        `[rooms] Se intentó unirse a la sala inexistente ${roomId}`,
+      );
+      socket.emit('room_not_found', { roomId });
       return;
     }
 
