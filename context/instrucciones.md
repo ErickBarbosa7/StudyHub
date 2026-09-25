@@ -187,8 +187,8 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 ##### Inicio responsivo
 
 - `HomeScreen` decide por ancho (`kLandingBreakpoint` = 960 px, en `landing_hero.dart`):
-  - **≥ 960 (laptop, tablet horizontal):** el inicio es directamente `CreateRoomScreen(landing: true)`: a la izquierda `LandingHero` (panel verde con "StudyHub" en grande, la frase, 3 etiquetas y, si sobra alto, la animación del chico estudiando `STUDENT.json` directo sobre el verde, con una tarjeta de muestra de una sala con los componentes de la app al frente) y a la derecha el formulario Crear / Unirte a la vista, sin clic intermedio. Si hay sesión restaurada, la misma pantalla pasa a la sala (no se empuja otra ruta).
-  - **< 960 (celular, tablet vertical):** mismo lenguaje visual (panel verde, nombre grande, frase, etiquetas, animación) con el botón blanco "Crear o unirse a una sala", que abre `CreateRoomScreen` como ruta. Las piezas compartidas (`LandingBrandRow`, `LandingWordmark`, `LandingTagline`, `LandingFeatures`, `LandingIllustration`, `LandingRoomPreview`) viven en `landing_hero.dart`.
+  - **≥ 960 (laptop, tablet horizontal):** el inicio es directamente `CreateRoomScreen(landing: true)`: a la izquierda `LandingHero` (panel verde con "StudyHub" en grande, la frase, 3 etiquetas y, si sobra alto, la animación del chico estudiando `STUDENT.json` directo sobre el verde, abajo y centrada, sin tarjeta) y a la derecha el formulario Crear / Unirte a la vista, sin clic intermedio. Si hay sesión restaurada, la misma pantalla pasa a la sala (no se empuja otra ruta).
+  - **< 960 (celular, tablet vertical):** mismo lenguaje visual (panel verde, nombre grande, frase, etiquetas, animación) con el botón blanco "Crear o unirse a una sala", que abre `CreateRoomScreen` como ruta. Las piezas compartidas (`LandingBrandRow`, `LandingWordmark`, `LandingTagline`, `LandingFeatures`, `LandingIllustration`) viven en `landing_hero.dart`.
 
 ##### Sala rediseñada (paleta "Estudio" + iconos Lucide)
 
