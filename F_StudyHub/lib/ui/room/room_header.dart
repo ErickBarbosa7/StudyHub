@@ -204,8 +204,9 @@ class RoomHeader extends ConsumerWidget {
             const Spacer(),
             _AvatarStack(users: users, showLabel: wide, onPressed: openMembers),
             const SizedBox(width: 12),
-            chatToggle,
-            const SizedBox(width: 10),
+            // En laptop el chat se pliega desde su propia tarjeta (y el riel que
+            // queda al plegarlo); el botón del header es para tablet.
+            if (!wide) ...[chatToggle, const SizedBox(width: 10)],
             // Esta rama solo se alcanza en tablet y laptop; en celular la fila
             // está llena y el toggle vive en la hoja de miembros.
             const ThemeToggleIconButton(),
