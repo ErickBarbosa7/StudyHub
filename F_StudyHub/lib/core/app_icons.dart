@@ -49,6 +49,10 @@ abstract final class AppIcons {
   static const IconData messageSquareOff = IconData(58737, fontFamily: _family);
   /// moon
   static const IconData moon = IconData(57630, fontFamily: _family);
+  /// panel-right-close
+  static const IconData panelRightClose = IconData(58418, fontFamily: _family);
+  /// panel-right-open
+  static const IconData panelRightOpen = IconData(58420, fontFamily: _family);
   /// pause
   static const IconData pause = IconData(57646, fontFamily: _family);
   /// pencil

@@ -12,10 +12,22 @@ import 'avatar_picker.dart';
 
 /// Chat de la sala. Necesita alto acotado: la lista hace scroll por dentro.
 class ChatBox extends ConsumerStatefulWidget {
-  const ChatBox({super.key, this.showTitle = true});
+  const ChatBox({
+    super.key,
+    this.showTitle = true,
+    this.onCollapse,
+    this.collapseIcon = AppIcons.panelRightClose,
+  });
 
   /// Sin título cuando una pestaña ya dice "Chat".
   final bool showTitle;
+
+  /// Si se pasa, el título lleva un botón para plegar el chat (laptop).
+  final VoidCallback? onCollapse;
+
+  /// Icono del botón de [onCollapse]: el panel plegable en laptop, una X donde
+  /// el chat es una pestaña.
+  final IconData collapseIcon;
 
   @override
   ConsumerState<ChatBox> createState() => _ChatBoxState();
@@ -179,14 +191,25 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                 children: [
                   Icon(AppIcons.messageSquare, size: 20, color: c.study),
                   SizedBox(width: 10),
-                  Text(
-                    'Chat',
-                    style: TextStyle(
-                      color: c.ink,
-                      fontSize: AppType.sizeTitle - 2,
-                      fontWeight: AppType.weightBold,
+                  Expanded(
+                    child: Text(
+                      'Chat',
+                      style: TextStyle(
+                        color: c.ink,
+                        fontSize: AppType.sizeTitle - 2,
+                        fontWeight: AppType.weightBold,
+                      ),
                     ),
                   ),
+                  if (widget.onCollapse != null)
+                    RoomIconButton(
+                      size: 36,
+                      iconSize: 18,
+                      icon: widget.collapseIcon,
+                      tooltip: 'Ocultar chat',
+                      foreground: c.muted,
+                      onPressed: widget.onCollapse,
+                    ),
                 ],
               ),
               const SizedBox(height: 16),

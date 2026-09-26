@@ -67,8 +67,9 @@ const _chat = _Step(
   title: 'Chat, solo si lo necesitas',
   message:
       'Habla con tu equipo sin salir de la sala. ¿Estudias solo? Oculta el '
-      'chat con el botón de arriba y el reloj y las tareas ocupan todo el '
-      'espacio.',
+      'chat con su botón (en laptop, el de la tarjeta del chat; en tablet, el '
+      'de arriba) y las tareas ocupan el espacio. En laptop queda un riel para '
+      'volver a abrirlo, con los mensajes sin leer.',
   preview: _Preview.chat,
 );
 
