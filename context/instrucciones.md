@@ -43,7 +43,7 @@ F_StudyHub/lib/
   main.dart
   core/
     constants.dart        # kApiBaseUrl, kSocketUrl (dart-define)
-    avatars.dart          # avatarSvg(seed): avatares DiceBear "Sprouts" generados en el dispositivo (con caché) + warmUpAvatars()
+    avatars.dart          # avatarSvg(seed): avatares DiceBear "Sprouts" generados en el dispositivo (con caché) + kAvatarSeeds (espejo de AVATAR_SEEDS) + warmUpAvatars()
     theme.dart            # Design system: AppColors (ThemeExtension claro/oscuro), AppType, buildTheme(brightness)
   logic/
     room_provider.dart    # RoomNotifier / RoomState
@@ -67,7 +67,8 @@ F_StudyHub/lib/
       home_screen.dart         # Landing / Home
       create_room_screen.dart  # Formulario crear/unirse + Workspace (tabs Estudio/Chat)
     widgets/
-      chat_box.dart            # ChatBox: burbujas, reacciones rápidas, indicador "escribiendo"
+      avatar_picker.dart       # showAvatarPicker: rejilla de macetas libres para cambiar el avatar
+      chat_box.dart            # ChatBox: burbujas con avatar agrupado, reacciones rápidas, indicador "escribiendo"
       help_icon.dart           # HelpIcon widget reutilizable
       pomodoro_timer.dart      # PomodoroTimer widget
       qr_display.dart          # QrDisplaySheet (genera QR de la sala)
@@ -94,7 +95,7 @@ B_StudyHub/src/
   index.ts              # Entry point: express + http.listen + registerSocketHandlers
   config/
     db.ts               # Mongoose connect
-    avatarSeeds.ts      # AVATAR_SEEDS (23 seeds curadas de Sprouts) + pickAvatarSeed()
+    avatarSeeds.ts      # AVATAR_SEEDS (23 seeds curadas de Sprouts) + pickAvatarSeed() + isValidAvatarSeed()
     env.ts              # Variables de entorno
   controllers/          # Lógica REST
   routes/               # Definición de endpoints HTTP Express
@@ -102,9 +103,10 @@ B_StudyHub/src/
     Room.ts             # RoomModel + TaskSubSchema + generateRoomCode()
     Message.ts          # MessageModel (incluye reactions: [{ emoji, userIds }])
     CatalogTaskState.ts # CatalogTaskStateModel + seedCatalogTaskStates()
-  sockets/
+    sockets/
     index.ts            # registerSocketHandlers (master)
-    roomHandler.ts      # join_room, leave_room, kick_user, disconnect
+    roomHandler.ts      # join_room, leave_room, kick_user, set_avatar, disconnect
+
     chatHandler.ts      # send_message, get_chat_history, toggle_reaction, typing, join_room
     taskHandler.ts      # add_task, update_task_status, delete_task, edit_task, join_room
     pomodoroHandler.ts  # pomodoro_action, join_room
@@ -128,6 +130,7 @@ B_StudyHub/src/
     - Separada de las salas para evitar sobrepasar el límite de 16MB por documento de MongoDB.
     - Esquema: `{ roomId: string (indexed), senderId: string, senderName: string, text: string, timestamp: Date, reactions: [{ emoji: string, userIds: string[] }] (_id: false, default []), createdAt, updatedAt }`
     - Las reacciones viven en el propio mensaje (se borran con él). Los emojis permitidos son una lista de validación (`ALLOWED_REACTIONS` en `chatHandler.ts`, espejo de `kReactionEmojis` en Dart), no un estado de negocio, por eso no lleva catálogo.
+    - **Un usuario, un emoji por mensaje:** nunca hay dos entradas con el mismo `userId`. Elegir un emoji distinto sustituye al anterior; elegir el que ya tiene lo quita.
 
 #### 5. DICCIONARIO DE EVENTOS WEBSOCKET (SOCKET.IO)
 
@@ -136,12 +139,14 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 ##### Dominio: Salas (Rooms)
 
 - *(REST HTTP)* `POST /api/rooms` -> Crea sala, retorna `roomId` único (alfabeto sin caracteres ambiguos I/0/O).
-- *(Emite Cliente)* `join_room`: `{ roomId, user: { id, name } }` -> El backend notifica a los 4 handlers: roomHandler (users), chatHandler (history), taskHandler (task_sync), pomodoroHandler (timer state).
+- *(Emite Cliente)* `join_room`: `{ roomId, user: { id, name, avatarSeed? } }` -> El backend notifica a los 4 handlers: roomHandler (users), chatHandler (history), taskHandler (task_sync), pomodoroHandler (timer state).
 - *(Emite Cliente)* `leave_room`: `{ roomId, userId }`.
 - *(Emite Cliente)* `kick_user`: `{ roomId, hostId, userId }` -> Verifica que `hostId` coincide con el host en DB. Si es válido: emite `kicked` al usuario expulsado y `user_kicked` a todos.
-- *(Emite Servidor)* `room_users_update`: `Array<{ id: string, name: string, avatarSeed: string }>` -> Broadcast a sala completa.
+- *(Emite Servidor)* `room_users_update`: `Array<{ id: string, name: string, avatarSeed: string }>` -> Broadcast a sala completa. También es la respuesta a `set_avatar` (el cliente reemplaza su `localUser` con la entrada de la lista que coincida con su id).
+- *(Emite Cliente)* `set_avatar`: `{ roomId, userId, avatarSeed }` -> Elige la maceta a mano. El servidor valida que el usuario esté en la sala y que la seed sea de `AVATAR_SEEDS` y **no la tenga otra persona**; si está ocupada re-emite `room_users_update` para que el cliente se resincronice.
 
-**Avatares por defecto:** al hacer `join_room` el servidor asigna a cada usuario un `avatarSeed` de `AVATAR_SEEDS` que nadie más de esa sala esté usando (al azar entre las libres; si se agotan las 23, usa el `userId`, que es único). Quien vuelve a entrar (F5, reconexión dentro del periodo de gracia) conserva la suya; al salir del mapa `usersByRoom` su seed queda libre. Se ignora cualquier `avatarSeed` que mande el cliente y no se guarda en Mongo. El cliente dibuja el avatar en el dispositivo con `avatarSvg(seed)` (estilo Sprouts de DiceBear, CC0, sin peticiones de red).
+**Avatares por defecto:** al hacer `join_room` el servidor asigna a cada usuario un `avatarSeed` de `AVATAR_SEEDS` que nadie más de esa sala esté usando (al azar entre las libres; si se agotan las 23, usa el `userId`, que es único). Prioridad al entrar: **1)** la `avatarSeed` que manda el cliente, si es válida y está libre, **2)** la que ya tenía en `usersByRoom` (F5, reconexión dentro del periodo de gracia), **3)** una libre al azar. Al salir del mapa su seed queda libre. Sigue sin guardarse en Mongo: la elección vive en el dispositivo (pref `avatar_seed`) y viaja con el `join_room`, así que el servidor solo la valida. El cliente dibuja el avatar en el dispositivo con `avatarSvg(seed)` (estilo Sprouts de DiceBear, CC0, sin peticiones de red).
+- *(Pendiente)* Con las 23 macetas consumidas no queda nada libre: no hay límite de personas por sala, así que en salas muy grandes el selector se queda sin opciones. Valorar un tope de participantes más adelante.
 - *(Emite Servidor)* `kicked`: `{ roomId: string }` -> Solo al usuario expulsado.
 - *(Emite Servidor)* `user_kicked`: `{ userId: string, userName: string }` -> Broadcast a sala completa.
 - *(Manejo disconnect)* En `disconnect`: el socket se remueve automáticamente de todas las salas.
@@ -152,7 +157,7 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 - *(Emite Cliente)* `get_chat_history`: `{ roomId }`.
 - *(Emite Servidor)* `chat_history`: `ChatMessage[]` -> Solo al socket que lo solicitó.
 - *(Emite Servidor)* `new_message`: `{ id, roomId, senderId, senderName, text, timestamp, reactions }` -> Broadcast a sala.
-- *(Emite Cliente)* `toggle_reaction`: `{ roomId, messageId, userId, emoji }`. -> Solo acepta emojis de `ALLOWED_REACTIONS` (🚀 🔥 🍅), un `messageId` válido de esa sala y un `userId` que esté en ella. Alterna la reacción del usuario con operaciones atómicas de Mongo (`$pull` / `$addToSet` / `$push`) y limpia los emojis que quedan sin usuarios.
+- *(Emite Cliente)* `toggle_reaction`: `{ roomId, messageId, userId, emoji }`. -> Solo acepta emojis de `ALLOWED_REACTIONS` (🚀 🔥 🍅), un `messageId` válido de esa sala y un `userId` que esté en ella. Alterna la reacción del usuario con operaciones atómicas de Mongo (`$pull` / `$addToSet` / `$push`) y limpia los emojis que quedan sin usuarios. Como solo se admite una reacción por usuario y mensaje, al añadir primero lo saca de los otros emojis del mensaje: elegir uno nuevo **mueve** el anterior en vez de acumularlo. Tocar el emoji que ya tiene lo quita. El `$` posicional de `$pull` solo toca el primer elemento, así que esa limpieza se repite en bucle (con tope `ALLOWED_REACTIONS.length`) hasta que no queden; de paso, los mensajes guardados con duplicados de antes se van corrigiendo solos.
 - *(Emite Servidor)* `message_reactions`: `{ roomId, messageId, reactions: [{ emoji, userIds }] }` -> Broadcast a sala con el estado completo de ese mensaje (el cliente reemplaza, no suma).
 - *(Emite Cliente)* `typing`: `{ roomId, userId, isTyping: boolean }`. -> Efímero: no se guarda.
 - *(Emite Servidor)* `user_typing`: `{ roomId, userId, userName, isTyping }` -> A la sala **excepto** a quien escribe (`socket.to(roomId)`).
@@ -184,6 +189,7 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 | `join_room` | EMIT | HANDLED (4 handlers) |
 | `leave_room` | EMIT | HANDLED (roomHandler) |
 | `kick_user` | EMIT | HANDLED (roomHandler) |
+| `set_avatar` | EMIT | HANDLED (roomHandler) |
 | `disconnect` | auto | HANDLED (roomHandler + index) |
 | `room_users_update` | -- | EMIT (broadcast sala) |
 | `kicked` | -- | EMIT (solo expulsado) |
@@ -214,7 +220,7 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 ##### Sala rediseñada (paleta "Estudio" + iconos Lucide)
 
 - `lib/ui/room/room_workspace.dart`: contenedor de la sala. Elige distribución por ancho (`RoomLayout`): **wide** ≥1100 (reloj · tareas · chat), **tablet** ≥700 (reloj + pestañas Tareas/Chat), **phone** (navegación inferior Foco/Tareas/Chat + mini reloj). El chat se puede ocultar (pref `chat_hidden`).
-- `lib/ui/room/room_header.dart`: barra superior (salir, nombre, código, QR, avatares, chat, botón de tema, ayuda) y hoja de miembros/invitación (`showRoomMembersSheet`, aquí el anfitrión expulsa).
+- `lib/ui/room/room_header.dart`: barra superior (salir, nombre, código, QR, avatares, chat, botón de tema, ayuda) y hoja de miembros/invitación (`showRoomMembersSheet`, aquí el anfitrión expulsa y **tu propia fila abre `showAvatarPicker`**).
 - `lib/ui/room/room_widgets.dart`: `RoomCard`, `RoomIconButton`, `RoomChip`, `RoomAvatar`, `RoomLayout`.
 - Paleta de la sala: tokens de `AppColors` (un color por modo del reloj: estudio verde azulado, descanso corto ámbar, largo índigo), ver sección 8. Sin chat en laptop, reloj y tareas ocupan 50/50.
 - Iconos: Lucide, con fuente propia recortada. Se usan como `AppIcons.circleHelp` (camelCase del nombre Lucide). `lib/core/app_icons.dart` y `assets/fonts/Lucide.ttf` se generan con `python3 tool/gen_icons.py` (requiere `pip install fonttools`) a partir de los `AppIcons.*` que aparecen en el código. No se usa el paquete `lucide_icons_flutter`: declaraba 7 fuentes (3.7 MB) que el navegador descargaba al arrancar.
@@ -245,9 +251,11 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 
 **Chat State extra:** `_isChatVisible` (bool, privado en Notifier) + `setChatVisible(bool)` + `clearUnread()`. El `unreadCount` se incrementa cuando llega `new_message` y el chat no es visible.
 
-**Chat reacciones / escribiendo:** `toggleReaction(messageId, emoji)` (valida contra `kReactionEmojis`) y `notifyTyping(bool)`. Escuchan `message_reactions` (reemplaza las reacciones de ese mensaje) y `user_typing`. Reaccionar no cuenta como mensaje no leído.
+**Chat reacciones / escribiendo:** `toggleReaction(messageId, emoji)` (valida contra `kReactionEmojis`) y `notifyTyping(bool)`. Escuchan `message_reactions` (reemplaza las reacciones de ese mensaje) y `user_typing`. Reaccionar no cuenta como mensaje no leído. El selector marca un solo emoji por mensaje: `_MessageItem` resuelve la reacción propia como `String?` (el primero de `kReactionEmojis` que contenga al usuario local), así que un mensaje con datos viejos duplicados nunca muestra dos emojis activos a la vez.
 
 **Tema:** `themeProvider` guarda solo el `ThemeMode`; `toggle(isDark:)` recibe el brillo efectivo en pantalla (no el guardado), así el botón es un interruptor de dos estados aunque el usuario aún siguiera al sistema. La elección se persiste en `SharedPreferences` (`theme_mode`). `main.dart` lee la preferencia **antes** de `runApp` para que el primer frame ya salga con el tema correcto (sin destello claro).
+
+**Room State extra (avatares):** `setAvatarSeed(seed)` devuelve `String?` con el nombre de quien ya tiene esa maceta (y en ese caso no emite), o `null` si se aplicó. Actualiza `localUser` al instante, emite `set_avatar` y guarda la pref `avatar_seed`. `room_users_update` **también** reemplaza `localUser` por la entrada de la lista con el mismo id (si no aparece, se conserva el anterior): sin eso el usuario local nunca vería su propio avatar. `_joinRoom` manda `avatarSeed` (la de `localUser` o la de la pref) para no empezar con una maceta al azar.
 
 **Task State extra:** `_pendingLocalAdd` (bool, privado en Notifier) + `consumeNewTask()`. Permite distinguir tareas agregadas por el usuario local vs remotas, para no mostrar notificación en tareas propias.
 
@@ -257,7 +265,7 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 
 | Modelo | Campos | Notas |
 |--------|--------|-------|
-| `User` | `id: String`, `name: String`, `avatarSeed: String?` | Factory `generateLocal(name)` genera ID con timestamp + random. `avatarSeed` lo pone el servidor (nula con un servidor viejo: `RoomAvatar` cae a las iniciales) |
+| `User` | `id: String`, `name: String`, `avatarSeed: String?` | Factory `generateLocal(name)` genera ID con timestamp + random. `avatarSeed` lo pone el servidor o lo elige el usuario (nula con un servidor viejo: `RoomAvatar` cae a las iniciales). `copyWith({name, avatarSeed})` |
 | `Room` | `roomId: String`, `name: String`, `hostId: String` | |
 | `Message` | `id: String`, `roomId: String`, `senderId: String`, `senderName: String`, `text: String`, `timestamp: DateTime`, `reactions: Map<String, List<String>>` | `.toLocal()` en factory. `isOwn(userId)` helper. `reactionsFromJson` tolera servidores sin el campo. `copyWith(reactions:)` |
 | `Task` | `taskId: String`, `title: String`, `stateCode: String`, `stateLabel: String`, `createdAt: DateTime?` | |
@@ -273,6 +281,8 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 - **Al añadir un color:** agregarlo al constructor, `light`, `dark`, `copyWith` y `lerp` de `AppColors`. Los dos valores deben tener contraste suficiente (texto normal 4.5:1) contra su fondo.
 - **Botón de tema:** `ThemeToggleIconButton` (superficies del tema; header de la sala, barra de "Crear o unirse" y panel del formulario en laptop), `ThemeTogglePillButton` (sobre el panel de marca del inicio en celular) y `ThemeToggleRow` (con etiqueta, hoja de miembros en celular). El icono muestra el DESTINO: luna en claro, sol en oscuro. Solo hacen `ref.read`; el color lo toman del tema, no se suscriben al provider.
 - **Avatares:** `RoomAvatar(name, index, seed?)` dibuja el SVG de `avatarSvg(seed)` dentro de un círculo cuyo fondo sale de los tokens (`paletteOf(c)[index % 4]`), por eso se ve bien en claro y oscuro. El SVG se genera SIN fondo propio (`backgroundColor: []`; DiceBear trae uno saturado distinto por seed que chocaría con la paleta) y sin `<metadata>` (flutter_svg avisa por consola). Sin `seed` muestra las iniciales. Tiene `Semantics(label: name)`.
+- **Avatares en el chat:** `_MessageItem` pone el `RoomAvatar` del emisor **fuera** del `GestureDetector` de la burbuja (si no, el tap abriría las reacciones), en el lado exterior según quién escribe, y solo en el primer mensaje de cada racha (`showHeader`: cambia de `senderId`). El nombre va dentro de la burbuja: `"Tú"` si es propia, si no el de quien envía, con `onAccent` al 75% sobre el verde de la propia (el `muted` no contrasta ahí). Seed e índice salen de `roomProvider.users`, observado con `select` (solo cambia al entrar, salir o cambiar un avatar). Tocar **tu** avatar abre el selector; el ajeno no es interactivo. `_MessageAvatar` es de 36 px: la vía accesible de verdad es la fila propia de la hoja de miembros.
+- **Selector de avatar:** `avatar_picker.dart` → `showAvatarPicker(context)`. Rejilla de las 23 `kAvatarSeeds` (3-5 columnas según ancho); la tuya con anillo `study` y check, las de otra persona atenuadas, sin `InkWell` y con tooltip/semantics de quién las tiene (los avatares siguen siendo únicos por sala). Se aplica al tocar y cierra; si el `setAvatarSeed` devuelve el nombre de quien la bloquea, avisa con `showCustomNotification` y no cierra.
 - **Barra de estado:** `MaterialApp.builder` envuelve la app en `AnnotatedRegion<SystemUiOverlayStyle>` según el brillo activo.
 - Nuevos componentes de UI (reacciones, indicador de escritura, papelera de tareas, mascota) siguen la misma regla y tienen pruebas en claro y oscuro.
 
@@ -370,9 +380,10 @@ ref.listen<XState>(provider, (previous, next) {
 | **Traspaso de dueño** | `roomHandler.ts`, `room_provider.dart`, `room_model.dart` | Al irse el dueño y quedar 1+ usuario, el 1ro que se queda pasa a ser dueño (Mongo + evento `host_transferred`) |
 | **Eliminar sala vacía** | `roomHandler.ts` | Al quedar 0 usuarios conectados se borra `Room` + `Message` del chat |
 | **Modo oscuro** | `theme.dart`, `theme_provider.dart`, `theme_toggle.dart`, `main.dart` | `AppColors` claro/oscuro, `themeProvider` persistido, lectura previa a `runApp`, botón en header de sala, inicio (celular y laptop), "Crear o unirse" y hoja de miembros. Ver sección 8 |
-| **Reacciones rápidas** | `chat_box.dart`, `chat_provider.dart`, `message_model.dart`, `chatHandler.ts`, `Message.ts` | Tocar un mensaje abre un selector con 🚀 🔥 🍅; chips con cuenta bajo el mensaje (resaltado si es tuya, tocar alterna). Alternar atómico en Mongo y `message_reactions` a la sala |
+| **Reacciones rápidas** | `chat_box.dart`, `chat_provider.dart`, `message_model.dart`, `chatHandler.ts`, `Message.ts` | Tocar un mensaje abre un selector con 🚀 🔥 🍅; chips con cuenta bajo el mensaje (resaltado si es tuya, tocar alterna). Una sola reacción por usuario y mensaje: elegir otro emoji mueve la anterior. Alternar atómico en Mongo y `message_reactions` a la sala |
 | **Indicador "escribiendo"** | `chat_box.dart`, `chat_provider.dart`, `chatHandler.ts` | "Ana está escribiendo" / "Ana y Marco..." / "Varios..." con puntos animados sobre el campo; eventos `typing` / `user_typing`, caduca a los 5 s |
 | **Avatares por defecto** | `avatars.dart`, `room_widgets.dart`, `user_model.dart`, `avatarSeeds.ts`, `roomHandler.ts` | Macetas "Sprouts" de DiceBear asignadas por el servidor, únicas por sala y estables al reconectar; render local sin red (`dicebear_core` + `flutter_svg`), caché por seed y precalentamiento tras el primer cuadro. Ver sección 5 |
+| **Elegir avatar a mano** | `avatar_picker.dart`, `room_header.dart`, `chat_box.dart`, `room_provider.dart`, `avatarSeeds.ts` | Desde tu fila en la hoja de miembros o tocando tu avatar en el chat. Solo ofrece las macetas libres de la sala, se guarda en el dispositivo (pref `avatar_seed`) y viaja en el `join_room`, así que no se persiste en Mongo. Con las 23 ocupadas no queda ninguna: pendiente valorar un límite de personas por sala |
 | **Papelera de tareas** | `task_list.dart` | Al arrastrar una tarea aparece una papelera; soltarla encima pide confirmación y elimina (no reordena) |
 | **Mascota reactiva** | `pomodoro_mascot.dart`, `pomodoro_timer.dart` | El cangrejo del dial cambia según `moodFor(PomodoroState)`: quieto en pausa, rebote en foco, lento con "zzz" en descanso, salto al terminar. `kMascotAssets` permite dar un Lottie propio a cada ánimo |
 

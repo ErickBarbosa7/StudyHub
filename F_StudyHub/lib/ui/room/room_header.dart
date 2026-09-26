@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../data/models/user_model.dart';
 import '../../logic/chat_provider.dart';
 import '../../logic/room_provider.dart';
+import '../widgets/avatar_picker.dart';
 import '../widgets/qr_display.dart';
 import '../widgets/theme_toggle.dart';
 import 'room_widgets.dart';
@@ -514,6 +515,9 @@ class _MembersSheet extends ConsumerWidget {
                     room?.hostId != users[i].id &&
                     roomState.localUser?.id != users[i].id,
                 onKick: () => onKick(users[i]),
+                onPickAvatar: roomState.localUser?.id == users[i].id
+                    ? () => showAvatarPicker(context)
+                    : null,
               ),
             // En celular la barra del header no cabe un cuarto botón sin dejar el
             // nombre de la sala ilegible, así que el cambio de tema vive aquí.
@@ -536,6 +540,7 @@ class _MemberRow extends StatelessWidget {
     required this.isMe,
     required this.canKick,
     required this.onKick,
+    this.onPickAvatar,
   });
 
   final User user;
@@ -545,10 +550,14 @@ class _MemberRow extends StatelessWidget {
   final bool canKick;
   final VoidCallback onKick;
 
+  /// Solo la fila propia: abrir el selector de macetas. No se añade nada visible
+  /// a la hoja para no recargarla; se toca la propia fila.
+  final VoidCallback? onPickAvatar;
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    return Padding(
+    final row = Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
@@ -597,6 +606,23 @@ class _MemberRow extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+
+    final onPickAvatar = this.onPickAvatar;
+    if (onPickAvatar == null) return row;
+
+    return Semantics(
+      button: true,
+      label: 'Cambiar tu avatar',
+      excludeSemantics: true,
+      child: Tooltip(
+        message: 'Cambiar tu avatar',
+        child: InkWell(
+          onTap: onPickAvatar,
+          borderRadius: BorderRadius.circular(16),
+          child: row,
+        ),
       ),
     );
   }

@@ -8,6 +8,7 @@ import '../../data/models/message_model.dart';
 import '../../logic/chat_provider.dart';
 import '../../logic/room_provider.dart';
 import '../room/room_widgets.dart';
+import 'avatar_picker.dart';
 
 /// Chat de la sala. Necesita alto acotado: la lista hace scroll por dentro.
 class ChatBox extends ConsumerStatefulWidget {
@@ -91,6 +92,13 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
     final localUserId = ref.watch(
       roomProvider.select((s) => s.localUser?.id ?? ''),
     );
+    // La lista de personas solo cambia al entrar, salir o cambiar un avatar, así
+    // que observarla entera no reconstruye el chat en cada mensaje.
+    final users = ref.watch(roomProvider.select((s) => s.users));
+    final avatars = <String, ({String? seed, int index})>{
+      for (var i = 0; i < users.length; i++)
+        users[i].id: (seed: users[i].avatarSeed, index: i),
+    };
     // Un texto estable en vez del mapa: no reconstruye por cambios ajenos.
     final typingKey = ref.watch(
       chatProvider.select((s) => s.typingUsers.values.join('\u0000')),
@@ -136,16 +144,23 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
             itemCount: messages.length,
             itemBuilder: (context, index) {
               final message = messages[index];
+              final avatar = avatars[message.senderId];
+              final previous = index == 0 ? null : messages[index - 1];
               return _MessageItem(
                 key: ValueKey(message.id),
                 message: message,
                 localUserId: localUserId,
+                avatarSeed: avatar?.seed,
+                avatarIndex: avatar?.index ?? 0,
+                // Una racha por persona: avatar y nombre solo en el primero.
+                showHeader: previous == null || previous.senderId != message.senderId,
                 pickerOpen: _pickerMessageId == message.id,
                 onTapBubble: () => _togglePicker(
                   message,
                   isLast: index == messages.length - 1,
                 ),
                 onReact: (emoji) => _react(message, emoji),
+                onTapOwnAvatar: () => showAvatarPicker(context),
               );
             },
           );
@@ -297,16 +312,24 @@ class _MessageItem extends StatelessWidget {
     super.key,
     required this.message,
     required this.localUserId,
+    required this.avatarSeed,
+    required this.avatarIndex,
+    required this.showHeader,
     required this.pickerOpen,
     required this.onTapBubble,
     required this.onReact,
+    required this.onTapOwnAvatar,
   });
 
   final Message message;
   final String localUserId;
+  final String? avatarSeed;
+  final int avatarIndex;
+  final bool showHeader;
   final bool pickerOpen;
   final VoidCallback onTapBubble;
   final ValueChanged<String> onReact;
+  final VoidCallback onTapOwnAvatar;
 
   @override
   Widget build(BuildContext context) {
@@ -322,42 +345,117 @@ class _MessageItem extends StatelessWidget {
       }
     }
 
+    // El avatar va fuera del GestureDetector de la burbuja: si no, el tap
+    // abriría el selector de reacciones en lugar del de avatares.
+    final avatar = showHeader
+        ? _MessageAvatar(
+            name: message.senderName,
+            seed: avatarSeed,
+            index: avatarIndex,
+            onTap: isOwn ? onTapOwnAvatar : null,
+          )
+        : null;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Column(
-        crossAxisAlignment: align,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Semantics(
-            button: true,
-            hint: 'Toca para reaccionar',
-            child: GestureDetector(
-              onTap: onTapBubble,
-              behavior: HitTestBehavior.opaque,
-              child: _MessageBubble(message: message, isOwn: isOwn),
-            ),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            alignment: isOwn ? Alignment.topRight : Alignment.topLeft,
-            child: pickerOpen
-                ? Padding(
+          if (avatar != null && !isOwn) ...[
+            avatar,
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: align,
+              children: [
+                Semantics(
+                  button: true,
+                  hint: 'Toca para reaccionar',
+                  child: GestureDetector(
+                    onTap: onTapBubble,
+                    behavior: HitTestBehavior.opaque,
+                    child: _MessageBubble(
+                      message: message,
+                      isOwn: isOwn,
+                      showLabel: showHeader,
+                    ),
+                  ),
+                ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  alignment: isOwn ? Alignment.topRight : Alignment.topLeft,
+                  child: pickerOpen
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: _ReactionPicker(
+                            active: mine,
+                            onPick: onReact,
+                          ),
+                        )
+                      : const SizedBox(width: double.infinity),
+                ),
+                if (message.reactions.isNotEmpty)
+                  Padding(
                     padding: const EdgeInsets.only(top: 6),
-                    child: _ReactionPicker(active: mine, onPick: onReact),
-                  )
-                : const SizedBox(width: double.infinity),
-          ),
-          if (message.reactions.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: _ReactionChips(
-                reactions: message.reactions,
-                localUserId: localUserId,
-                alignEnd: isOwn,
-                onTap: onReact,
-              ),
+                    child: _ReactionChips(
+                      reactions: message.reactions,
+                      localUserId: localUserId,
+                      alignEnd: isOwn,
+                      onTap: onReact,
+                    ),
+                  ),
+              ],
             ),
+          ),
+          if (avatar != null && isOwn) ...[
+            const SizedBox(width: 8),
+            avatar,
+          ],
         ],
+      ),
+    );
+  }
+}
+
+/// Avatar junto a la burbuja. El propio es el atajo al selector de macetas.
+class _MessageAvatar extends StatelessWidget {
+  const _MessageAvatar({
+    required this.name,
+    required this.seed,
+    required this.index,
+    this.onTap,
+  });
+
+  final String name;
+  final String? seed;
+  final int index;
+  final VoidCallback? onTap;
+
+  static const double size = 36;
+
+  @override
+  Widget build(BuildContext context) {
+    final avatar = RoomAvatar(
+      name: name,
+      seed: seed,
+      index: index,
+      size: size,
+    );
+    if (onTap == null) return avatar;
+
+    return Semantics(
+      button: true,
+      label: 'Cambiar tu avatar',
+      excludeSemantics: true,
+      child: Tooltip(
+        message: 'Cambiar tu avatar',
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: avatar,
+        ),
       ),
     );
   }
@@ -657,10 +755,18 @@ class _TypingDotsState extends State<_TypingDots>
 }
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({required this.message, required this.isOwn});
+  const _MessageBubble({
+    required this.message,
+    required this.isOwn,
+    required this.showLabel,
+  });
 
   final Message message;
   final bool isOwn;
+
+  /// Con los mensajes agrupados, el nombre ("Tú" o el de quien envía) solo
+  /// aparece en el primero de la racha.
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -682,13 +788,16 @@ class _MessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!isOwn)
+            if (showLabel)
               Padding(
                 padding: const EdgeInsets.only(bottom: 3),
                 child: Text(
-                  message.senderName,
+                  isOwn ? 'Tú' : message.senderName,
                   style: TextStyle(
-                    color: c.muted,
+                    // Sobre el verde de la burbuja propia el muted no contrasta.
+                    color: isOwn
+                        ? c.onAccent.withValues(alpha: 0.75)
+                        : c.muted,
                     fontWeight: AppType.weightSemiBold,
                     fontSize: AppType.sizeCaption,
                   ),

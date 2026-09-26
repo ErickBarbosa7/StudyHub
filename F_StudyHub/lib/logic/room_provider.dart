@@ -57,6 +57,10 @@ class RoomState {
 /// Tiempo máximo de vida de una sesión guardada antes de considerarla expirada.
 const Duration _sessionTtl = Duration(hours: 6);
 
+/// Maceta elegida a mano. Vive en el dispositivo y viaja con el `join_room`, así
+/// que el servidor no necesita guardarla.
+const String _kAvatarSeedPref = 'avatar_seed';
+
 String _translateError(Object error) {
   final msg = error.toString().toLowerCase();
   if (msg.contains('socket') ||
@@ -101,7 +105,17 @@ class RoomNotifier extends StateNotifier<RoomState> {
       final users = (data as List)
           .map((item) => User.fromJson(item as Map<String, dynamic>))
           .toList();
-      state = state.copyWith(users: users);
+      // La lista viene con la seed de todos, incluida la nuestra. Sin copiarla
+      // al local, el usuario local nunca vería su propio avatar.
+      final localId = state.localUser?.id;
+      User? local;
+      for (final user in users) {
+        if (user.id == localId) {
+          local = user;
+          break;
+        }
+      }
+      state = state.copyWith(users: users, localUser: local);
     });
 
     _socketService.on('host_transferred', (data) {
@@ -161,6 +175,11 @@ class RoomNotifier extends StateNotifier<RoomState> {
   }
 
   Future<SharedPreferences> _getPrefs() => SharedPreferences.getInstance();
+
+  Future<String?> _savedAvatarSeed() async {
+    final prefs = await _getPrefs();
+    return prefs.getString(_kAvatarSeedPref);
+  }
 
   Future<void> _saveSession(Room room, User user) async {
     final prefs = await _getPrefs();
@@ -240,7 +259,11 @@ class RoomNotifier extends StateNotifier<RoomState> {
     state = state.copyWith(isRestoring: true, clearError: true);
     try {
       final room = await _apiService.getRoom(roomId);
-      final user = User(id: userId, name: userName);
+      final user = User(
+        id: userId,
+        name: userName,
+        avatarSeed: prefs.getString(_kAvatarSeedPref),
+      );
       await _resetRoomUiState();
       state = state.copyWith(room: room, localUser: user, isRestoring: false);
       if (_socketService.isConnected) {
@@ -331,11 +354,43 @@ class RoomNotifier extends StateNotifier<RoomState> {
     await _ensureConnected();
     if (!_socketService.isConnected) return;
     _ref.read(chatProvider);
+    // La seed elegida a mano viaja al entrar: si en esa sala ya la tiene otra
+    // persona, el servidor asigna otra y lo avisa con room_users_update.
+    final seed = user.avatarSeed ?? await _savedAvatarSeed();
     _socketService.emit('join_room', {
       'roomId': roomId,
-      'user': {'id': user.id, 'name': user.name},
+      'user': {
+        'id': user.id,
+        'name': user.name,
+        'avatarSeed': ?seed,
+      },
     });
     _ref.read(chatProvider.notifier).requestHistory(roomId);
+  }
+
+  /// Elige la maceta del avatar local. Devuelve el nombre de quien ya la tiene
+  /// si está ocupada (y en ese caso no se emite nada), o `null` si se aplicó.
+  Future<String?> setAvatarSeed(String seed) async {
+    final room = state.room;
+    final localUser = state.localUser;
+    if (room == null || localUser == null) return null;
+    if (localUser.avatarSeed == seed) return null;
+
+    for (final user in state.users) {
+      if (user.id != localUser.id && user.avatarSeed == seed) {
+        return user.name;
+      }
+    }
+
+    state = state.copyWith(localUser: localUser.copyWith(avatarSeed: seed));
+    _socketService.emit('set_avatar', {
+      'roomId': room.roomId,
+      'userId': localUser.id,
+      'avatarSeed': seed,
+    });
+    final prefs = await _getPrefs();
+    await prefs.setString(_kAvatarSeedPref, seed);
+    return null;
   }
 
   void leaveRoom() {

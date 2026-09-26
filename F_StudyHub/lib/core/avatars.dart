@@ -10,6 +10,35 @@ import 'package:dicebear_styles/sprouts.dart';
 /// con los tokens del tema, así se ve bien también en oscuro.
 Style? _style;
 
+/// Espejo de `AVATAR_SEEDS` en `avatarSeeds.ts`, que es quien valida. Se
+/// duplica (como `kReactionEmojis` con `ALLOWED_REACTIONS`) para que el selector
+/// pueda dibujar la lista sin una llamada al servidor.
+const List<String> kAvatarSeeds = [
+  'Aloe',
+  'Brote',
+  'Cactus',
+  'Albahaca',
+  'Romero',
+  'Lavanda',
+  'Hiedra',
+  'Bonsai',
+  'Orquidea',
+  'Margarita',
+  'Jazmin',
+  'Lirio',
+  'Magnolia',
+  'Ficus',
+  'Manzano',
+  'Mora',
+  'Higo',
+  'Pimienta',
+  'Garbanzo',
+  'brote-015',
+  'brote-024',
+  'brote-031',
+  'brote-186',
+];
+
 final Map<String, String> _svgBySeed = {};
 
 final RegExp _metadata = RegExp(r'<metadata.*?</metadata>', dotAll: true);

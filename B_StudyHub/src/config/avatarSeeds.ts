@@ -38,3 +38,9 @@ export function pickAvatarSeed(
   if (free.length === 0) return userId;
   return free[Math.floor(Math.random() * free.length)] ?? userId;
 }
+
+// Solo se acepta una seed de la lista, venga de donde venga: el cliente manda la
+// que eligió a mano y no se valida contra la lista, solo contra la pertenencia.
+export function isValidAvatarSeed(seed: unknown): seed is string {
+  return typeof seed === 'string' && AVATAR_SEEDS.includes(seed);
+}

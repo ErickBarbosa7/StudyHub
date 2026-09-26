@@ -339,7 +339,7 @@ void main() {
         tester,
       ) async {
         // El servidor ya no lo permite, pero un mensaje guardado antes del arreglo
-        // puede traerlo: la interfaz solo debe highlighting uno.
+        // puede traerlo: la interfaz solo debe marcar uno.
         await pumpChat(
           tester,
           history: [

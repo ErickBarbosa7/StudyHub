@@ -41,6 +41,23 @@ void main() {
       expect(u.avatarSeed, isNull);
       expect(u.toJson().containsKey('avatarSeed'), isFalse);
     });
+
+    test('copyWith cambia el avatar sin tocar id ni nombre', () {
+      const u = User(id: 'u1', name: 'Ana', avatarSeed: 'Aloe');
+      final b = u.copyWith(avatarSeed: 'Cactus');
+      expect(b.id, 'u1');
+      expect(b.name, 'Ana');
+      expect(b.avatarSeed, 'Cactus');
+      expect(u.avatarSeed, 'Aloe', reason: 'el original no se toca');
+    });
+  });
+
+  group('kAvatarSeeds', () {
+    test('es el espejo de AVATAR_SEEDS del servidor (23 macetas)', () {
+      expect(kAvatarSeeds, hasLength(23));
+      expect(kAvatarSeeds, contains('Aloe'));
+      expect(kAvatarSeeds.toSet(), hasLength(23), reason: 'sin repetidas');
+    });
   });
 
   for (final brightness in Brightness.values) {

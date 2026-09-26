@@ -1,7 +1,7 @@
 import type { Server, Socket } from 'socket.io';
 import { MessageModel } from '../models/Message.js';
 import { RoomModel } from '../models/Room.js';
-import { pickAvatarSeed } from '../config/avatarSeeds.js';
+import { isValidAvatarSeed, pickAvatarSeed } from '../config/avatarSeeds.js';
 import { cleanupPomodoroSession } from './pomodoroHandler.js';
 
 export interface RoomUser {
@@ -18,7 +18,14 @@ interface JoinRoomPayload {
   user: {
     id: string;
     name: string;
+    avatarSeed?: string;
   };
+}
+
+interface SetAvatarPayload {
+  roomId: string;
+  userId: string;
+  avatarSeed: string;
 }
 
 interface LeaveRoomPayload {
@@ -56,6 +63,15 @@ function cancelPendingRemoval(roomId: string, userId: string): void {
 function getRoomUsers(roomId: string): RoomUser[] {
   return Array.from(usersByRoom.get(roomId)?.values() ?? []).filter(
     (u) => !u.disconnected,
+  );
+}
+
+// Seeds ocupadas por OTRA persona: la de uno mismo nunca bloquea elegir la suya.
+function takenSeeds(roomId: string, exceptUserId: string): Set<string> {
+  return new Set(
+    getRoomUsers(roomId)
+      .filter((u) => u.id !== exceptUserId)
+      .map((u) => u.avatarSeed),
   );
 }
 
@@ -179,14 +195,16 @@ export function registerRoomHandler(io: Server, socket: Socket): void {
 
     const roomUsers = usersByRoom.get(roomId) ?? new Map<string, RoomUser>();
     cancelPendingRemoval(roomId, user.id);
-    // Quien vuelve (F5, reconexión) conserva su avatar; quien llega recibe uno
-    // que nadie más en la sala esté usando.
+    // Prioridad: la que eligió a mano si sigue libre, la que ya tenía (F5,
+    // reconexión) y si no una libre al azar entre las que nadie más usa.
+    const taken = takenSeeds(roomId, user.id);
+    const chosen = isValidAvatarSeed(user.avatarSeed) && !taken.has(user.avatarSeed)
+      ? user.avatarSeed
+      : undefined;
     const avatarSeed =
+      chosen ??
       roomUsers.get(user.id)?.avatarSeed ??
-      pickAvatarSeed(
-        new Set(Array.from(roomUsers.values(), (u) => u.avatarSeed)),
-        user.id,
-      );
+      pickAvatarSeed(taken, user.id);
     roomUsers.set(user.id, {
       id: user.id,
       name: user.name,
@@ -196,6 +214,31 @@ export function registerRoomHandler(io: Server, socket: Socket): void {
     usersByRoom.set(roomId, roomUsers);
 
     console.log(`[rooms] ${user.name} se unió a la sala ${roomId}`);
+    sendUsersUpdate(io, roomId);
+  });
+
+  socket.on('set_avatar', (payload: SetAvatarPayload) => {
+    const { roomId, userId, avatarSeed } = payload ?? {};
+
+    if (!roomId || !userId || !isValidAvatarSeed(avatarSeed)) {
+      return;
+    }
+
+    const user = usersByRoom.get(roomId)?.get(userId);
+    if (!user) {
+      return;
+    }
+
+    // Alguien más pudo cogerla entre el render del selector y este evento: si
+    // está ocupada se re-emite la lista para que el cliente se resincronice.
+    if (takenSeeds(roomId, userId).has(avatarSeed)) {
+      sendUsersUpdate(io, roomId);
+      return;
+    }
+
+    if (user.avatarSeed !== avatarSeed) {
+      user.avatarSeed = avatarSeed;
+    }
     sendUsersUpdate(io, roomId);
   });
 

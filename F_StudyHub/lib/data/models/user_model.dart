@@ -29,4 +29,10 @@ class User {
         'name': name,
         if (avatarSeed != null) 'avatarSeed': avatarSeed,
       };
+
+  User copyWith({String? name, String? avatarSeed}) => User(
+        id: id,
+        name: name ?? this.name,
+        avatarSeed: avatarSeed ?? this.avatarSeed,
+      );
 }
