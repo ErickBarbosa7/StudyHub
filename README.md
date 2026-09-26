@@ -2,6 +2,10 @@
 
 Este repositorio contiene el código fuente de una aplicación de salas colaborativas en tiempo real. Está estructurado como un monorepo que incluye tanto el cliente web como el servidor de comunicaciones.
 
+## Cómo trabajamos
+
+El proyecto usa ramas: `main` es producción, `dev` es la integración y cada tema va en su propia rama corta, siempre mediante pull request. La guía completa (tipos de rama, ciclo de trabajo, checks obligatorios y qué hacer cuando algo sale mal) está en **[`context/ramas.md`](context/ramas.md)**.
+
 ## Arquitectura del Proyecto
 
 El proyecto está dividido en dos directorios principales:
