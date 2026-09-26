@@ -8,15 +8,15 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 # Icono normal: cuadrado redondeado, cangrejo grande para leerse a 16 px.
-python3 tool/lottie_to_svg.py 0 '#3347A8' 0.82
+python3 tool/lottie_to_svg.py 0 '#F3F2EE' 0.82
 cp tool/logo.svg web/favicon.svg
 
 # Maskable: fondo a sangre (el SO recorta) y cangrejo en la zona segura (60 %).
-python3 tool/lottie_to_svg.py 0 '#3347A8' 0.6
+python3 tool/lottie_to_svg.py 0 '#F3F2EE' 0.6
 sed -E 's/ rx="[0-9.]+"//' tool/logo.svg > "$tmp/maskable.svg"
 
 # Versión normal como fuente canónica (la última ejecución deja logo.svg).
-python3 tool/lottie_to_svg.py 0 '#3347A8' 0.82
+python3 tool/lottie_to_svg.py 0 '#F3F2EE' 0.82
 
 for s in 192 512; do
   rsvg-convert -w $s -h $s web/favicon.svg -o web/icons/Icon-$s.png

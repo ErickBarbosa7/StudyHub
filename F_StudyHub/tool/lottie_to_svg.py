@@ -7,7 +7,7 @@ grupos visibles y se recorta al cangrejo sobre un cuadrado redondeado.
 
 Uso: python3 tool/lottie_to_svg.py [frame] [fondo] [zoom]
   frame  fotograma a extraer (0 por defecto)
-  fondo  color hex del cuadrado (#3347A8 por defecto)
+  fondo  color hex del cuadrado (#F3F2EE por defecto)
   zoom   margen: 0.76 = el cangrejo ocupa el 76 % del lado (0.76 por defecto)
 Luego render: ver tool/make_favicons.sh
 """
@@ -20,7 +20,7 @@ SRC = ROOT / 'assets' / 'Lottie' / 'claude.json'
 OUT = Path(__file__).resolve().parent / 'logo.svg'
 
 frame = int(sys.argv[1]) if len(sys.argv) > 1 else 0
-bg = sys.argv[2] if len(sys.argv) > 2 else '#3347A8'
+bg = sys.argv[2] if len(sys.argv) > 2 else '#F3F2EE'
 fill_ratio = float(sys.argv[3]) if len(sys.argv) > 3 else 0.76
 
 
