@@ -1,5 +1,13 @@
 import { model, Schema, type InferSchemaType } from 'mongoose';
 
+const ReactionSubSchema = new Schema(
+  {
+    emoji: { type: String, required: true },
+    userIds: { type: [String], default: [] },
+  },
+  { _id: false },
+);
+
 export const MessageSchema = new Schema(
   {
     roomId: { type: String, required: true },
@@ -7,6 +15,7 @@ export const MessageSchema = new Schema(
     senderName: { type: String, required: true },
     text: { type: String, required: true },
     timestamp: { type: Date, required: true, default: Date.now },
+    reactions: { type: [ReactionSubSchema], default: [] },
   },
   {
     timestamps: true,

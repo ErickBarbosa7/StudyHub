@@ -10,9 +10,10 @@ class QrScannerSheet extends StatefulWidget {
   const QrScannerSheet({super.key});
 
   static Future<String?> show(BuildContext context) {
+    final c = context.colors;
     return showModalBottomSheet<String>(
       context: context,
-      backgroundColor: kColorPaper,
+      backgroundColor: c.bg,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -26,6 +27,9 @@ class QrScannerSheet extends StatefulWidget {
 }
 
 class _QrScannerSheetState extends State<QrScannerSheet> {
+  /// Paleta del tema activo, para los métodos auxiliares que no reciben contexto.
+  AppColors get c => context.colors;
+
   MobileScannerController? _scannerController;
   _CameraStatus _status = _CameraStatus.initializing;
   String _errorMessage = '';
@@ -128,6 +132,7 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
@@ -140,12 +145,12 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: kColorSageSoft,
+                    color: c.studySoft,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     AppIcons.scanQrCode,
-                    color: kColorDeepSage,
+                    color: c.study,
                     size: 22,
                   ),
                 ),
@@ -154,7 +159,7 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
                   child: Text(
                     'Escanear código',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: kColorInk,
+                          color: c.ink,
                           fontWeight: AppType.weightSemiBold,
                         ),
                   ),
@@ -170,7 +175,7 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
             TextButton(
               onPressed: _manualEntry,
               style: TextButton.styleFrom(
-                foregroundColor: kColorTextSecondary,
+                foregroundColor: c.muted,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               child: const Text('Escribir código manualmente'),
@@ -187,9 +192,9 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
         Text(
           'Apunta la cámara al código QR de la sala.',
           textAlign: TextAlign.center,
-          style: AppType.secondaryItalic(
+          style: AppType.secondaryItalic(context: context,
             size: AppType.sizeCaption,
-            color: kColorTextSecondary,
+            color: c.muted,
           ),
         ),
         const SizedBox(height: 16),
@@ -199,10 +204,10 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
             height: 260,
             child: _status == _CameraStatus.initializing
                 ? Container(
-                    color: kColorInk,
-                    child: const Center(
+                    color: c.ink,
+                    child: Center(
                       child: CircularProgressIndicator(
-                        color: kColorPaper,
+                        color: c.bg,
                         strokeWidth: 2.5,
                       ),
                     ),
@@ -228,7 +233,7 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
       width: 220,
       height: 220,
       child: CustomPaint(
-        painter: _ScanOverlayPainter(),
+        painter: _ScanOverlayPainter(color: c.study),
       ),
     );
   }
@@ -237,23 +242,23 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: kColorGoldSoft,
+        color: c.restSoft,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         children: [
-          const Icon(
+          Icon(
             AppIcons.videoOff,
             size: 48,
-            color: kColorTextSecondary,
+            color: c.muted,
           ),
           const SizedBox(height: 16),
           Text(
             _errorMessage,
             textAlign: TextAlign.center,
-            style: AppType.secondaryItalic(
+            style: AppType.secondaryItalic(context: context,
               size: AppType.sizeBody,
-              color: kColorInk,
+              color: c.ink,
             ),
           ),
           const SizedBox(height: 20),
@@ -274,10 +279,14 @@ class _QrScannerSheetState extends State<QrScannerSheet> {
 enum _CameraStatus { initializing, ready, error }
 
 class _ScanOverlayPainter extends CustomPainter {
+  const _ScanOverlayPainter({required this.color});
+
+  final Color color;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = kColorDeepSage
+      ..color = color
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -308,5 +317,6 @@ class _ScanOverlayPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ScanOverlayPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

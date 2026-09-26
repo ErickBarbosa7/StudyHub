@@ -1,11 +1,13 @@
 import type { Server, Socket } from 'socket.io';
 import { MessageModel } from '../models/Message.js';
 import { RoomModel } from '../models/Room.js';
+import { pickAvatarSeed } from '../config/avatarSeeds.js';
 import { cleanupPomodoroSession } from './pomodoroHandler.js';
 
 export interface RoomUser {
   id: string;
   name: string;
+  avatarSeed: string;
   socketId: string;
   /** true mientras el socket está caído pero dentro del periodo de gracia. */
   disconnected?: boolean;
@@ -58,7 +60,11 @@ function getRoomUsers(roomId: string): RoomUser[] {
 }
 
 function sendUsersUpdate(io: Server, roomId: string): void {
-  const users = getRoomUsers(roomId).map(({ id, name }) => ({ id, name }));
+  const users = getRoomUsers(roomId).map(({ id, name, avatarSeed }) => ({
+    id,
+    name,
+    avatarSeed,
+  }));
   io.to(roomId).emit('room_users_update', users);
 }
 
@@ -173,7 +179,20 @@ export function registerRoomHandler(io: Server, socket: Socket): void {
 
     const roomUsers = usersByRoom.get(roomId) ?? new Map<string, RoomUser>();
     cancelPendingRemoval(roomId, user.id);
-    roomUsers.set(user.id, { ...user, socketId: socket.id });
+    // Quien vuelve (F5, reconexión) conserva su avatar; quien llega recibe uno
+    // que nadie más en la sala esté usando.
+    const avatarSeed =
+      roomUsers.get(user.id)?.avatarSeed ??
+      pickAvatarSeed(
+        new Set(Array.from(roomUsers.values(), (u) => u.avatarSeed)),
+        user.id,
+      );
+    roomUsers.set(user.id, {
+      id: user.id,
+      name: user.name,
+      avatarSeed,
+      socketId: socket.id,
+    });
     usersByRoom.set(roomId, roomUsers);
 
     console.log(`[rooms] ${user.name} se unió a la sala ${roomId}`);

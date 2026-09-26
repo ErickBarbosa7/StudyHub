@@ -211,7 +211,7 @@ class LandingHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: kRoomStudy,
+      color: context.colors.brand,
       child: ClipRect(
         child: LayoutBuilder(
           builder: (context, constraints) {

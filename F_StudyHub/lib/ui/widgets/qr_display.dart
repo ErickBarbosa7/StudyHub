@@ -11,9 +11,10 @@ class QrDisplaySheet extends StatelessWidget {
   final String roomId;
 
   static void show(BuildContext context, String roomId) {
+    final c = context.colors;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: kColorPaper,
+      backgroundColor: c.bg,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -24,6 +25,7 @@ class QrDisplaySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(32, 32, 32, 16),
@@ -36,12 +38,12 @@ class QrDisplaySheet extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: kColorSageSoft,
+                    color: c.studySoft,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     AppIcons.qrCode,
-                    color: kColorDeepSage,
+                    color: c.study,
                     size: 22,
                   ),
                 ),
@@ -50,7 +52,7 @@ class QrDisplaySheet extends StatelessWidget {
                   child: Text(
                     'Código de sala',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: kColorInk,
+                          color: c.ink,
                           fontWeight: AppType.weightSemiBold,
                         ),
                   ),
@@ -63,7 +65,7 @@ class QrDisplaySheet extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  border: Border.all(color: kColorBorder),
+                  border: Border.all(color: c.line),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: QrImageView(
@@ -71,13 +73,13 @@ class QrDisplaySheet extends StatelessWidget {
                   version: QrVersions.auto,
                   size: 200,
                   backgroundColor: Colors.white,
-                  eyeStyle: const QrEyeStyle(
+                  eyeStyle: QrEyeStyle(
                     eyeShape: QrEyeShape.circle,
-                    color: kColorDeepSage,
+                    color: c.study,
                   ),
-                  dataModuleStyle: const QrDataModuleStyle(
+                  dataModuleStyle: QrDataModuleStyle(
                     dataModuleShape: QrDataModuleShape.circle,
-                    color: kColorInk,
+                    color: c.ink,
                   ),
                 ),
               ),
@@ -87,13 +89,13 @@ class QrDisplaySheet extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
-                  color: kColorSageSoft,
+                  color: c.studySoft,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
                   roomId,
-                  style: const TextStyle(
-                    color: kColorInk,
+                  style: TextStyle(
+                    color: c.ink,
                     fontWeight: AppType.weightBold,
                     fontSize: AppType.sizeBodyLarge,
                     letterSpacing: 2,
@@ -105,9 +107,9 @@ class QrDisplaySheet extends StatelessWidget {
             Text(
               'Comparte este código o esta imagen con tu equipo para que se unan a la sala.',
               textAlign: TextAlign.center,
-              style: AppType.secondaryItalic(
+              style: AppType.secondaryItalic(context: context,
                 size: AppType.sizeCaption,
-                color: kColorTextSecondary,
+                color: c.muted,
               ),
             ),
             const SizedBox(height: 24),
@@ -129,7 +131,7 @@ class QrDisplaySheet extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               style: TextButton.styleFrom(
-                foregroundColor: kColorTextSecondary,
+                foregroundColor: c.muted,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               child: const Text('Entendido'),

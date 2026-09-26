@@ -56,15 +56,16 @@ class MascotTip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final double avatarHeight = compact ? 52 : 84;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: EdgeInsets.all(compact ? 12 : 16),
       decoration: BoxDecoration(
-        color: kColorCard,
+        color: c.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: kColorBorder),
+        border: Border.all(color: c.line),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,15 +84,15 @@ class MascotTip extends StatelessWidget {
                       fontFamily: kFontFamily,
                       fontWeight: AppType.weightSemiBold,
                       fontSize: compact ? AppType.sizeLabel : AppType.sizeBody,
-                      color: kColorInk,
+                      color: c.ink,
                     ),
                   ),
                   const SizedBox(height: 4),
                 ],
                 Text(
                   message,
-                  style: AppType.secondaryItalic(
-                    color: kColorInk,
+                  style: AppType.secondaryItalic(context: context,
+                    color: c.ink,
                     size: compact ? AppType.sizeBody : AppType.sizeBodyMedium,
                   ),
                 ),
@@ -102,7 +103,7 @@ class MascotTip extends StatelessWidget {
                     child: TextButton(
                       onPressed: onAction,
                       style: TextButton.styleFrom(
-                        foregroundColor: kColorDeepSage,
+                        foregroundColor: c.study,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                       ),
                       child: Text(

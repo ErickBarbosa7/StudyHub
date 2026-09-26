@@ -8,6 +8,7 @@ import '../../data/models/user_model.dart';
 import '../../logic/chat_provider.dart';
 import '../../logic/room_provider.dart';
 import '../widgets/qr_display.dart';
+import '../widgets/theme_toggle.dart';
 import 'room_widgets.dart';
 
 void _copyCode(BuildContext context, String roomId) {
@@ -38,6 +39,7 @@ class RoomHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
     final roomState = ref.watch(roomProvider);
     final room = roomState.room;
     final users = roomState.users;
@@ -53,7 +55,7 @@ class RoomHeader extends ConsumerWidget {
               ? AppIcons.messageSquareOff
               : AppIcons.messageSquare,
           tooltip: chatHidden ? 'Mostrar chat' : 'Ocultar chat',
-          foreground: chatHidden ? kRoomMuted : kRoomInk,
+          foreground: chatHidden ? c.muted : c.ink,
           onPressed: onToggleChat,
         ),
         if (unread)
@@ -64,16 +66,17 @@ class RoomHeader extends ConsumerWidget {
               width: 10,
               height: 10,
               decoration: BoxDecoration(
-                color: kRoomError,
+                color: c.error,
                 shape: BoxShape.circle,
-                border: Border.all(color: kRoomBg, width: 2),
+                border: Border.all(color: c.bg, width: 2),
               ),
             ),
           ),
       ],
     );
 
-    void openMembers() => showRoomMembersSheet(context, onKick: onKick);
+    void openMembers() =>
+        showRoomMembersSheet(context, onKick: onKick, layout: layout);
 
     if (layout == RoomLayout.phone) {
       return SizedBox(
@@ -86,8 +89,8 @@ class RoomHeader extends ConsumerWidget {
                 icon: AppIcons.arrowLeft,
                 tooltip: 'Salir de la sala',
                 bordered: false,
-                foreground: kRoomError,
-                background: kRoomErrorSoft,
+                foreground: c.error,
+                background: c.errorSoft,
                 onPressed: onLeave,
               ),
               const SizedBox(width: 4),
@@ -105,8 +108,8 @@ class RoomHeader extends ConsumerWidget {
                         room?.name ?? '',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: kRoomInk,
+                        style: TextStyle(
+                          color: c.ink,
                           fontSize: 17,
                           fontWeight: AppType.weightBold,
                         ),
@@ -116,18 +119,18 @@ class RoomHeader extends ConsumerWidget {
                           children: [
                             Text(
                               room.roomId,
-                              style: const TextStyle(
-                                color: kRoomMuted,
+                              style: TextStyle(
+                                color: c.muted,
                                 fontSize: AppType.sizeCaption,
                                 fontWeight: AppType.weightSemiBold,
                                 letterSpacing: 1.4,
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Icon(
+                            Icon(
                               AppIcons.copy,
                               size: 13,
-                              color: kRoomMuted,
+                              color: c.muted,
                             ),
                           ],
                         ),
@@ -154,9 +157,9 @@ class RoomHeader extends ConsumerWidget {
             RoomIconButton(
               icon: AppIcons.logOut,
               tooltip: 'Salir de la sala',
-              foreground: kRoomError,
-              background: kRoomErrorSoft,
-              borderColor: kRoomErrorLine,
+              foreground: c.error,
+              background: c.errorSoft,
+              borderColor: c.errorLine,
               onPressed: onLeave,
             ),
             const SizedBox(width: 16),
@@ -170,17 +173,17 @@ class RoomHeader extends ConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: kRoomInk,
+                      color: c.ink,
                       fontSize: wide ? 22 : 20,
                       fontWeight: AppType.weightBold,
                       letterSpacing: -0.2,
                     ),
                   ),
                   if (wide)
-                    const Text(
+                    Text(
                       'Sala de estudio',
                       style: TextStyle(
-                        color: kRoomMuted,
+                        color: c.muted,
                         fontSize: AppType.sizeLabel,
                       ),
                     ),
@@ -202,6 +205,10 @@ class RoomHeader extends ConsumerWidget {
             const SizedBox(width: 12),
             chatToggle,
             const SizedBox(width: 10),
+            // Esta rama solo se alcanza en tablet y laptop; en celular la fila
+            // está llena y el toggle vive en la hoja de miembros.
+            const ThemeToggleIconButton(),
+            const SizedBox(width: 10),
             RoomIconButton(
               icon: AppIcons.circleHelp,
               tooltip: '¿Cómo funciona?',
@@ -222,13 +229,14 @@ class _CodeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Tooltip(
       message: 'Copiar código de la sala',
       child: Material(
-        color: kRoomSurface,
+        color: c.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: kRoomLine),
+          side: BorderSide(color: c.line),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
@@ -241,10 +249,10 @@ class _CodeChip extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (showLabel) ...[
-                    const Text(
+                    Text(
                       'Código',
                       style: TextStyle(
-                        color: kRoomMuted,
+                        color: c.muted,
                         fontSize: AppType.sizeCaption,
                         fontWeight: AppType.weightSemiBold,
                       ),
@@ -253,15 +261,15 @@ class _CodeChip extends StatelessWidget {
                   ],
                   Text(
                     roomId,
-                    style: const TextStyle(
-                      color: kRoomInk,
+                    style: TextStyle(
+                      color: c.ink,
                       fontSize: 15,
                       fontWeight: AppType.weightBold,
                       letterSpacing: 2,
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Icon(AppIcons.copy, size: 17, color: kRoomMuted),
+                  Icon(AppIcons.copy, size: 17, color: c.muted),
                 ],
               ),
             ),
@@ -288,6 +296,7 @@ class _AvatarStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final shown = users.take(_max).toList();
     final extra = users.length - shown.length;
     final label = users.length <= 1 ? 'Solo tú' : '${users.length} en la sala';
@@ -312,7 +321,11 @@ class _AvatarStack extends StatelessWidget {
                     for (var i = 0; i < shown.length; i++)
                       Positioned(
                         left: i * 26.0,
-                        child: RoomAvatar(name: shown[i].name, index: i),
+                        child: RoomAvatar(
+                          name: shown[i].name,
+                          seed: shown[i].avatarSeed,
+                          index: i,
+                        ),
                       ),
                     if (extra > 0)
                       Positioned(
@@ -322,14 +335,14 @@ class _AvatarStack extends StatelessWidget {
                           height: 36,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: kRoomTrack,
+                            color: c.track,
                             shape: BoxShape.circle,
-                            border: Border.all(color: kRoomBg, width: 2),
+                            border: Border.all(color: c.bg, width: 2),
                           ),
                           child: Text(
                             '+$extra',
-                            style: const TextStyle(
-                              color: kRoomMuted,
+                            style: TextStyle(
+                              color: c.muted,
                               fontSize: 12,
                               fontWeight: AppType.weightBold,
                             ),
@@ -343,8 +356,8 @@ class _AvatarStack extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: kRoomMuted,
+                  style: TextStyle(
+                    color: c.muted,
                     fontSize: AppType.sizeBody,
                   ),
                 ),
@@ -365,13 +378,14 @@ class _PeopleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Tooltip(
       message: 'Personas en la sala e invitación',
       child: Material(
-        color: kRoomSurface,
+        color: c.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: kRoomLine),
+          side: BorderSide(color: c.line),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
@@ -383,12 +397,12 @@ class _PeopleButton extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(AppIcons.users, size: 18, color: kRoomInk),
+                  Icon(AppIcons.users, size: 18, color: c.ink),
                   const SizedBox(width: 8),
                   Text(
                     '$count',
-                    style: const TextStyle(
-                      color: kRoomInk,
+                    style: TextStyle(
+                      color: c.ink,
                       fontSize: 14,
                       fontWeight: AppType.weightBold,
                     ),
@@ -407,16 +421,18 @@ class _PeopleButton extends StatelessWidget {
 Future<void> showRoomMembersSheet(
   BuildContext context, {
   required ValueChanged<User> onKick,
+  required RoomLayout layout,
 }) {
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: kRoomSurface,
+    backgroundColor: context.colors.surface,
     isScrollControlled: true,
     constraints: const BoxConstraints(maxWidth: 520),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (sheetContext) => _MembersSheet(
+      layout: layout,
       onKick: (user) {
         Navigator.of(sheetContext).pop();
         onKick(user);
@@ -426,12 +442,14 @@ Future<void> showRoomMembersSheet(
 }
 
 class _MembersSheet extends ConsumerWidget {
-  const _MembersSheet({required this.onKick});
+  const _MembersSheet({required this.onKick, required this.layout});
 
   final ValueChanged<User> onKick;
+  final RoomLayout layout;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
     final roomState = ref.watch(roomProvider);
     final room = roomState.room;
     final users = roomState.users;
@@ -444,18 +462,18 @@ class _MembersSheet extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Invita a tu equipo',
               style: TextStyle(
-                color: kRoomInk,
+                color: c.ink,
                 fontSize: AppType.sizeTitle - 2,
                 fontWeight: AppType.weightBold,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Comparte el código o el QR para que entren a esta sala.',
-              style: TextStyle(color: kRoomMuted, fontSize: AppType.sizeBody),
+              style: TextStyle(color: c.muted, fontSize: AppType.sizeBody),
             ),
             if (room != null) ...[
               const SizedBox(height: 14),
@@ -478,8 +496,8 @@ class _MembersSheet extends ConsumerWidget {
               users.length == 1
                   ? 'En la sala · 1 persona'
                   : 'En la sala · ${users.length} personas',
-              style: const TextStyle(
-                color: kRoomInk,
+              style: TextStyle(
+                color: c.ink,
                 fontSize: AppType.sizeBodyLarge,
                 fontWeight: AppType.weightBold,
               ),
@@ -497,6 +515,12 @@ class _MembersSheet extends ConsumerWidget {
                     roomState.localUser?.id != users[i].id,
                 onKick: () => onKick(users[i]),
               ),
+            // En celular la barra del header no cabe un cuarto botón sin dejar el
+            // nombre de la sala ilegible, así que el cambio de tema vive aquí.
+            if (layout == RoomLayout.phone) ...[
+              const SizedBox(height: 18),
+              const ThemeToggleRow(),
+            ],
           ],
         ),
       ),
@@ -523,19 +547,25 @@ class _MemberRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          RoomAvatar(name: user.name, index: index, ringColor: kRoomSurface),
+          RoomAvatar(
+            name: user.name,
+            seed: user.avatarSeed,
+            index: index,
+            ringColor: c.surface,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               user.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: kRoomInk,
+              style: TextStyle(
+                color: c.ink,
                 fontSize: 15,
                 fontWeight: AppType.weightSemiBold,
               ),
@@ -543,18 +573,18 @@ class _MemberRow extends StatelessWidget {
           ),
           if (isHost) ...[
             const SizedBox(width: 8),
-            const RoomChip(
+            RoomChip(
               label: 'Anfitrión',
-              background: kRoomBreakSoft,
-              foreground: kRoomBreakInk,
+              background: c.restSoft,
+              foreground: c.restInk,
             ),
           ],
           if (isMe) ...[
             const SizedBox(width: 8),
-            const RoomChip(
+            RoomChip(
               label: 'Tú',
-              background: kRoomStudySoft,
-              foreground: kRoomStudy,
+              background: c.studySoft,
+              foreground: c.study,
             ),
           ],
           if (canKick) ...[
@@ -562,7 +592,7 @@ class _MemberRow extends StatelessWidget {
             RoomIconButton(
               icon: AppIcons.userX,
               tooltip: 'Expulsar a ${user.name}',
-              foreground: kRoomError,
+              foreground: c.error,
               onPressed: onKick,
             ),
           ],

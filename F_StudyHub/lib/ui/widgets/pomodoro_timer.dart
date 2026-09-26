@@ -3,13 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lottie/lottie.dart';
 import '../../core/app_icons.dart';
 
 import '../../core/theme.dart';
 import '../../data/services/sound_service.dart';
 import '../../logic/pomodoro_provider.dart';
 import '../room/room_widgets.dart';
+import 'mascot/pomodoro_mascot.dart';
 
 const _durationPresets = [5 * 60, 15 * 60, 30 * 60];
 
@@ -17,6 +17,9 @@ const _kMinCustomMinutes = 1;
 const _kMaxCustomMinutes = 180;
 
 /// Colores, textos e icono de cada modo del reloj.
+///
+/// El acento, el fondo suave y el texto se resuelven con la paleta activa, así
+/// que hay una instancia por modo y por brillo.
 class _ModeStyle {
   const _ModeStyle({
     required this.mode,
@@ -34,38 +37,39 @@ class _ModeStyle {
   final String label;
   final IconData icon;
 
-  static const focus = _ModeStyle(
-    mode: kModeFocus,
-    accent: kRoomStudy,
-    soft: kRoomStudySoft,
-    ink: kRoomStudy,
-    label: 'Estudio',
-    icon: AppIcons.bookOpen,
-  );
-  static const shortBreak = _ModeStyle(
-    mode: kModeShortBreak,
-    accent: kRoomBreak,
-    soft: kRoomBreakSoft,
-    ink: kRoomBreakInk,
-    label: 'Descanso corto',
-    icon: AppIcons.coffee,
-  );
-  static const longBreak = _ModeStyle(
-    mode: kModeLongBreak,
-    accent: kRoomLong,
-    soft: kRoomLongSoft,
-    ink: kRoomLong,
-    label: 'Descanso largo',
-    icon: AppIcons.moon,
-  );
-
-  static const all = [focus, shortBreak, longBreak];
-
-  static _ModeStyle of(String mode) => switch (mode) {
-    kModeShortBreak => shortBreak,
-    kModeLongBreak => longBreak,
-    _ => focus,
+  static _ModeStyle of(String mode, AppColors c) => switch (mode) {
+    kModeShortBreak => _ModeStyle(
+      mode: kModeShortBreak,
+      accent: c.rest,
+      soft: c.restSoft,
+      ink: c.restInk,
+      label: 'Descanso corto',
+      icon: AppIcons.coffee,
+    ),
+    kModeLongBreak => _ModeStyle(
+      mode: kModeLongBreak,
+      accent: c.longRest,
+      soft: c.longRestSoft,
+      ink: c.longRest,
+      label: 'Descanso largo',
+      icon: AppIcons.moon,
+    ),
+    _ => _ModeStyle(
+      mode: kModeFocus,
+      accent: c.study,
+      soft: c.studySoft,
+      ink: c.study,
+      label: 'Estudio',
+      icon: AppIcons.bookOpen,
+    ),
   };
+
+  /// Los tres modos, para el selector. En el orden en que avanza el ciclo.
+  static List<_ModeStyle> allOf(AppColors c) => [
+    of(kModeFocus, c),
+    of(kModeShortBreak, c),
+    of(kModeLongBreak, c),
+  ];
 }
 
 String _formatTime(int totalSeconds) {
@@ -119,9 +123,10 @@ class PomodoroTimer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
     final state = ref.watch(pomodoroProvider);
     final notifier = ref.read(pomodoroProvider.notifier);
-    final style = _ModeStyle.of(state.mode);
+    final style = _ModeStyle.of(state.mode, context.colors);
     // Los descansos tienen duración fija: no se envía duración al servidor.
     final int? focusDuration = state.isBreak ? null : state.totalSeconds;
 
@@ -170,8 +175,8 @@ class PomodoroTimer extends ConsumerWidget {
           Text(
             _nextHint(state),
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: kRoomMuted,
+            style: TextStyle(
+              color: c.muted,
               fontSize: AppType.sizeLabel,
             ),
           ),
@@ -215,15 +220,16 @@ class _Title extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Row(
       children: [
         Icon(AppIcons.timer, size: 20, color: style.accent),
         const SizedBox(width: 10),
-        const Expanded(
+        Expanded(
           child: Text(
             'Pomodoro',
             style: TextStyle(
-              color: kRoomInk,
+              color: c.ink,
               fontSize: AppType.sizeTitle - 2,
               fontWeight: AppType.weightBold,
             ),
@@ -250,23 +256,26 @@ class _ModeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: kRoomTrack,
+        color: c.track,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          for (final style in _ModeStyle.all)
-            Expanded(child: _segment(style, style.mode == selectedMode)),
+          for (final style in _ModeStyle.allOf(c))
+            Expanded(
+              child: _segment(c, style, style.mode == selectedMode),
+            ),
         ],
       ),
     );
   }
 
-  Widget _segment(_ModeStyle style, bool selected) {
-    final Color foreground = selected ? style.accent : kRoomMuted;
+  Widget _segment(AppColors c, _ModeStyle style, bool selected) {
+    final Color foreground = selected ? style.accent : c.muted;
     return Semantics(
       button: true,
       selected: selected,
@@ -288,14 +297,14 @@ class _ModeSelector extends StatelessWidget {
               constraints: const BoxConstraints(minHeight: 48),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               decoration: BoxDecoration(
-                color: selected ? kRoomSurface : Colors.transparent,
+                color: selected ? c.surface : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: selected
-                    ? const [
+                    ? [
                         BoxShadow(
-                          color: Color(0x1A1C2321),
+                          color: c.shadow,
                           blurRadius: 2,
-                          offset: Offset(0, 1),
+                          offset: const Offset(0, 1),
                         ),
                       ]
                     : null,
@@ -346,13 +355,14 @@ class _Setup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     if (state.isRunning) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 10),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
         child: Text(
           'Pausa el reloj para cambiar de modo',
           textAlign: TextAlign.center,
-          style: TextStyle(color: kRoomMuted, fontSize: AppType.sizeLabel),
+          style: TextStyle(color: c.muted, fontSize: AppType.sizeLabel),
         ),
       );
     }
@@ -404,6 +414,7 @@ class _Dial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final double progress = state.totalSeconds > 0
         ? (state.timeRemaining / state.totalSeconds).clamp(0.0, 1.0)
         : 0;
@@ -427,7 +438,7 @@ class _Dial extends StatelessWidget {
                   painter: _RingPainter(
                     progress: value,
                     color: style.accent,
-                    track: kRoomRingTrack,
+                    track: c.ringTrack,
                     stroke: 8,
                   ),
                   child: child,
@@ -442,31 +453,15 @@ class _Dial extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Mascota: cangrejo de Claude.
-                          // Capa propia + 12 fps (los de la animación): el anillo
-                          // y el resto no se repintan con cada cuadro del cangrejo.
-                          RepaintBoundary(
-                            child: SizedBox(
-                              width: crab * 1.4,
-                              height: crab,
-                              child: FittedBox(
-                                fit: BoxFit.contain,
-                                child: Lottie.asset(
-                                  'assets/Lottie/claude.json',
-                                  repeat: true,
-                                  frameRate: FrameRate.composition,
-                                  width: crab * 1.4,
-                                  height: crab,
-                                ),
-                              ),
-                            ),
-                          ),
+                          // Mascota: reacciona a la fase del ciclo (ver PomodoroMascot).
+                          PomodoroMascot(state: state, height: crab),
                           const SizedBox(height: 6),
                           Text(
                             _formatTime(state.timeRemaining),
                             maxLines: 1,
                             style: AppType.monoTimer(
-                              color: state.isBreak ? style.accent : kRoomInk,
+                              context: context,
+                              color: state.isBreak ? style.accent : c.ink,
                               fontSize: size * 0.19,
                             ),
                           ),
@@ -480,10 +475,10 @@ class _Dial extends StatelessWidget {
                               maxLines: 2,
                               style: TextStyle(
                                 color: state.isFinished
-                                    ? kRoomInk
+                                    ? c.ink
                                     : state.isRunning
                                     ? style.accent
-                                    : kRoomMuted,
+                                    : c.muted,
                                 fontWeight: AppType.weightSemiBold,
                                 fontSize: AppType.sizeBody,
                                 height: 1.2,
@@ -515,11 +510,12 @@ class _SoundToggle extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
     final enabled = ref.watch(soundProvider.select((s) => s.isEnabled));
     return RoomIconButton(
       icon: enabled ? AppIcons.volume2 : AppIcons.volumeX,
       tooltip: enabled ? 'Silenciar sonido' : 'Activar sonido',
-      foreground: enabled ? kRoomMuted : kRoomDisabled,
+      foreground: enabled ? c.muted : c.disabled,
       bordered: false,
       background: Colors.transparent,
       onPressed: () => ref.read(soundProvider.notifier).toggleSound(),
@@ -537,6 +533,7 @@ class _RoundDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final int done = _roundsDone(state);
     final String caption = state.isBreak
         ? '$done de $kFocusRoundsBeforeLong rondas'
@@ -556,14 +553,14 @@ class _RoundDots extends StatelessWidget {
               height: 8,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: i < done ? accent : kRoomLine,
+                color: i < done ? accent : c.line,
               ),
             ),
           const SizedBox(width: 8),
           Text(
             caption,
-            style: const TextStyle(
-              color: kRoomMuted,
+            style: TextStyle(
+              color: c.muted,
               fontWeight: AppType.weightSemiBold,
               fontSize: AppType.sizeLabel,
             ),
@@ -608,7 +605,7 @@ class _Controls extends StatelessWidget {
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: style.accent,
-                foregroundColor: Colors.white,
+                foregroundColor: context.colors.onAccent,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 shape: RoundedRectangleBorder(
@@ -655,9 +652,10 @@ class MiniTimerBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
     final state = ref.watch(pomodoroProvider);
     final notifier = ref.read(pomodoroProvider.notifier);
-    final style = _ModeStyle.of(state.mode);
+    final style = _ModeStyle.of(state.mode, context.colors);
     final int done = _roundsDone(state);
     final String label = state.isBreak
         ? style.label
@@ -666,8 +664,8 @@ class MiniTimerBar extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
       decoration: BoxDecoration(
-        color: kRoomSurface,
-        border: Border.all(color: kRoomLine),
+        color: c.surface,
+        border: Border.all(color: c.line),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -695,8 +693,8 @@ class MiniTimerBar extends ConsumerWidget {
                           label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: kRoomMuted,
+                          style: TextStyle(
+                            color: c.muted,
                             fontSize: AppType.sizeCaption,
                             fontWeight: AppType.weightSemiBold,
                           ),
@@ -704,7 +702,8 @@ class MiniTimerBar extends ConsumerWidget {
                         Text(
                           _formatTime(state.timeRemaining),
                           style: AppType.monoTimer(
-                            color: kRoomInk,
+                            context: context,
+                            color: c.ink,
                             fontSize: 24,
                           ),
                         ),
@@ -796,12 +795,14 @@ class _DurationPills extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final bool customSelected = !_durationPresets.contains(selectedSeconds);
     return Row(
       children: [
         for (final seconds in _durationPresets) ...[
           Expanded(
             child: _pill(
+              c: c,
               label: '${seconds ~/ 60} min',
               selected: seconds == selectedSeconds,
               onTap: () => onSelected(seconds),
@@ -811,6 +812,7 @@ class _DurationPills extends StatelessWidget {
         ],
         Expanded(
           child: _pill(
+            c: c,
             label: customSelected ? '${selectedSeconds ~/ 60} min' : 'Otro',
             selected: customSelected,
             onTap: () => _promptCustomDuration(context),
@@ -821,6 +823,7 @@ class _DurationPills extends StatelessWidget {
   }
 
   Widget _pill({
+    required AppColors c,
     required String label,
     required bool selected,
     required VoidCallback onTap,
@@ -840,15 +843,15 @@ class _DurationPills extends StatelessWidget {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: selected ? soft : kRoomSurface,
-              border: Border.all(color: selected ? accent : kRoomLine),
+              color: selected ? soft : c.surface,
+              border: Border.all(color: selected ? accent : c.line),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
               label,
               maxLines: 1,
               style: TextStyle(
-                color: selected ? accent : kRoomMuted,
+                color: selected ? accent : c.muted,
                 fontWeight: AppType.weightSemiBold,
                 fontSize: AppType.sizeLabel,
               ),
@@ -905,6 +908,7 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Material(
@@ -923,11 +927,11 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
               constraints: const BoxConstraints(maxWidth: 340),
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
               decoration: BoxDecoration(
-                color: kRoomSurface,
+                color: c.surface,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.12),
+                    color: c.shadow,
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -940,7 +944,7 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
                   Text(
                     'Duración personalizada',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: kRoomInk,
+                      color: c.ink,
                       fontWeight: AppType.weightSemiBold,
                     ),
                   ),
@@ -959,11 +963,11 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(3),
                       ],
-                      style: const TextStyle(color: kRoomInk),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: c.ink),
+                      decoration: InputDecoration(
                         labelText: 'Minutos',
                         hintText: 'ej. 30',
-                        labelStyle: TextStyle(color: kRoomMuted),
+                        labelStyle: TextStyle(color: c.muted),
                         counterText: '',
                       ),
                       validator: (value) {
@@ -989,7 +993,7 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: TextButton.styleFrom(
-                          foregroundColor: kRoomMuted,
+                          foregroundColor: c.muted,
                         ),
                         child: const Text('Cancelar'),
                       ),
@@ -997,7 +1001,7 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
                       TextButton(
                         onPressed: _submit,
                         style: TextButton.styleFrom(
-                          foregroundColor: kRoomStudy,
+                          foregroundColor: c.study,
                         ),
                         child: const Text(
                           'Aceptar',

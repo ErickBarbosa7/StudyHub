@@ -95,7 +95,7 @@ void main() {
                 child: MaterialApp(
                   theme: buildTheme(),
                   home: Scaffold(
-                    backgroundColor: kRoomBg,
+                    backgroundColor: AppColors.light.bg,
                     body: SafeArea(
                       child: RoomWorkspace(
                         onLeave: () {},

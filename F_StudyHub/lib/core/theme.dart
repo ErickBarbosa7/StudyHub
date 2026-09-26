@@ -4,10 +4,15 @@ import 'package:flutter/material.dart';
 // PALETA DE COLOR — "Estudio"
 // ─────────────────────────────────────────────────────────────
 //
-// Los kColor* de abajo apuntan a la paleta nueva (kRoom*, definida más
-// abajo). Junto a cada uno queda comentado su valor anterior de la paleta
-// "Focus & Paper" (verde salvia, crema y dorado) por si se quiere volver:
-// basta con restaurar ese Color(0x...) en cada línea.
+// Los colores viven en `AppColors`, una ThemeExtension con una instancia por
+// brillo. La UI nunca usa `const Color` sueltas: pide el token al contexto con
+// `context.colors`, que Material resuelve del `ThemeData` activo. Así el mismo
+// widget se dibuja solo en claro o en oscuro, y los colores del tema se pueden
+// animar con `lerp` al cambiar de modo.
+//
+// main.dart: `theme: buildTheme(Brightness.light)` y
+// `darkTheme: buildTheme(Brightness.dark)`, con el `themeMode` del provider
+// (logic/theme_provider.dart).
 //
 // Paleta anterior — filosofía:
 // Filosofía:
@@ -20,133 +25,315 @@ import 'package:flutter/material.dart';
 // Objetivo:
 // Una interfaz tranquila para sesiones largas de estudio,
 // sin colores saturados que compitan con el contenido.
+//
+// Paleta "Focus & Paper" (la anterior a la actual), por si se quiere volver:
+//   paper #FAFAF7 · card #F2F3ED · sage #9BAF9D · deepSage #486B52
+//   gold #C5A15A · ink #29312B · muted #687268 · line #DFE3DA
+//   sageSoft #E8EEE8 · goldSoft #F3EEDF · error #C94A4A
+//   estados: done #10B981 · inProgress #F59E0B · pending #F43F5E
 // ─────────────────────────────────────────────────────────────
 
-
 // ═════════════════════════════════════════════════════════════
-// COLORES PRINCIPALES
-// ═════════════════════════════════════════════════════════════
-
-const Color kColorPaper = kRoomBg; // antes: Color(0xFFFAFAF7)
-// Fondo principal.
-// Blanco ligeramente cálido para evitar la sensación clínica
-// de un blanco puro.
-
-const Color kColorCard = kRoomSurface; // antes: Color(0xFFF2F3ED)
-// Superficies secundarias.
-// Sutilmente diferenciadas del fondo.
-
-const Color kColorSage = kColorSageMid; // antes: Color(0xFF9BAF9D)
-// Verde salvia suave.
-// Uso decorativo, estados secundarios y superficies.
-
-const Color kColorDeepSage = kRoomStudy; // antes: Color(0xFF486B52)
-// Verde principal.
-// Acciones, botones, foco, elementos activos e interacción.
-
-const Color kColorGold = kRoomBreak; // antes: Color(0xFFC5A15A)
-// Dorado.
-// Reservado para progreso, logros y elementos completados.
-
-const Color kColorInk = kRoomInk; // antes: Color(0xFF29312B)
-// Texto principal.
-// Alto contraste sin llegar al negro puro.
-
-
-// ═════════════════════════════════════════════════════════════
-// COLORES DE APOYO
+// TOKENS DE COLOR
 // ═════════════════════════════════════════════════════════════
 
-const Color kColorTextSecondary = kRoomMuted; // antes: Color(0xFF687268)
-// Texto secundario.
-// Descripciones, timestamps y metadata.
+/// Paleta de la app para un brillo concreto.
+///
+/// Se accede desde la UI con `context.colors.<token>`.
+///
+/// Regla: un solo color por modo del reloj (estudio, descanso corto, descanso
+/// largo); todo lo demás es neutro.
+@immutable
+class AppColors extends ThemeExtension<AppColors> {
+  const AppColors({
+    required this.bg,
+    required this.surface,
+    required this.ink,
+    required this.muted,
+    required this.line,
+    required this.track,
+    required this.ringTrack,
+    required this.disabled,
+    required this.study,
+    required this.studySoft,
+    required this.rest,
+    required this.restSoft,
+    required this.restInk,
+    required this.longRest,
+    required this.longRestSoft,
+    required this.error,
+    required this.errorSoft,
+    required this.errorLine,
+    required this.sageMid,
+    required this.onAccent,
+    required this.snackBg,
+    required this.snackText,
+    required this.shadow,
+    required this.brand,
+  });
 
-const Color kColorBorder = kRoomLine; // antes: Color(0xFFDFE3DA)
-// Bordes y divisores.
-// Muy sutil para evitar ruido visual.
+  // ── Neutros ────────────────────────────────────────────────
 
-const Color kColorSageSoft = kRoomStudySoft; // antes: Color(0xFFE8EEE8)
-// Verde muy suave.
-// Chips, iconos, estados informativos y pequeños fondos.
+  /// Fondo de pantalla.
+  final Color bg;
 
-const Color kColorGoldSoft = kRoomBreakSoft; // antes: Color(0xFFF3EEDF)
-// Dorado lavado.
-// Fondos asociados a logros y progreso.
+  /// Tarjetas y paneles.
+  final Color surface;
 
+  /// Texto principal. Nunca negro puro.
+  final Color ink;
 
-// ═════════════════════════════════════════════════════════════
-// ESTADOS
-// ═════════════════════════════════════════════════════════════
+  /// Texto secundario, descripciones y metadatos.
+  final Color muted;
 
-const Color kColorError = kRoomError; // antes: Color(0xFFC94A4A)
+  /// Bordes y divisores.
+  final Color line;
 
-const Color kColorErrorBorder = Color(0xFFE9A6A6);
+  /// Fondos neutros: selectores, chips, campos.
+  final Color track;
 
-const Color kColorStateDone = kRoomStudy; // antes: Color(0xFF10B981)
-const Color kColorStateInProgress = kRoomBreak; // antes: Color(0xFFF59E0B)
-const Color kColorStatePending = kRoomMuted; // antes: Color(0xFFF43F5E)
+  /// Pista del anillo del reloj.
+  final Color ringTrack;
 
+  /// Elementos deshabilitados.
+  final Color disabled;
 
-// ═════════════════════════════════════════════════════════════
-// PALETA DE LA SALA — "Estudio" (rediseño de sala)
-// ═════════════════════════════════════════════════════════════
-//
-// Solo se usa dentro de la sala (lib/ui/room, pomodoro, tareas y chat).
-// La paleta anterior "Focus & Paper" sigue intacta arriba (kColorPaper,
-// kColorDeepSage, kColorGold, ...) y la usan inicio y crear/unirse.
-// Para volver a ella basta con apuntar los widgets de la sala a esas
-// constantes en lugar de estas.
-//
-// Regla: un solo color por modo del reloj; todo lo demás es neutro.
+  // ── Modos del reloj ────────────────────────────────────────
 
-const Color kRoomBg = Color(0xFFF3F2EE); // fondo de pantalla
-const Color kRoomSurface = Color(0xFFFFFFFF); // tarjetas
-const Color kRoomInk = Color(0xFF1C2321); // texto principal
-const Color kRoomMuted = Color(0xFF5D6763); // texto secundario
-const Color kRoomLine = Color(0xFFE3E1DA); // bordes
-const Color kRoomTrack = Color(0xFFEEEDE8); // fondos neutros (selector, chips)
-const Color kRoomRingTrack = Color(0xFFE9E7E1); // pista del anillo
-const Color kRoomDisabled = Color(0xFFC9C6BC);
+  /// Estudio: acciones, foco, elementos activos.
+  final Color study;
 
-const Color kRoomStudy = Color(0xFF1F6B5C); // estudio
-const Color kRoomStudySoft = Color(0xFFE3EFEB);
+  /// Fondo suave de estudio: chips, iconos, estados informativos.
+  final Color studySoft;
 
-const Color kRoomBreak = Color(0xFFA65A00); // descanso corto
-const Color kRoomBreakSoft = Color(0xFFFAEBD5);
-const Color kRoomBreakInk = Color(0xFF8A4B00); // texto sobre kRoomBreakSoft
+  /// Descanso corto.
+  final Color rest;
 
-const Color kRoomLong = Color(0xFF484C9B); // descanso largo
-const Color kRoomLongSoft = Color(0xFFE8E9F6);
+  /// Fondo suave de descanso corto.
+  final Color restSoft;
 
-const Color kRoomError = Color(0xFFB3372F);
-const Color kRoomErrorSoft = Color(0xFFF9E7E4);
-const Color kRoomErrorLine = Color(0xFFE8C6C1);
+  /// Texto sobre [restSoft].
+  final Color restInk;
 
-// Tono medio del verde azulado (decorativo, antes salvia #9BAF9D).
-const Color kColorSageMid = Color(0xFF8DB8AC);
+  /// Descanso largo.
+  final Color longRest;
 
+  /// Fondo suave de descanso largo.
+  final Color longRestSoft;
 
-// ═════════════════════════════════════════════════════════════
-// SUPERFICIES Y SOMBRAS
-// ═════════════════════════════════════════════════════════════
+  // ── Errores ────────────────────────────────────────────────
 
-const Color kColorSurfaceWhite = kColorPaper;
+  final Color error;
+  final Color errorSoft;
+  final Color errorLine;
 
-const Color kColorSurfaceSoft = kColorCard;
+  // ── Acento decorativo ──────────────────────────────────────
 
-// Sombra extremadamente sutil.
-// La intención es separar elementos sin crear una interfaz
-// llena de sombras.
-final Color kColorTintedShadow =
-    kColorDeepSage.withValues(alpha: 0.06);
+  /// Tono medio del verde azulado.
+  final Color sageMid;
 
+  // ── Sobre acento ───────────────────────────────────────────
 
+  /// Texto e iconos colocados sobre [study] o [bg] (botón principal, avisos).
+  ///
+  /// En oscuro se invierte a un verde muy oscuro: el acento es claro y necesita
+  /// texto oscuro encima para mantener el contraste.
+  final Color onAccent;
 
-const Color kColorRingActive = kColorDeepSage;
+  // ── Avisos ─────────────────────────────────────────────────
 
-const Color kColorRingComplete = kColorGold;
+  /// Fondo de los avisos (notificaciones, banners).
+  ///
+  /// Sigue siendo de alto contraste en ambos modos: en oscuro la píldora se
+  /// vuelve clara sobre el fondo oscuro, en vez de un gris apagado.
+  final Color snackBg;
 
-const Color kColorRingInactive = kColorBorder;
+  /// Texto sobre [snackBg].
+  final Color snackText;
+
+  // ── Sombras ────────────────────────────────────────────────
+
+  /// Sombra tintada de tarjetas. En oscuro, negro (una sombra de color verde no
+  /// se ve sobre un fondo oscuro).
+  final Color shadow;
+
+  // ── Marca ──────────────────────────────────────────────────
+
+  /// Fondo del panel de marca del inicio (blanco encima). Verde profundo en
+  /// ambos modos: en oscuro se hunde para no ser el bloque más brillante de la
+  /// pantalla, pero sigue dando contraste al texto blanco.
+  final Color brand;
+
+  /// Paleta clara: la que se usó siempre hasta ahora.
+  static const light = AppColors(
+    bg: Color(0xFFF3F2EE),
+    surface: Color(0xFFFFFFFF),
+    ink: Color(0xFF1C2321),
+    muted: Color(0xFF5D6763),
+    line: Color(0xFFE3E1DA),
+    track: Color(0xFFEEEDE8),
+    ringTrack: Color(0xFFE9E7E1),
+    disabled: Color(0xFFC9C6BC),
+    study: Color(0xFF1F6B5C),
+    studySoft: Color(0xFFE3EFEB),
+    rest: Color(0xFFA65A00),
+    restSoft: Color(0xFFFAEBD5),
+    restInk: Color(0xFF8A4B00),
+    longRest: Color(0xFF484C9B),
+    longRestSoft: Color(0xFFE8E9F6),
+    error: Color(0xFFB3372F),
+    errorSoft: Color(0xFFF9E7E4),
+    errorLine: Color(0xFFE8C6C1),
+    sageMid: Color(0xFF8DB8AC),
+    onAccent: Color(0xFFF3F2EE),
+    snackBg: Color(0xFF1C2321),
+    snackText: Color(0xFFF3F2EE),
+    shadow: Color(0x0F1F6B5C),
+    brand: Color(0xFF1F6B5C),
+  );
+
+  /// Paleta oscura.
+  ///
+  /// Mantiene la identidad "Estudio" (verde azulado, ámbar, índigo) aclarando y
+  /// desaturando los acentos para que tengan contraste sobre fondo oscuro, y
+  /// respetando la regla del diseño: ni negro ni blanco puros.
+  static const dark = AppColors(
+    bg: Color(0xFF14181A),
+    surface: Color(0xFF1D2224),
+    ink: Color(0xFFE8EDEB),
+    muted: Color(0xFF9BA6A3),
+    line: Color(0xFF2C3234),
+    track: Color(0xFF242A2C),
+    ringTrack: Color(0xFF2A3134),
+    disabled: Color(0xFF5A625F),
+    study: Color(0xFF4FBFA5),
+    studySoft: Color(0xFF123028),
+    rest: Color(0xFFE0912F),
+    restSoft: Color(0xFF33240E),
+    restInk: Color(0xFFF0B36A),
+    longRest: Color(0xFF9DA1F0),
+    longRestSoft: Color(0xFF1F2240),
+    error: Color(0xFFE5786F),
+    errorSoft: Color(0xFF33201E),
+    errorLine: Color(0xFF4A2B28),
+    sageMid: Color(0xFF5C8A7F),
+    onAccent: Color(0xFF0F1F1B),
+    snackBg: Color(0xFFE8EDEB),
+    snackText: Color(0xFF14181A),
+    shadow: Color(0x8A000000),
+    brand: Color(0xFF0F4238),
+  );
+
+  /// Colores de la sala por modo de reloj. Para pintar el dial según la fase.
+  Color modeColor(String mode) {
+    if (mode == 'SHORT_BREAK') return rest;
+    if (mode == 'LONG_BREAK') return longRest;
+    return study;
+  }
+
+  /// Fondo suave de la sala por modo de reloj.
+  Color modeSoft(String mode) {
+    if (mode == 'SHORT_BREAK') return restSoft;
+    if (mode == 'LONG_BREAK') return longRestSoft;
+    return studySoft;
+  }
+
+  @override
+  AppColors copyWith({
+    Color? bg,
+    Color? surface,
+    Color? ink,
+    Color? muted,
+    Color? line,
+    Color? track,
+    Color? ringTrack,
+    Color? disabled,
+    Color? study,
+    Color? studySoft,
+    Color? rest,
+    Color? restSoft,
+    Color? restInk,
+    Color? longRest,
+    Color? longRestSoft,
+    Color? error,
+    Color? errorSoft,
+    Color? errorLine,
+    Color? sageMid,
+    Color? onAccent,
+    Color? snackBg,
+    Color? snackText,
+    Color? shadow,
+    Color? brand,
+  }) {
+    return AppColors(
+      bg: bg ?? this.bg,
+      surface: surface ?? this.surface,
+      ink: ink ?? this.ink,
+      muted: muted ?? this.muted,
+      line: line ?? this.line,
+      track: track ?? this.track,
+      ringTrack: ringTrack ?? this.ringTrack,
+      disabled: disabled ?? this.disabled,
+      study: study ?? this.study,
+      studySoft: studySoft ?? this.studySoft,
+      rest: rest ?? this.rest,
+      restSoft: restSoft ?? this.restSoft,
+      restInk: restInk ?? this.restInk,
+      longRest: longRest ?? this.longRest,
+      longRestSoft: longRestSoft ?? this.longRestSoft,
+      error: error ?? this.error,
+      errorSoft: errorSoft ?? this.errorSoft,
+      errorLine: errorLine ?? this.errorLine,
+      sageMid: sageMid ?? this.sageMid,
+      onAccent: onAccent ?? this.onAccent,
+      snackBg: snackBg ?? this.snackBg,
+      snackText: snackText ?? this.snackText,
+      shadow: shadow ?? this.shadow,
+      brand: brand ?? this.brand,
+    );
+  }
+
+  @override
+  AppColors lerp(covariant AppColors? other, double t) {
+    if (other == null) return this;
+    Color mix(Color a, Color b) => Color.lerp(a, b, t)!;
+    return AppColors(
+      bg: mix(bg, other.bg),
+      surface: mix(surface, other.surface),
+      ink: mix(ink, other.ink),
+      muted: mix(muted, other.muted),
+      line: mix(line, other.line),
+      track: mix(track, other.track),
+      ringTrack: mix(ringTrack, other.ringTrack),
+      disabled: mix(disabled, other.disabled),
+      study: mix(study, other.study),
+      studySoft: mix(studySoft, other.studySoft),
+      rest: mix(rest, other.rest),
+      restSoft: mix(restSoft, other.restSoft),
+      restInk: mix(restInk, other.restInk),
+      longRest: mix(longRest, other.longRest),
+      longRestSoft: mix(longRestSoft, other.longRestSoft),
+      error: mix(error, other.error),
+      errorSoft: mix(errorSoft, other.errorSoft),
+      errorLine: mix(errorLine, other.errorLine),
+      sageMid: mix(sageMid, other.sageMid),
+      onAccent: mix(onAccent, other.onAccent),
+      snackBg: mix(snackBg, other.snackBg),
+      snackText: mix(snackText, other.snackText),
+      shadow: mix(shadow, other.shadow),
+      brand: mix(brand, other.brand),
+    );
+  }
+}
+
+/// Los tokens de color del tema activo.
+///
+/// Un `Theme.of(context)` por método `build` y se pasa el resultado a las
+/// propiedades: `[c.ink, c.muted]` en vez de repetir la búsqueda.
+extension AppColorsContext on BuildContext {
+  AppColors get colors => Theme.of(this).extension<AppColors>() ?? AppColors.light;
+}
+
 
 const String kFontFamily = 'Recursive';
 
@@ -209,10 +396,11 @@ abstract final class AppType {
   // MONO
   // ───────────────────────────────────────────────────────────
 
+  /// Fuente monoespaciada sin color: el que lo use decide el tono (para el reloj
+  /// suele ser el del modo actual, no el de la paleta).
   static const TextStyle mono = TextStyle(
     fontFamily: kFontFamilyMono,
     fontWeight: weightMedium,
-    color: kColorInk,
     fontFeatures: [
       FontFeature.tabularFigures(),
     ],
@@ -224,14 +412,15 @@ abstract final class AppType {
   // ───────────────────────────────────────────────────────────
 
   static TextStyle monoTimer({
-    Color color = kColorInk,
+    required BuildContext context,
+    Color? color,
     double? fontSize,
   }) =>
       TextStyle(
         fontFamily: kFontFamilyMono,
         fontWeight: weightSemiBold,
         fontSize: fontSize ?? sizeTimerDisplay,
-        color: color,
+        color: color ?? context.colors.ink,
         fontFeatures: const [
           FontFeature.tabularFigures(),
         ],
@@ -247,14 +436,15 @@ abstract final class AppType {
 
 
   static TextStyle secondaryItalic({
+    required BuildContext context,
     double size = sizeBodyMedium,
-    Color color = kColorTextSecondary,
+    Color? color,
   }) =>
       TextStyle(
         fontFamily: kFontFamily,
         fontWeight: weightRegular,
         fontSize: size,
-        color: color,
+        color: color ?? context.colors.muted,
         height: 1.3,
         fontVariations: const [
           italicSlant,
@@ -267,59 +457,69 @@ abstract final class AppType {
 // THEME
 // ═════════════════════════════════════════════════════════════
 
-ThemeData buildTheme() {
+ThemeData buildTheme([Brightness brightness = Brightness.light]) {
+
+  final c = brightness == Brightness.dark ? AppColors.dark : AppColors.light;
 
   final ColorScheme colorScheme = ColorScheme(
-    brightness: Brightness.light,
+    brightness: brightness,
 
     // ─────────────────────────────────────────────────────────
     // PRIMARY
     // ─────────────────────────────────────────────────────────
 
-    primary: kColorDeepSage,
+    primary: c.study,
 
-    onPrimary: kColorPaper,
+    onPrimary: c.onAccent,
 
 
     // ─────────────────────────────────────────────────────────
     // SECONDARY
     // ─────────────────────────────────────────────────────────
 
-    secondary: kColorSage,
+    secondary: c.sageMid,
 
-    onSecondary: kColorInk,
+    onSecondary: c.ink,
 
 
     // ─────────────────────────────────────────────────────────
     // TERTIARY
     // ─────────────────────────────────────────────────────────
 
-    // Dorado = recompensa.
-    tertiary: kColorGold,
+    // Ámbar = recompensa.
+    tertiary: c.rest,
 
-    onTertiary: kColorPaper,
+    onTertiary: c.onAccent,
 
-    tertiaryContainer: kColorGoldSoft,
+    tertiaryContainer: c.restSoft,
 
-    onTertiaryContainer: kColorInk,
+    onTertiaryContainer: c.restInk,
 
 
     // ─────────────────────────────────────────────────────────
     // ERROR
     // ─────────────────────────────────────────────────────────
 
-    error: kColorError,
+    error: c.error,
 
-    onError: kColorPaper,
+    onError: c.onAccent,
 
 
     // ─────────────────────────────────────────────────────────
     // SURFACE
     // ─────────────────────────────────────────────────────────
 
-    surface: kColorCard,
+    surface: c.surface,
 
-    onSurface: kColorInk,
+    onSurface: c.ink,
+
+    onSurfaceVariant: c.muted,
+
+    surfaceContainerHighest: c.track,
+
+    outline: c.line,
+
+    outlineVariant: c.line,
   );
 
 
@@ -333,7 +533,12 @@ ThemeData buildTheme() {
 
     colorScheme: colorScheme,
 
-    scaffoldBackgroundColor: kColorPaper,
+    brightness: brightness,
+
+    // Paleta de la app: la UI la lee con `context.colors`.
+    extensions: [c],
+
+    scaffoldBackgroundColor: c.bg,
 
     fontFamily: kFontFamily,
 
@@ -342,12 +547,12 @@ ThemeData buildTheme() {
     // TYPOGRAPHY
     // ═══════════════════════════════════════════════════════
 
-    textTheme: const TextTheme(
+    textTheme: TextTheme(
 
       displayLarge: TextStyle(
         fontSize: AppType.sizeDisplay,
         fontWeight: FontWeight.w800,
-        color: kColorInk,
+        color: c.ink,
         height: 1.15,
         letterSpacing: -0.4,
       ),
@@ -355,7 +560,7 @@ ThemeData buildTheme() {
       headlineMedium: TextStyle(
         fontSize: AppType.sizeHeadline,
         fontWeight: FontWeight.w700,
-        color: kColorInk,
+        color: c.ink,
         height: 1.2,
         letterSpacing: -0.3,
       ),
@@ -363,7 +568,7 @@ ThemeData buildTheme() {
       titleLarge: TextStyle(
         fontSize: AppType.sizeTitle,
         fontWeight: FontWeight.w700,
-        color: kColorInk,
+        color: c.ink,
         height: 1.25,
         letterSpacing: -0.2,
       ),
@@ -371,21 +576,21 @@ ThemeData buildTheme() {
       bodyLarge: TextStyle(
         fontSize: AppType.sizeBodyLarge,
         fontWeight: AppType.weightRegular,
-        color: kColorInk,
+        color: c.ink,
         height: 1.3,
       ),
 
       bodyMedium: TextStyle(
         fontSize: AppType.sizeBodyMedium,
         fontWeight: AppType.weightRegular,
-        color: kColorInk,
+        color: c.ink,
         height: 1.35,
       ),
 
       bodySmall: TextStyle(
         fontSize: AppType.sizeBody,
         fontWeight: AppType.weightRegular,
-        color: kColorTextSecondary,
+        color: c.muted,
         fontVariations: [
           AppType.italicSlant,
         ],
@@ -394,13 +599,13 @@ ThemeData buildTheme() {
       labelLarge: TextStyle(
         fontSize: AppType.sizeLabel,
         fontWeight: AppType.weightSemiBold,
-        color: kColorInk,
+        color: c.ink,
       ),
 
       labelSmall: TextStyle(
         fontSize: AppType.sizeCaption,
         fontWeight: AppType.weightRegular,
-        color: kColorTextSecondary,
+        color: c.muted,
         fontVariations: [
           AppType.italicSlant,
         ],
@@ -412,9 +617,9 @@ ThemeData buildTheme() {
     // APP BAR
     // ═══════════════════════════════════════════════════════
 
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: Colors.transparent,
-      foregroundColor: kColorInk,
+      foregroundColor: c.ink,
       elevation: 0,
       centerTitle: true,
       surfaceTintColor: Colors.transparent,
@@ -429,11 +634,14 @@ ThemeData buildTheme() {
 
       style: ElevatedButton.styleFrom(
 
-        // Verde = acción principal.
-        backgroundColor: kColorDeepSage,
+        // Verde azulado = acción principal.
+        backgroundColor: c.study,
 
-        // Papel sobre verde.
-        foregroundColor: kColorPaper,
+        // Texto de alto contraste sobre ese verde.
+        foregroundColor: c.onAccent,
+
+        disabledBackgroundColor: c.track,
+        disabledForegroundColor: c.disabled,
 
         minimumSize: const Size.fromHeight(56),
 
@@ -466,10 +674,10 @@ ThemeData buildTheme() {
 
       style: OutlinedButton.styleFrom(
 
-        foregroundColor: kColorDeepSage,
+        foregroundColor: c.study,
 
-        side: const BorderSide(
-          color: kColorDeepSage,
+        side: BorderSide(
+          color: c.study,
           width: 1.5,
         ),
 
@@ -494,6 +702,29 @@ ThemeData buildTheme() {
 
 
     // ═══════════════════════════════════════════════════════
+    // TEXT BUTTON
+    // ═══════════════════════════════════════════════════════
+
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: c.study,
+        textStyle: const TextStyle(
+          fontFamily: kFontFamily,
+          fontWeight: AppType.weightSemiBold,
+          fontSize: AppType.sizeBodyLarge,
+        ),
+      ),
+    ),
+
+
+    // ═══════════════════════════════════════════════════════
+    // ICON
+    // ═══════════════════════════════════════════════════════
+
+    iconTheme: IconThemeData(color: c.ink),
+
+
+    // ═══════════════════════════════════════════════════════
     // INPUTS
     // ═══════════════════════════════════════════════════════
 
@@ -501,15 +732,15 @@ ThemeData buildTheme() {
 
       filled: true,
 
-      fillColor: kColorPaper,
+      fillColor: c.track,
 
-      hintStyle: const TextStyle(
-        color: kColorTextSecondary,
+      hintStyle: TextStyle(
+        color: c.muted,
         fontSize: AppType.sizeBodyMedium,
       ),
 
-      labelStyle: const TextStyle(
-        color: kColorTextSecondary,
+      labelStyle: TextStyle(
+        color: c.muted,
         fontSize: AppType.sizeBodyMedium,
       ),
 
@@ -546,8 +777,8 @@ ThemeData buildTheme() {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
 
-        borderSide: const BorderSide(
-          color: kColorDeepSage,
+        borderSide: BorderSide(
+          color: c.study,
           width: 1.5,
         ),
       ),
@@ -560,8 +791,8 @@ ThemeData buildTheme() {
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
 
-        borderSide: const BorderSide(
-          color: kColorErrorBorder,
+        borderSide: BorderSide(
+          color: c.errorLine,
           width: 1.5,
         ),
       ),
@@ -570,8 +801,8 @@ ThemeData buildTheme() {
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
 
-        borderSide: const BorderSide(
-          color: kColorError,
+        borderSide: BorderSide(
+          color: c.error,
           width: 1.5,
         ),
       ),
@@ -584,7 +815,7 @@ ThemeData buildTheme() {
 
     cardTheme: CardThemeData(
 
-      color: kColorCard,
+      color: c.surface,
 
       elevation: 0,
 
@@ -604,13 +835,13 @@ ThemeData buildTheme() {
 
     chipTheme: ChipThemeData(
 
-      // Verde suave para no competir con el contenido.
-      backgroundColor: kColorSageSoft,
+      // Fondo suave para no competir con el contenido.
+      backgroundColor: c.studySoft,
 
       side: BorderSide.none,
 
-      labelStyle: const TextStyle(
-        color: kColorInk,
+      labelStyle: TextStyle(
+        color: c.ink,
         fontWeight: AppType.weightMedium,
       ),
 
@@ -624,9 +855,11 @@ ThemeData buildTheme() {
     // SNACKBAR
     // ═══════════════════════════════════════════════════════
 
-    snackBarTheme: const SnackBarThemeData(
+    snackBarTheme: SnackBarThemeData(
 
-      backgroundColor: kColorInk,
+      backgroundColor: c.snackBg,
+
+      contentTextStyle: TextStyle(color: c.snackText),
 
       behavior: SnackBarBehavior.floating,
 
@@ -644,7 +877,7 @@ ThemeData buildTheme() {
 
     dialogTheme: DialogThemeData(
 
-      backgroundColor: kColorPaper,
+      backgroundColor: c.bg,
 
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
@@ -656,11 +889,13 @@ ThemeData buildTheme() {
     // BOTTOM SHEET
     // ═══════════════════════════════════════════════════════
 
-    bottomSheetTheme: const BottomSheetThemeData(
+    bottomSheetTheme: BottomSheetThemeData(
 
-      backgroundColor: kColorPaper,
+      backgroundColor: c.bg,
 
-      shape: RoundedRectangleBorder(
+      surfaceTintColor: Colors.transparent,
+
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(32),
         ),
@@ -673,15 +908,15 @@ ThemeData buildTheme() {
     // ═══════════════════════════════════════════════════════
 
     tabBarTheme: TabBarThemeData(
-      labelColor: kColorDeepSage,
-      unselectedLabelColor: kColorTextSecondary,
+      labelColor: c.study,
+      unselectedLabelColor: c.muted,
       indicatorSize: TabBarIndicatorSize.tab,
       indicator: BoxDecoration(
-        color: kColorCard,
+        color: c.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: c.shadow,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

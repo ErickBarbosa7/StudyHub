@@ -10,26 +10,27 @@ class ConnectionBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
     final state = ref.watch(socketStateProvider);
 
     if (state.isConnecting) {
       return _Banner(
-        color: kColorSageSoft,
+        color: c.studySoft,
         child: Row(
           children: [
-            const SizedBox(
+            SizedBox(
               width: 18,
               height: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: kColorDeepSage,
+                color: c.study,
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Conectando al servidor…',
-                style: TextStyle(color: kColorInk),
+                style: TextStyle(color: c.ink),
               ),
             ),
           ],
@@ -39,16 +40,16 @@ class ConnectionBanner extends ConsumerWidget {
 
     if (state.error != null) {
       return _Banner(
-        color: kColorErrorBorder,
+        color: c.errorSoft,
         child: Row(
           children: [
-            const Icon(AppIcons.cloudOff, color: kColorError, size: 20),
+            Icon(AppIcons.cloudOff, color: c.error, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 state.error!,
-                style: const TextStyle(
-                  color: kColorInk,
+                style: TextStyle(
+                  color: c.ink,
                   fontSize: AppType.sizeCaption,
                 ),
               ),
@@ -56,7 +57,7 @@ class ConnectionBanner extends ConsumerWidget {
             TextButton(
               onPressed: () => ref.read(socketStateProvider.notifier).connect(),
               style: TextButton.styleFrom(
-                foregroundColor: kColorDeepSage,
+                foregroundColor: c.study,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
               ),
               child: const Text('Reintentar'),
@@ -65,8 +66,9 @@ class ConnectionBanner extends ConsumerWidget {
               onPressed: () =>
                   ref.read(socketStateProvider.notifier).clearError(),
               icon: const Icon(AppIcons.x, size: 18),
-              color: kColorTextSecondary,
+              color: c.muted,
               visualDensity: VisualDensity.compact,
+              tooltip: 'Cerrar aviso',
             ),
           ],
         ),

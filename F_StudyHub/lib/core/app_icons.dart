@@ -69,6 +69,8 @@ abstract final class AppIcons {
   static const IconData send = IconData(57682, fontFamily: _family);
   /// skip-forward
   static const IconData skipForward = IconData(57696, fontFamily: _family);
+  /// sun
+  static const IconData sun = IconData(57720, fontFamily: _family);
   /// timer
   static const IconData timer = IconData(57824, fontFamily: _family);
   /// trash-2

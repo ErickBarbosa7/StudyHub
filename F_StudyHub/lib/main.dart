@@ -1,19 +1,26 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'core/app_icons.dart';
 import 'ui/widgets/inactivity_detector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/avatars.dart';
 import 'core/theme.dart';
+import 'logic/theme_provider.dart';
 import 'ui/screens/create_room_screen.dart';
 import 'ui/screens/home_screen.dart';
 
 Widget _buildErrorWidget(FlutterErrorDetails errorDetails) {
+  // Esta pantalla se dibuja cuando el árbol ya está roto, así que no hay
+  // MaterialApp del que sacar el tema: se queda en la paleta clara.
+  const c = AppColors.light;
+
   return Builder(
     builder: (context) {
       return Material(
-        color: kColorPaper,
+        color: c.bg,
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
@@ -23,12 +30,12 @@ Widget _buildErrorWidget(FlutterErrorDetails errorDetails) {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: kColorSageSoft,
+                    color: c.studySoft,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     AppIcons.circleAlert,
-                    color: kColorDeepSage,
+                    color: c.study,
                     size: 40,
                   ),
                 ),
@@ -36,7 +43,7 @@ Widget _buildErrorWidget(FlutterErrorDetails errorDetails) {
                 Text(
                   'Algo salió mal',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: kColorInk,
+                        color: c.ink,
                         fontWeight: AppType.weightSemiBold,
                       ),
                 ),
@@ -44,7 +51,7 @@ Widget _buildErrorWidget(FlutterErrorDetails errorDetails) {
                 Text(
                   'Ocurrió un error inesperado. Por favor, reinicia la aplicación.',
                   textAlign: TextAlign.center,
-                  style: AppType.secondaryItalic(color: kColorInk),
+                  style: AppType.secondaryItalic(context: context, color: c.ink),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
@@ -73,13 +80,25 @@ Widget _buildErrorWidget(FlutterErrorDetails errorDetails) {
 
 void main() {
   runZonedGuarded(
-    () {
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      final initialThemeMode = await loadSavedThemeMode();
       FlutterError.onError = (details) {
         debugPrint('[FlutterError] ${details.exceptionAsString()}');
         debugPrint('${details.stack}');
       };
       ErrorWidget.builder = _buildErrorWidget;
-      runApp(const ProviderScope(child: StudyHubApp()));
+      // Tras el primer cuadro: la primera vez que se dibuja un avatar el estilo
+      // se interpreta (cientos de ms) y así no cae sobre la sala.
+      WidgetsBinding.instance.addPostFrameCallback((_) => warmUpAvatars());
+      runApp(
+        ProviderScope(
+          overrides: [
+            initialThemeModeProvider.overrideWithValue(initialThemeMode),
+          ],
+          child: const StudyHubApp(),
+        ),
+      );
     },
     (error, stackTrace) {
       debugPrint('[ZoneError] $error');
@@ -89,15 +108,29 @@ void main() {
 }
 
 
-class StudyHubApp extends StatelessWidget {
+class StudyHubApp extends ConsumerWidget {
   const StudyHubApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+
     return InactivityDetector(
       child: MaterialApp(
         title: 'StudyHub',
-        theme: buildTheme(),
+        theme: buildTheme(Brightness.light),
+        darkTheme: buildTheme(Brightness.dark),
+        themeMode: themeMode,
+        builder: (context, child) {
+          // Iconos de la barra de estado legibles sobre el fondo del modo activo.
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: isDark
+                ? SystemUiOverlayStyle.light
+                : SystemUiOverlayStyle.dark,
+            child: child!,
+          );
+        },
         home: const HomeScreen(),
         routes: {
           CreateRoomScreen.routeName: (_) => const CreateRoomScreen(),

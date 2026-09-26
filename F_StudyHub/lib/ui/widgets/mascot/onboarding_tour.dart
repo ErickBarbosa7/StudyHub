@@ -92,6 +92,7 @@ Future<void> showOnboardingTour(
   OnboardingNotifier notifier, {
   bool inRoom = false,
 }) async {
+  final c = context.colors;
   final isWide = MediaQuery.sizeOf(context).width >= 600;
   notifier.markOpened();
   final view = _OnboardingTourView(steps: _stepsFor(inRoom: inRoom));
@@ -101,7 +102,7 @@ Future<void> showOnboardingTour(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => Dialog(
-        backgroundColor: kRoomSurface,
+        backgroundColor: c.surface,
         insetPadding: const EdgeInsets.all(24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: ConstrainedBox(
@@ -114,7 +115,7 @@ Future<void> showOnboardingTour(
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: kRoomSurface,
+      backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -161,6 +162,7 @@ class _OnboardingTourViewState extends State<_OnboardingTourView> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final step = widget.steps[_index];
     final total = widget.steps.length;
     // Cabecera y botones fijos; solo el contenido del paso hace scroll, para
@@ -176,8 +178,8 @@ class _OnboardingTourViewState extends State<_OnboardingTourView> {
               Expanded(
                 child: Text(
                   'Paso ${_index + 1} de $total',
-                  style: const TextStyle(
-                    color: kRoomMuted,
+                  style: TextStyle(
+                    color: c.muted,
                     fontSize: AppType.sizeLabel,
                     fontWeight: AppType.weightSemiBold,
                   ),
@@ -210,7 +212,7 @@ class _OnboardingTourViewState extends State<_OnboardingTourView> {
                         alignment: Alignment.center,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: kRoomBg,
+                          color: c.bg,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: _PreviewView(step.preview),
@@ -219,8 +221,8 @@ class _OnboardingTourViewState extends State<_OnboardingTourView> {
                       Text(
                         step.title,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: kRoomInk,
+                        style: TextStyle(
+                          color: c.ink,
                           fontSize: AppType.sizeTitle,
                           fontWeight: AppType.weightBold,
                           height: 1.2,
@@ -230,8 +232,8 @@ class _OnboardingTourViewState extends State<_OnboardingTourView> {
                       Text(
                         step.message,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: kRoomMuted,
+                        style: TextStyle(
+                          color: c.muted,
                           fontSize: AppType.sizeBodyMedium,
                           height: 1.5,
                         ),
@@ -253,7 +255,7 @@ class _OnboardingTourViewState extends State<_OnboardingTourView> {
                 width: active ? 22 : 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: active ? kRoomStudy : kRoomLine,
+                  color: active ? c.study : c.line,
                   borderRadius: BorderRadius.circular(4),
                 ),
               );
@@ -266,7 +268,7 @@ class _OnboardingTourViewState extends State<_OnboardingTourView> {
                 child: TextButton(
                   onPressed: _back,
                   style: TextButton.styleFrom(
-                    foregroundColor: kRoomMuted,
+                    foregroundColor: c.muted,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   child: Text(_isFirst ? 'Saltar' : 'Atrás'),
@@ -280,8 +282,8 @@ class _OnboardingTourViewState extends State<_OnboardingTourView> {
                   child: FilledButton(
                     onPressed: _next,
                     style: FilledButton.styleFrom(
-                      backgroundColor: kRoomStudy,
-                      foregroundColor: Colors.white,
+                      backgroundColor: c.study,
+                      foregroundColor: c.onAccent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -307,17 +309,18 @@ class _PreviewView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return switch (preview) {
       _Preview.welcome => const ClawdAvatar(height: 100),
-      _Preview.join => const Row(
+      _Preview.join => Row(
         children: [
           Expanded(
             child: _Tile(
               icon: AppIcons.plus,
               label: 'Crear sala',
               detail: 'Con nombre',
-              accent: kRoomStudy,
-              soft: kRoomStudySoft,
+              accent: c.study,
+              soft: c.studySoft,
             ),
           ),
           SizedBox(width: 8),
@@ -326,8 +329,8 @@ class _PreviewView extends StatelessWidget {
               icon: AppIcons.logIn,
               label: 'Unirme',
               detail: 'Con código',
-              accent: kRoomLong,
-              soft: kRoomLongSoft,
+              accent: c.longRest,
+              soft: c.longRestSoft,
             ),
           ),
           SizedBox(width: 8),
@@ -336,21 +339,21 @@ class _PreviewView extends StatelessWidget {
               icon: AppIcons.scanQrCode,
               label: 'Escanear',
               detail: 'Código QR',
-              accent: kRoomBreakInk,
-              soft: kRoomBreakSoft,
+              accent: c.restInk,
+              soft: c.restSoft,
             ),
           ),
         ],
       ),
-      _Preview.modes => const Row(
+      _Preview.modes => Row(
         children: [
           Expanded(
             child: _Tile(
               icon: AppIcons.bookOpen,
               label: 'Estudio',
               detail: '5 a 180 min',
-              accent: kRoomStudy,
-              soft: kRoomStudySoft,
+              accent: c.study,
+              soft: c.studySoft,
             ),
           ),
           SizedBox(width: 8),
@@ -359,8 +362,8 @@ class _PreviewView extends StatelessWidget {
               icon: AppIcons.coffee,
               label: 'Descanso corto',
               detail: '5 min',
-              accent: kRoomBreak,
-              soft: kRoomBreakSoft,
+              accent: c.rest,
+              soft: c.restSoft,
             ),
           ),
           SizedBox(width: 8),
@@ -369,13 +372,13 @@ class _PreviewView extends StatelessWidget {
               icon: AppIcons.moon,
               label: 'Descanso largo',
               detail: '15 min',
-              accent: kRoomLong,
-              soft: kRoomLongSoft,
+              accent: c.longRest,
+              soft: c.longRestSoft,
             ),
           ),
         ],
       ),
-      _Preview.controls => const _Fit(
+      _Preview.controls => _Fit(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,8 +387,8 @@ class _PreviewView extends StatelessWidget {
               caption: 'Reiniciar',
               child: _MiniSquare(
                 icon: AppIcons.rotateCcw,
-                foreground: kRoomInk,
-                background: kRoomSurface,
+                foreground: c.ink,
+                background: c.surface,
                 bordered: true,
               ),
             ),
@@ -396,39 +399,39 @@ class _PreviewView extends StatelessWidget {
               caption: 'Adelantar',
               child: _MiniSquare(
                 icon: AppIcons.skipForward,
-                foreground: kRoomStudy,
-                background: kRoomStudySoft,
+                foreground: c.study,
+                background: c.studySoft,
                 bordered: false,
               ),
             ),
           ],
         ),
       ),
-      _Preview.tasks => const _Fit(
+      _Preview.tasks => _Fit(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             RoomChip(
               label: 'Pendiente',
-              background: kRoomTrack,
-              foreground: kRoomMuted,
+              background: c.track,
+              foreground: c.muted,
             ),
             _Arrow(),
             RoomChip(
               label: 'En progreso',
-              background: kRoomBreakSoft,
-              foreground: kRoomBreakInk,
+              background: c.restSoft,
+              foreground: c.restInk,
             ),
             _Arrow(),
             RoomChip(
               label: 'Completada',
-              background: kRoomStudySoft,
-              foreground: kRoomStudy,
+              background: c.studySoft,
+              foreground: c.study,
             ),
           ],
         ),
       ),
-      _Preview.chat => const _Fit(
+      _Preview.chat => _Fit(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -437,8 +440,8 @@ class _PreviewView extends StatelessWidget {
               caption: 'Chat visible',
               child: _MiniSquare(
                 icon: AppIcons.messageSquare,
-                foreground: kRoomInk,
-                background: kRoomSurface,
+                foreground: c.ink,
+                background: c.surface,
                 bordered: true,
               ),
             ),
@@ -450,15 +453,15 @@ class _PreviewView extends StatelessWidget {
               caption: 'Chat oculto',
               child: _MiniSquare(
                 icon: AppIcons.messageSquareOff,
-                foreground: kRoomMuted,
-                background: kRoomSurface,
+                foreground: c.muted,
+                background: c.surface,
                 bordered: true,
               ),
             ),
           ],
         ),
       ),
-      _Preview.invite => const _Fit(
+      _Preview.invite => _Fit(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -466,15 +469,25 @@ class _PreviewView extends StatelessWidget {
             SizedBox(width: 10),
             _MiniSquare(
               icon: AppIcons.qrCode,
-              foreground: kRoomInk,
-              background: kRoomSurface,
+              foreground: c.ink,
+              background: c.surface,
               bordered: true,
             ),
             SizedBox(width: 14),
-            RoomAvatar(name: 'Ana Lu', index: 0, ringColor: kRoomBg),
+            RoomAvatar(
+              name: 'Ana Lu',
+              seed: 'Lavanda',
+              index: 0,
+              ringColor: c.bg,
+            ),
             Padding(
               padding: EdgeInsets.only(left: 4),
-              child: RoomAvatar(name: 'Marco', index: 1, ringColor: kRoomBg),
+              child: RoomAvatar(
+                name: 'Marco',
+                seed: 'Cactus',
+                index: 1,
+                ringColor: c.bg,
+              ),
             ),
           ],
         ),
@@ -511,6 +524,7 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
       decoration: BoxDecoration(
@@ -526,8 +540,8 @@ class _Tile extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             maxLines: 2,
-            style: const TextStyle(
-              color: kRoomInk,
+            style: TextStyle(
+              color: c.ink,
               fontSize: AppType.sizeCaption,
               fontWeight: AppType.weightSemiBold,
               height: 1.15,
@@ -554,9 +568,9 @@ class _Arrow extends StatelessWidget {
   const _Arrow();
 
   @override
-  Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.symmetric(horizontal: 4),
-    child: Icon(AppIcons.chevronRight, size: 16, color: kRoomMuted),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 4),
+    child: Icon(AppIcons.chevronRight, size: 16, color: context.colors.muted),
   );
 }
 
@@ -568,6 +582,7 @@ class _Captioned extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -575,8 +590,8 @@ class _Captioned extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           caption,
-          style: const TextStyle(
-            color: kRoomMuted,
+          style: TextStyle(
+            color: c.muted,
             fontSize: AppType.sizeCaption,
           ),
         ),
@@ -600,13 +615,14 @@ class _MiniSquare extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(14),
-        border: bordered ? Border.all(color: kRoomLine) : null,
+        border: bordered ? Border.all(color: c.line) : null,
       ),
       child: Icon(icon, size: 20, color: foreground),
     );
@@ -618,22 +634,23 @@ class _MiniPrimary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: kRoomStudy,
+        color: c.study,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(AppIcons.play, size: 18, color: Colors.white),
-          SizedBox(width: 8),
+          Icon(AppIcons.play, size: 18, color: c.onAccent),
+          const SizedBox(width: 8),
           Text(
             'Iniciar',
             style: TextStyle(
-              color: Colors.white,
+              color: c.onAccent,
               fontWeight: AppType.weightSemiBold,
               fontSize: AppType.sizeBody,
             ),
@@ -649,28 +666,29 @@ class _MiniCode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: kRoomSurface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kRoomLine),
+        border: Border.all(color: c.line),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             'K7Q2MX',
             style: TextStyle(
-              color: kRoomInk,
+              color: c.ink,
               fontSize: AppType.sizeBody,
               fontWeight: AppType.weightBold,
               letterSpacing: 1.6,
             ),
           ),
           SizedBox(width: 8),
-          Icon(AppIcons.copy, size: 16, color: kRoomMuted),
+          Icon(AppIcons.copy, size: 16, color: c.muted),
         ],
       ),
     );

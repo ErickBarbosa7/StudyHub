@@ -12,6 +12,7 @@ import '../../logic/socket_provider.dart';
 import '../../ui/widgets/connection_banner.dart';
 import '../../ui/widgets/landing_hero.dart';
 import '../../ui/widgets/mascot/onboarding_tour.dart';
+import '../../ui/widgets/theme_toggle.dart';
 import 'create_room_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -45,6 +46,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     // Laptop: el inicio es directamente el formulario, sin clic intermedio.
     if (MediaQuery.sizeOf(context).width >= kLandingBreakpoint) {
       return const CreateRoomScreen(landing: true);
@@ -65,7 +67,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
 
     return Scaffold(
-      backgroundColor: kRoomStudy,
+      backgroundColor: c.brand,
       body: SafeArea(
         child: Column(
           children: [
@@ -87,13 +89,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           children: [
                             Align(
                               alignment: Alignment.centerRight,
-                              child: IconButton(
-                                onPressed: _showHowItWorks,
-                                tooltip: '¿Cómo funciona?',
-                                icon: const Icon(
-                                  AppIcons.circleHelp,
-                                  color: kLandingSoft,
-                                ),
+                              // Tema junto a la ayuda: son los dos controles de la
+                              // app fuera de la sala, arriba a la derecha.
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const ThemeTogglePillButton(),
+                                  const SizedBox(width: 4),
+                                  IconButton(
+                                    onPressed: _showHowItWorks,
+                                    tooltip: '¿Cómo funciona?',
+                                    icon: const Icon(
+                                      AppIcons.circleHelp,
+                                      color: kLandingSoft,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -152,7 +163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 label: const Text('Crear o unirse a una sala'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.white,
-                                  foregroundColor: kRoomStudy,
+                                  foregroundColor: c.brand,
                                   disabledBackgroundColor: const Color(
                                     0x80FFFFFF,
                                   ),

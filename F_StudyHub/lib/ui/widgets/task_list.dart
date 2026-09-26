@@ -34,6 +34,22 @@ class _TaskListState extends ConsumerState<TaskList> {
   final _taskController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  // ── Arrastrar a la papelera ───────────────────────────────
+  //
+  // ReorderableListView maneja el arrastre por dentro y no expone la posición
+  // del dedo. Pero los eventos de puntero siguen llegando a los ancestros del
+  // asa aunque el dedo salga de ella, así que un Listener sobre la lista basta
+  // para saber si el dedo está sobre la papelera.
+  final _trashKey = GlobalKey();
+  Task? _draggedTask;
+  bool _overTrash = false;
+  bool _releasedOverTrash = false;
+
+  /// Al soltar sobre la papelera no se debe reordenar: se pregunta si eliminar.
+  bool _skipNextReorder = false;
+
+  bool get _dragging => _draggedTask != null;
+
   @override
   void dispose() {
     _taskController.dispose();
@@ -52,10 +68,62 @@ class _TaskListState extends ConsumerState<TaskList> {
     ref.read(taskProvider.notifier).updateTaskStatus(task.taskId, target);
   }
 
+  void _onReorderStart(int index, List<Task> tasks) {
+    _skipNextReorder = false;
+    _releasedOverTrash = false;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _draggedTask = tasks[index];
+      _overTrash = false;
+    });
+  }
+
+  void _onReorderEnd() {
+    final task = _draggedTask;
+    final delete = _releasedOverTrash;
+    _skipNextReorder = delete;
+    _releasedOverTrash = false;
+    setState(() {
+      _draggedTask = null;
+      _overTrash = false;
+    });
+    if (delete && task != null && mounted) _confirmDelete(task);
+  }
+
+  void _onReorderItem(int oldIndex, int newIndex) {
+    if (_skipNextReorder) {
+      _skipNextReorder = false;
+      return;
+    }
+    ref.read(taskProvider.notifier).reorderTasks(oldIndex, newIndex);
+  }
+
+  void _onPointerMove(PointerEvent event) {
+    if (!_dragging) return;
+    final over = _isOverTrash(event.position);
+    if (over == _overTrash) return;
+    if (over) HapticFeedback.selectionClick();
+    setState(() => _overTrash = over);
+  }
+
+  void _onPointerUp(PointerEvent event) {
+    if (!_dragging) return;
+    _releasedOverTrash = _isOverTrash(event.position);
+  }
+
+  bool _isOverTrash(Offset globalPosition) {
+    final box = _trashKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached) return false;
+    final rect = box.localToGlobal(Offset.zero) & box.size;
+    // Margen para no exigir puntería exacta con el dedo.
+    return rect.inflate(16).contains(globalPosition);
+  }
+
   void _showTaskActions(Task task) {
+    final c = context.colors;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: kRoomSurface,
+      backgroundColor: c.surface,
       isScrollControlled: true,
       constraints: const BoxConstraints(maxWidth: 520),
       shape: const RoundedRectangleBorder(
@@ -71,17 +139,17 @@ class _TaskListState extends ConsumerState<TaskList> {
               Text(
                 task.title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: kRoomInk,
+                style: TextStyle(
+                  color: c.ink,
                   fontSize: AppType.sizeTitle - 2,
                   fontWeight: AppType.weightBold,
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Estado',
                 style: TextStyle(
-                  color: kRoomMuted,
+                  color: c.muted,
                   fontSize: AppType.sizeLabel,
                   fontWeight: AppType.weightSemiBold,
                 ),
@@ -104,6 +172,7 @@ class _TaskListState extends ConsumerState<TaskList> {
               _SheetAction(
                 icon: AppIcons.pencil,
                 label: 'Editar nombre',
+                color: c.ink,
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   _editTask(task);
@@ -113,7 +182,7 @@ class _TaskListState extends ConsumerState<TaskList> {
               _SheetAction(
                 icon: AppIcons.trash2,
                 label: 'Eliminar esta tarea',
-                color: kRoomError,
+                color: c.error,
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   _confirmDelete(task);
@@ -123,7 +192,7 @@ class _TaskListState extends ConsumerState<TaskList> {
               TextButton(
                 onPressed: () => Navigator.of(sheetContext).pop(),
                 style: TextButton.styleFrom(
-                  foregroundColor: kRoomMuted,
+                  foregroundColor: c.muted,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 child: const Text('Cancelar'),
@@ -136,17 +205,18 @@ class _TaskListState extends ConsumerState<TaskList> {
   }
 
   void _editTask(Task task) {
+    final c = context.colors;
     final controller = TextEditingController(text: task.title);
     final editFormKey = GlobalKey<FormState>();
 
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: kRoomSurface,
+        backgroundColor: c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
+        title: Text(
           'Editar tarea',
-          style: TextStyle(color: kRoomInk, fontWeight: AppType.weightSemiBold),
+          style: TextStyle(color: c.ink, fontWeight: AppType.weightSemiBold),
         ),
         content: Form(
           key: editFormKey,
@@ -156,10 +226,10 @@ class _TaskListState extends ConsumerState<TaskList> {
             maxLength: _kMaxTaskLength,
             maxLengthEnforcement: MaxLengthEnforcement.enforced,
             textCapitalization: TextCapitalization.sentences,
-            style: const TextStyle(color: kRoomInk),
-            decoration: const InputDecoration(
+            style: TextStyle(color: c.ink),
+            decoration: InputDecoration(
               labelText: 'Nombre de la tarea',
-              labelStyle: TextStyle(color: kRoomMuted),
+              labelStyle: TextStyle(color: c.muted),
               counterText: '',
             ),
             validator: (value) {
@@ -173,7 +243,7 @@ class _TaskListState extends ConsumerState<TaskList> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            style: TextButton.styleFrom(foregroundColor: kRoomMuted),
+            style: TextButton.styleFrom(foregroundColor: c.muted),
             child: const Text('Cancelar'),
           ),
           TextButton(
@@ -184,7 +254,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                   .editTask(task.taskId, controller.text);
               Navigator.of(dialogContext).pop();
             },
-            style: TextButton.styleFrom(foregroundColor: kRoomStudy),
+            style: TextButton.styleFrom(foregroundColor: c.study),
             child: const Text(
               'Guardar',
               style: TextStyle(fontWeight: AppType.weightSemiBold),
@@ -196,23 +266,24 @@ class _TaskListState extends ConsumerState<TaskList> {
   }
 
   void _confirmDelete(Task task) {
+    final c = context.colors;
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: kRoomSurface,
+        backgroundColor: c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
+        title: Text(
           '¿Eliminar tarea?',
-          style: TextStyle(color: kRoomInk, fontWeight: AppType.weightSemiBold),
+          style: TextStyle(color: c.ink, fontWeight: AppType.weightSemiBold),
         ),
         content: Text(
           '"${task.title}" se eliminará permanentemente. Esta acción no se puede deshacer.',
-          style: const TextStyle(color: kRoomMuted, height: 1.4),
+          style: TextStyle(color: c.muted, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            style: TextButton.styleFrom(foregroundColor: kRoomMuted),
+            style: TextButton.styleFrom(foregroundColor: c.muted),
             child: const Text('Cancelar'),
           ),
           TextButton(
@@ -220,7 +291,7 @@ class _TaskListState extends ConsumerState<TaskList> {
               ref.read(taskProvider.notifier).deleteTask(task.taskId);
               Navigator.of(dialogContext).pop();
             },
-            style: TextButton.styleFrom(foregroundColor: kRoomError),
+            style: TextButton.styleFrom(foregroundColor: c.error),
             child: const Text(
               'Eliminar',
               style: TextStyle(fontWeight: AppType.weightSemiBold),
@@ -233,6 +304,7 @@ class _TaskListState extends ConsumerState<TaskList> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final tasks = ref.watch(taskProvider.select((s) => s.tasks));
     final solo = ref.watch(roomProvider.select((s) => s.users.length <= 1));
 
@@ -252,27 +324,49 @@ class _TaskListState extends ConsumerState<TaskList> {
 
     final listArea = tasks.isEmpty
         ? _EmptyTasks(solo: solo)
-        : ReorderableListView.builder(
-            buildDefaultDragHandles: false,
-            itemCount: tasks.length,
-            onReorderItem: ref.read(taskProvider.notifier).reorderTasks,
-            proxyDecorator: (child, index, animation) => Material(
-              color: kRoomSurface,
-              elevation: 4,
-              borderRadius: BorderRadius.circular(12),
-              child: child,
+        : Listener(
+            onPointerMove: _onPointerMove,
+            onPointerUp: _onPointerUp,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ReorderableListView.builder(
+                    buildDefaultDragHandles: false,
+                    itemCount: tasks.length,
+                    onReorderStart: (i) => _onReorderStart(i, tasks),
+                    onReorderEnd: (_) => _onReorderEnd(),
+                    onReorderItem: _onReorderItem,
+                    proxyDecorator: (child, index, animation) => Material(
+                      color: c.surface,
+                      elevation: 4,
+                      borderRadius: BorderRadius.circular(12),
+                      child: child,
+                    ),
+                    itemBuilder: (context, index) {
+                      final task = tasks[index];
+                      return _TaskTile(
+                        key: ValueKey(task.taskId),
+                        index: index,
+                        task: task,
+                        showCreator: !solo,
+                        onToggleComplete: () => _toggleComplete(task),
+                        onOpenMenu: () => _showTaskActions(task),
+                      );
+                    },
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _TrashDropZone(
+                    key: _trashKey,
+                    visible: _dragging,
+                    active: _overTrash,
+                  ),
+                ),
+              ],
             ),
-            itemBuilder: (context, index) {
-              final task = tasks[index];
-              return _TaskTile(
-                key: ValueKey(task.taskId),
-                index: index,
-                task: task,
-                showCreator: !solo,
-                onToggleComplete: () => _toggleComplete(task),
-                onOpenMenu: () => _showTaskActions(task),
-              );
-            },
           );
 
     return LayoutBuilder(
@@ -287,17 +381,17 @@ class _TaskListState extends ConsumerState<TaskList> {
             Row(
               children: [
                 if (widget.showTitle) ...[
-                  const Icon(
+                  Icon(
                     AppIcons.listChecks,
                     size: 20,
-                    color: kRoomStudy,
+                    color: c.study,
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Tareas',
                       style: TextStyle(
-                        color: kRoomInk,
+                        color: c.ink,
                         fontSize: AppType.sizeTitle - 2,
                         fontWeight: AppType.weightBold,
                       ),
@@ -310,8 +404,8 @@ class _TaskListState extends ConsumerState<TaskList> {
                     done == 1
                         ? '1 de ${tasks.length} completada'
                         : '$done de ${tasks.length} completadas',
-                    style: const TextStyle(
-                      color: kRoomMuted,
+                    style: TextStyle(
+                      color: c.muted,
                       fontSize: AppType.sizeLabel,
                       fontWeight: AppType.weightSemiBold,
                     ),
@@ -335,25 +429,25 @@ class _TaskListState extends ConsumerState<TaskList> {
                       maxLength: _kMaxTaskLength,
                       maxLengthEnforcement: MaxLengthEnforcement.enforced,
                       scrollPadding: const EdgeInsets.only(bottom: 60),
-                      style: const TextStyle(color: kRoomInk, fontSize: 15),
+                      style: TextStyle(color: c.ink, fontSize: 15),
                       decoration: InputDecoration(
                         hintText:
                             'Nueva tarea, por ejemplo: leer el capítulo 2',
                         counterText: '',
-                        hintStyle: const TextStyle(color: kRoomMuted),
+                        hintStyle: TextStyle(color: c.muted),
                         filled: true,
-                        fillColor: kRoomSurface,
+                        fillColor: c.surface,
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 16,
                         ),
-                        border: _fieldBorder(kRoomLine),
-                        enabledBorder: _fieldBorder(kRoomLine),
-                        focusedBorder: _fieldBorder(kRoomStudy, width: 1.5),
-                        errorBorder: _fieldBorder(kRoomError),
+                        border: _fieldBorder(c.line),
+                        enabledBorder: _fieldBorder(c.line),
+                        focusedBorder: _fieldBorder(c.study, width: 1.5),
+                        errorBorder: _fieldBorder(c.error),
                         focusedErrorBorder: _fieldBorder(
-                          kRoomError,
+                          c.error,
                           width: 1.5,
                         ),
                       ),
@@ -374,8 +468,8 @@ class _TaskListState extends ConsumerState<TaskList> {
                     iconSize: 22,
                     icon: AppIcons.plus,
                     tooltip: 'Agregar tarea',
-                    foreground: kRoomStudy,
-                    background: kRoomStudySoft,
+                    foreground: c.study,
+                    background: c.studySoft,
                     bordered: false,
                     iconOffset: const Offset(0, 3),
                     onPressed: _addTask,
@@ -402,6 +496,67 @@ class _TaskListState extends ConsumerState<TaskList> {
   }
 }
 
+/// Papelera que aparece al arrastrar una tarea. Solo indica y resalta: quien
+/// decide si se suelta encima es `_TaskListState`, que conoce el dedo.
+class _TrashDropZone extends StatelessWidget {
+  const _TrashDropZone({super.key, required this.visible, required this.active});
+
+  final bool visible;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final Color fg = active ? c.onAccent : c.error;
+
+    return IgnorePointer(
+      child: ExcludeSemantics(
+        child: AnimatedSlide(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          offset: visible ? Offset.zero : const Offset(0, 1.2),
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 150),
+            opacity: visible ? 1 : 0,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              height: 56,
+              decoration: BoxDecoration(
+                color: active ? c.error : c.errorSoft,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: active ? c.error : c.errorLine),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedScale(
+                    duration: const Duration(milliseconds: 150),
+                    scale: active ? 1.2 : 1,
+                    child: Icon(AppIcons.trash2, size: 20, color: fg),
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      active ? 'Suelta para eliminar' : 'Arrastra aquí para eliminar',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: fg,
+                        fontSize: AppType.sizeBody,
+                        fontWeight: AppType.weightSemiBold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ProgressBar extends StatelessWidget {
   const _ProgressBar({required this.value});
 
@@ -409,6 +564,7 @@ class _ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
       child: TweenAnimationBuilder<double>(
@@ -417,8 +573,8 @@ class _ProgressBar extends StatelessWidget {
         builder: (context, v, _) => LinearProgressIndicator(
           value: v,
           minHeight: 6,
-          backgroundColor: kRoomTrack,
-          valueColor: const AlwaysStoppedAnimation(kRoomStudy),
+          backgroundColor: c.track,
+          valueColor: AlwaysStoppedAnimation(c.study),
         ),
       ),
     );
@@ -433,6 +589,7 @@ class _EmptyTasks extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -445,21 +602,21 @@ class _EmptyTasks extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: kRoomStudySoft,
+                  color: c.studySoft,
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: const Icon(
+                child: Icon(
                   AppIcons.listChecks,
                   size: 26,
-                  color: kRoomStudy,
+                  color: c.study,
                 ),
               ),
               const SizedBox(height: 14),
-              const Text(
+              Text(
                 'Anota lo que quieres lograr',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: kRoomInk,
+                  color: c.ink,
                   fontSize: AppType.sizeTitle,
                   fontWeight: AppType.weightBold,
                 ),
@@ -474,8 +631,8 @@ class _EmptyTasks extends StatelessWidget {
                           'entregar o investigar. Todos en la sala ven la lista '
                           'y pueden marcar lo que van terminando.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: kRoomMuted,
+                style: TextStyle(
+                  color: c.muted,
                   fontSize: AppType.sizeBodyMedium,
                   height: 1.5,
                 ),
@@ -506,21 +663,22 @@ class _TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final bool done = task.stateCode == 'COMPLETED';
-    final chip = _chipColors(task.stateCode);
+    final chip = _chipColors(task.stateCode, c);
     final creator = showCreator ? task.creatorName : null;
 
     return Container(
       constraints: const BoxConstraints(minHeight: 60),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: kRoomTrack)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: c.track)),
       ),
       child: Row(
         children: [
           // Asa de arrastre para reordenar.
           ReorderableDragStartListener(
             index: index,
-            child: const MouseRegion(
+            child: MouseRegion(
               cursor: SystemMouseCursors.grab,
               child: SizedBox(
                 width: 32,
@@ -528,7 +686,7 @@ class _TaskTile extends StatelessWidget {
                 child: Icon(
                   AppIcons.gripVertical,
                   size: 18,
-                  color: kRoomDisabled,
+                  color: c.disabled,
                 ),
               ),
             ),
@@ -553,18 +711,18 @@ class _TaskTile extends StatelessWidget {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: done ? kRoomStudy : kRoomSurface,
+                        color: done ? c.study : c.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: done ? kRoomStudy : kRoomDisabled,
+                          color: done ? c.study : c.disabled,
                           width: 2,
                         ),
                       ),
                       child: done
-                          ? const Icon(
+                          ? Icon(
                               AppIcons.check,
                               size: 15,
-                              color: Colors.white,
+                              color: c.onAccent,
                             )
                           : null,
                     ),
@@ -588,14 +746,14 @@ class _TaskTile extends StatelessWidget {
                       Text(
                         task.title,
                         style: TextStyle(
-                          color: done ? kRoomMuted : kRoomInk,
+                          color: done ? c.muted : c.ink,
                           fontSize: 15,
                           height: 1.3,
                           fontWeight: done
                               ? AppType.weightRegular
                               : AppType.weightSemiBold,
                           decoration: done ? TextDecoration.lineThrough : null,
-                          decorationColor: kRoomMuted,
+                          decorationColor: c.muted,
                         ),
                       ),
                       if (creator != null && creator.isNotEmpty)
@@ -603,8 +761,8 @@ class _TaskTile extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
                             'Añadida por $creator',
-                            style: const TextStyle(
-                              color: kRoomMuted,
+                            style: TextStyle(
+                              color: c.muted,
                               fontSize: AppType.sizeCaption,
                             ),
                           ),
@@ -634,15 +792,15 @@ class _TaskTile extends StatelessWidget {
   }
 }
 
-({Color background, Color foreground}) _chipColors(String code) {
+({Color background, Color foreground}) _chipColors(String code, AppColors c) {
   switch (code) {
     case 'IN_PROGRESS':
-      return (background: kRoomBreakSoft, foreground: kRoomBreakInk);
+      return (background: c.restSoft, foreground: c.restInk);
     case 'COMPLETED':
-      return (background: kRoomStudySoft, foreground: kRoomStudy);
+      return (background: c.studySoft, foreground: c.study);
     case 'PENDING':
     default:
-      return (background: kRoomTrack, foreground: kRoomMuted);
+      return (background: c.track, foreground: c.muted);
   }
 }
 
@@ -651,7 +809,7 @@ class _SheetAction extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.color = kRoomInk,
+    required this.color,
   });
 
   final IconData icon;
@@ -662,7 +820,7 @@ class _SheetAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: kRoomTrack,
+      color: context.colors.track,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -703,8 +861,9 @@ class _StateOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chip = _chipColors(code);
-    final Color accent = code == 'PENDING' ? kRoomInk : chip.foreground;
+    final c = context.colors;
+    final chip = _chipColors(code, c);
+    final Color accent = code == 'PENDING' ? c.ink : chip.foreground;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
@@ -716,7 +875,7 @@ class _StateOption extends StatelessWidget {
             color: selected ? chip.background : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: selected ? accent : kRoomLine,
+              color: selected ? accent : c.line,
               width: selected ? 1.5 : 1,
             ),
           ),
@@ -725,7 +884,7 @@ class _StateOption extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  color: selected ? accent : kRoomInk,
+                  color: selected ? accent : c.ink,
                   fontWeight: AppType.weightSemiBold,
                 ),
               ),

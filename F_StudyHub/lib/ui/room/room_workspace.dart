@@ -78,7 +78,7 @@ class _RoomWorkspaceState extends ConsumerState<RoomWorkspace> {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: kRoomBg,
+      color: context.colors.bg,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final layout = RoomLayout.of(constraints.maxWidth);
@@ -264,17 +264,19 @@ class _PanelTabs extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
     final unread = ref.watch(chatProvider.select((s) => s.unreadCount));
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: kRoomTrack,
+        color: c.track,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
           Expanded(
             child: _tab(
+              c: c,
               icon: AppIcons.listChecks,
               label: 'Tareas',
               selected: !chatSelected,
@@ -283,6 +285,7 @@ class _PanelTabs extends ConsumerWidget {
           ),
           Expanded(
             child: _tab(
+              c: c,
               icon: AppIcons.messageSquare,
               label: 'Chat',
               selected: chatSelected,
@@ -296,6 +299,7 @@ class _PanelTabs extends ConsumerWidget {
   }
 
   Widget _tab({
+    required AppColors c,
     required IconData icon,
     required String label,
     required bool selected,
@@ -316,14 +320,14 @@ class _PanelTabs extends ConsumerWidget {
             duration: const Duration(milliseconds: 200),
             height: 44,
             decoration: BoxDecoration(
-              color: selected ? kRoomSurface : Colors.transparent,
+              color: selected ? c.surface : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               boxShadow: selected
-                  ? const [
+                  ? [
                       BoxShadow(
-                        color: Color(0x1A1C2321),
+                        color: c.shadow,
                         blurRadius: 2,
-                        offset: Offset(0, 1),
+                        offset: const Offset(0, 1),
                       ),
                     ]
                   : null,
@@ -331,12 +335,12 @@ class _PanelTabs extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 18, color: selected ? kRoomInk : kRoomMuted),
+                Icon(icon, size: 18, color: selected ? c.ink : c.muted),
                 const SizedBox(width: 8),
                 Text(
                   label,
                   style: TextStyle(
-                    color: selected ? kRoomInk : kRoomMuted,
+                    color: selected ? c.ink : c.muted,
                     fontWeight: AppType.weightSemiBold,
                     fontSize: AppType.sizeBody,
                   ),
@@ -349,13 +353,13 @@ class _PanelTabs extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: kRoomStudy,
+                      color: c.study,
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
                       '$badge',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: c.onAccent,
                         fontSize: 11,
                         fontWeight: AppType.weightBold,
                       ),
@@ -391,11 +395,12 @@ class _BottomNav extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
     final unread = ref.watch(chatProvider.select((s) => s.unreadCount > 0));
     return Container(
-      decoration: const BoxDecoration(
-        color: kRoomSurface,
-        border: Border(top: BorderSide(color: kRoomLine)),
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border(top: BorderSide(color: c.line)),
       ),
       child: SafeArea(
         top: false,
@@ -406,6 +411,7 @@ class _BottomNav extends ConsumerWidget {
               for (final s in tabs)
                 Expanded(
                   child: _item(
+                    c,
                     s,
                     selected: s == current,
                     dot: s == _Section.chat && unread && current != s,
@@ -418,9 +424,9 @@ class _BottomNav extends ConsumerWidget {
     );
   }
 
-  Widget _item(_Section s, {required bool selected, required bool dot}) {
+  Widget _item(AppColors c, _Section s, {required bool selected, required bool dot}) {
     final (icon, label) = _meta[s]!;
-    final color = selected ? kRoomStudy : kRoomMuted;
+    final color = selected ? c.study : c.muted;
     return Semantics(
       button: true,
       selected: selected,
@@ -443,9 +449,9 @@ class _BottomNav extends ConsumerWidget {
                       width: 9,
                       height: 9,
                       decoration: BoxDecoration(
-                        color: kRoomError,
+                        color: c.error,
                         shape: BoxShape.circle,
-                        border: Border.all(color: kRoomSurface, width: 2),
+                        border: Border.all(color: c.surface, width: 2),
                       ),
                     ),
                   ),

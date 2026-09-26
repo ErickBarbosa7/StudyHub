@@ -22,6 +22,9 @@ Aplicación móvil (Flutter) conectada a un servidor (Node.js/Express) mediante 
 |---------|---------|
 | `socket_io_client` | `^3.1.6` |
 | `flutter_riverpod` | `^3.4.2` |
+| `dicebear_core` | `^10.7.0` |
+| `dicebear_styles` | `^10.6.0` |
+| `flutter_svg` | `^2.3.0` |
 | `http` | `^1.6.0` |
 | `lottie` | `^3.5.1` |
 | `shared_preferences` | `^2.5.5` |
@@ -40,18 +43,20 @@ F_StudyHub/lib/
   main.dart
   core/
     constants.dart        # kApiBaseUrl, kSocketUrl (dart-define)
-    theme.dart            # Design system completo: paleta de colores, tipografía, tokens
+    avatars.dart          # avatarSvg(seed): avatares DiceBear "Sprouts" generados en el dispositivo (con caché) + warmUpAvatars()
+    theme.dart            # Design system: AppColors (ThemeExtension claro/oscuro), AppType, buildTheme(brightness)
   logic/
     room_provider.dart    # RoomNotifier / RoomState
     chat_provider.dart    # ChatNotifier / ChatState
     task_provider.dart    # TaskNotifier / TaskState
     pomodoro_provider.dart# PomodoroNotifier / PomodoroState
     socket_provider.dart  # socketServiceProvider (Provider<WebSocketService>)
+    theme_provider.dart   # themeProvider (ThemeNotifier sobre ThemeMode) + loadSavedThemeMode()
   data/
     models/
-      user_model.dart     # User { id, name }
+      user_model.dart     # User { id, name, avatarSeed? }
       room_model.dart     # Room { roomId, name, hostId }
-      message_model.dart  # Message { id, roomId, senderId, senderName, text, timestamp }
+      message_model.dart  # Message { id, roomId, senderId, senderName, text, timestamp, reactions } + kReactionEmojis
       task_model.dart     # Task { taskId, title, stateCode, stateLabel, createdAt }
     services/
       api_service.dart    # REST API: createRoom, getRoom
@@ -62,12 +67,14 @@ F_StudyHub/lib/
       home_screen.dart         # Landing / Home
       create_room_screen.dart  # Formulario crear/unirse + Workspace (tabs Estudio/Chat)
     widgets/
-      chat_box.dart            # ChatBox widget
+      chat_box.dart            # ChatBox: burbujas, reacciones rápidas, indicador "escribiendo"
       help_icon.dart           # HelpIcon widget reutilizable
       pomodoro_timer.dart      # PomodoroTimer widget
       qr_display.dart          # QrDisplaySheet (genera QR de la sala)
       qr_scanner.dart          # QrScannerScreen (escanea QR para unirse)
-      task_list.dart           # TaskList widget con edit/delete
+      task_list.dart           # TaskList: edit/delete, reordenar y arrastrar a la papelera
+      theme_toggle.dart        # Botón de modo claro/oscuro (ThemeToggleIconButton / PillButton / Row)
+      mascot/pomodoro_mascot.dart # Mascota del dial: reacciona a la fase del ciclo (MascotMood)
   assets/
     audio/focus_end.mp3        # Fin de estudio (3 notas que bajan)
     audio/break_end.mp3        # Fin de descanso (2 notas que suben)
@@ -87,17 +94,18 @@ B_StudyHub/src/
   index.ts              # Entry point: express + http.listen + registerSocketHandlers
   config/
     db.ts               # Mongoose connect
+    avatarSeeds.ts      # AVATAR_SEEDS (23 seeds curadas de Sprouts) + pickAvatarSeed()
     env.ts              # Variables de entorno
   controllers/          # Lógica REST
   routes/               # Definición de endpoints HTTP Express
   models/
     Room.ts             # RoomModel + TaskSubSchema + generateRoomCode()
-    Message.ts          # MessageModel
+    Message.ts          # MessageModel (incluye reactions: [{ emoji, userIds }])
     CatalogTaskState.ts # CatalogTaskStateModel + seedCatalogTaskStates()
   sockets/
     index.ts            # registerSocketHandlers (master)
     roomHandler.ts      # join_room, leave_room, kick_user, disconnect
-    chatHandler.ts      # send_message, get_chat_history, join_room
+    chatHandler.ts      # send_message, get_chat_history, toggle_reaction, typing, join_room
     taskHandler.ts      # add_task, update_task_status, delete_task, edit_task, join_room
     pomodoroHandler.ts  # pomodoro_action, join_room
 ```
@@ -118,7 +126,8 @@ B_StudyHub/src/
 
 - **Colección `Messages` (Chat):**
     - Separada de las salas para evitar sobrepasar el límite de 16MB por documento de MongoDB.
-    - Esquema: `{ roomId: string (indexed), senderId: string, senderName: string, text: string, timestamp: Date, createdAt, updatedAt }`
+    - Esquema: `{ roomId: string (indexed), senderId: string, senderName: string, text: string, timestamp: Date, reactions: [{ emoji: string, userIds: string[] }] (_id: false, default []), createdAt, updatedAt }`
+    - Las reacciones viven en el propio mensaje (se borran con él). Los emojis permitidos son una lista de validación (`ALLOWED_REACTIONS` en `chatHandler.ts`, espejo de `kReactionEmojis` en Dart), no un estado de negocio, por eso no lleva catálogo.
 
 #### 5. DICCIONARIO DE EVENTOS WEBSOCKET (SOCKET.IO)
 
@@ -130,7 +139,9 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 - *(Emite Cliente)* `join_room`: `{ roomId, user: { id, name } }` -> El backend notifica a los 4 handlers: roomHandler (users), chatHandler (history), taskHandler (task_sync), pomodoroHandler (timer state).
 - *(Emite Cliente)* `leave_room`: `{ roomId, userId }`.
 - *(Emite Cliente)* `kick_user`: `{ roomId, hostId, userId }` -> Verifica que `hostId` coincide con el host en DB. Si es válido: emite `kicked` al usuario expulsado y `user_kicked` a todos.
-- *(Emite Servidor)* `room_users_update`: `Array<{ id: string, name: string }>` -> Broadcast a sala completa.
+- *(Emite Servidor)* `room_users_update`: `Array<{ id: string, name: string, avatarSeed: string }>` -> Broadcast a sala completa.
+
+**Avatares por defecto:** al hacer `join_room` el servidor asigna a cada usuario un `avatarSeed` de `AVATAR_SEEDS` que nadie más de esa sala esté usando (al azar entre las libres; si se agotan las 23, usa el `userId`, que es único). Quien vuelve a entrar (F5, reconexión dentro del periodo de gracia) conserva la suya; al salir del mapa `usersByRoom` su seed queda libre. Se ignora cualquier `avatarSeed` que mande el cliente y no se guarda en Mongo. El cliente dibuja el avatar en el dispositivo con `avatarSvg(seed)` (estilo Sprouts de DiceBear, CC0, sin peticiones de red).
 - *(Emite Servidor)* `kicked`: `{ roomId: string }` -> Solo al usuario expulsado.
 - *(Emite Servidor)* `user_kicked`: `{ userId: string, userName: string }` -> Broadcast a sala completa.
 - *(Manejo disconnect)* En `disconnect`: el socket se remueve automáticamente de todas las salas.
@@ -140,7 +151,13 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 - *(Emite Cliente)* `send_message`: `{ roomId, senderId, text }`. -> El backend guarda en DB y emite `new_message` a la sala.
 - *(Emite Cliente)* `get_chat_history`: `{ roomId }`.
 - *(Emite Servidor)* `chat_history`: `ChatMessage[]` -> Solo al socket que lo solicitó.
-- *(Emite Servidor)* `new_message`: `{ id, roomId, senderId, senderName, text, timestamp }` -> Broadcast a sala.
+- *(Emite Servidor)* `new_message`: `{ id, roomId, senderId, senderName, text, timestamp, reactions }` -> Broadcast a sala.
+- *(Emite Cliente)* `toggle_reaction`: `{ roomId, messageId, userId, emoji }`. -> Solo acepta emojis de `ALLOWED_REACTIONS` (🚀 🔥 🍅), un `messageId` válido de esa sala y un `userId` que esté en ella. Alterna la reacción del usuario con operaciones atómicas de Mongo (`$pull` / `$addToSet` / `$push`) y limpia los emojis que quedan sin usuarios.
+- *(Emite Servidor)* `message_reactions`: `{ roomId, messageId, reactions: [{ emoji, userIds }] }` -> Broadcast a sala con el estado completo de ese mensaje (el cliente reemplaza, no suma).
+- *(Emite Cliente)* `typing`: `{ roomId, userId, isTyping: boolean }`. -> Efímero: no se guarda.
+- *(Emite Servidor)* `user_typing`: `{ roomId, userId, userName, isTyping }` -> A la sala **excepto** a quien escribe (`socket.to(roomId)`).
+
+**Indicador "escribiendo" (frontend):** `ChatNotifier.notifyTyping(bool)` emite `typing` al empezar, se reenvía cada 3 s mientras se sigue tecleando (`typingResend`) y emite `false` al vaciar el campo, al enviar o al cerrar el chat. Quien recibe guarda `typingUsers` (id -> nombre) y lo caduca a los 5 s sin renovación (`typingExpiry`), por si el otro se desconecta sin avisar. Un `new_message` de esa persona también lo quita.
 
 ##### Dominio: Tareas (Tasks)
 
@@ -175,6 +192,10 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 | `get_chat_history` | EMIT | HANDLED (chatHandler) |
 | `chat_history` | -- | EMIT (solo requestor) |
 | `new_message` | -- | EMIT (broadcast sala) |
+| `toggle_reaction` | EMIT | HANDLED (chatHandler) |
+| `message_reactions` | -- | EMIT (broadcast sala) |
+| `typing` | EMIT | HANDLED (chatHandler) |
+| `user_typing` | -- | EMIT (sala, sin el emisor) |
 | `add_task` | EMIT | HANDLED (taskHandler) |
 | `update_task_status` | EMIT | HANDLED (taskHandler) |
 | `delete_task` | EMIT | HANDLED (taskHandler) |
@@ -187,15 +208,15 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 ##### Inicio responsivo
 
 - `HomeScreen` decide por ancho (`kLandingBreakpoint` = 960 px, en `landing_hero.dart`):
-  - **≥ 960 (laptop, tablet horizontal):** el inicio es directamente `CreateRoomScreen(landing: true)`: a la izquierda `LandingHero` (panel verde con "StudyHub" en grande, la frase, 3 etiquetas y, si sobra alto, la animación del chico estudiando `STUDENT.json` directo sobre el verde, abajo y centrada, sin tarjeta) y a la derecha el formulario Crear / Unirte a la vista, sin clic intermedio. Si hay sesión restaurada, la misma pantalla pasa a la sala (no se empuja otra ruta).
+  - **≥ 960 (laptop, tablet horizontal):** el inicio es directamente `CreateRoomScreen(landing: true)`: a la izquierda `LandingHero` (panel de marca, token `brand`, con "StudyHub" en grande, la frase, 3 etiquetas y, si sobra alto, la animación del chico estudiando `STUDENT.json` directo sobre el verde, abajo y centrada, sin tarjeta) y a la derecha el formulario Crear / Unirte a la vista, sin clic intermedio. Si hay sesión restaurada, la misma pantalla pasa a la sala (no se empuja otra ruta).
   - **< 960 (celular, tablet vertical):** mismo lenguaje visual (panel verde, nombre grande, frase, etiquetas, animación) con el botón blanco "Crear o unirse a una sala", que abre `CreateRoomScreen` como ruta. Las piezas compartidas (`LandingBrandRow`, `LandingWordmark`, `LandingTagline`, `LandingFeatures`, `LandingIllustration`) viven en `landing_hero.dart`.
 
 ##### Sala rediseñada (paleta "Estudio" + iconos Lucide)
 
 - `lib/ui/room/room_workspace.dart`: contenedor de la sala. Elige distribución por ancho (`RoomLayout`): **wide** ≥1100 (reloj · tareas · chat), **tablet** ≥700 (reloj + pestañas Tareas/Chat), **phone** (navegación inferior Foco/Tareas/Chat + mini reloj). El chat se puede ocultar (pref `chat_hidden`).
-- `lib/ui/room/room_header.dart`: barra superior (salir, nombre, código, QR, avatares, chat, ayuda) y hoja de miembros/invitación (`showRoomMembersSheet`, aquí el anfitrión expulsa).
+- `lib/ui/room/room_header.dart`: barra superior (salir, nombre, código, QR, avatares, chat, botón de tema, ayuda) y hoja de miembros/invitación (`showRoomMembersSheet`, aquí el anfitrión expulsa).
 - `lib/ui/room/room_widgets.dart`: `RoomCard`, `RoomIconButton`, `RoomChip`, `RoomAvatar`, `RoomLayout`.
-- Paleta de la sala: constantes `kRoom*` en `theme.dart` (un color por modo: estudio verde azulado, descanso corto ámbar, largo índigo). Los `kColor*` de toda la app apuntan a esa paleta; el valor anterior ("Focus & Paper") quedó comentado junto a cada constante (`// antes: ...`). Sin chat en laptop, reloj y tareas ocupan 50/50.
+- Paleta de la sala: tokens de `AppColors` (un color por modo del reloj: estudio verde azulado, descanso corto ámbar, largo índigo), ver sección 8. Sin chat en laptop, reloj y tareas ocupan 50/50.
 - Iconos: Lucide, con fuente propia recortada. Se usan como `AppIcons.circleHelp` (camelCase del nombre Lucide). `lib/core/app_icons.dart` y `assets/fonts/Lucide.ttf` se generan con `python3 tool/gen_icons.py` (requiere `pip install fonttools`) a partir de los `AppIcons.*` que aparecen en el código. No se usa el paquete `lucide_icons_flutter`: declaraba 7 fuentes (3.7 MB) que el navegador descargaba al arrancar.
 
 ##### Rendimiento (web)
@@ -212,15 +233,21 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 | Provider | StateNotifier | State Fields | Archivo |
 |----------|---------------|-------------|---------|
 | `roomProvider` | `RoomNotifier` | `room: Room?`, `localUser: User?`, `users: List<User>`, `isCreating: bool`, `isRestoring: bool`, `error: String?` | `room_provider.dart` |
-| `chatProvider` | `ChatNotifier` | `messages: List<Message>`, `isLoadingHistory: bool`, `error: String?`, `unreadCount: int` | `chat_provider.dart` |
+| `chatProvider` | `ChatNotifier` | `messages: List<Message>`, `isLoadingHistory: bool`, `error: String?`, `unreadCount: int`, `typingUsers: Map<String, String>` | `chat_provider.dart` |
 | `taskProvider` | `TaskNotifier` | `tasks: List<Task>`, `error: String?`, `newTaskCount: int`, `lastAddedTaskTitle: String?` | `task_provider.dart` |
 | `pomodoroProvider` | `PomodoroNotifier` | `timeRemaining: int` (1800), `totalSeconds: int` (1800), `status: String` ('PAUSED'), `isFinished: bool`, `mode: String` ('FOCUS'), `completedFocus: int` (0), `finishedMode: String?` | `pomodoro_provider.dart` |
 | `socketServiceProvider` | -- (Provider) | `WebSocketService` | `socket_provider.dart` |
 | `soundProvider` | `SoundNotifier` | `isEnabled: bool` (true) | `sound_service.dart` |
+| `themeProvider` | `ThemeNotifier` | `ThemeMode` (`system` por defecto; `light` / `dark` tras elegir) | `theme_provider.dart` |
+| `initialThemeModeProvider` | -- (Provider) | `ThemeMode` leído de preferencias antes de `runApp`; `main` lo sobrescribe | `theme_provider.dart` |
 
 **Regla:** Ningún widget de UI debe hacer llamadas directas a Socket.io. Todo pasa por providers.
 
 **Chat State extra:** `_isChatVisible` (bool, privado en Notifier) + `setChatVisible(bool)` + `clearUnread()`. El `unreadCount` se incrementa cuando llega `new_message` y el chat no es visible.
+
+**Chat reacciones / escribiendo:** `toggleReaction(messageId, emoji)` (valida contra `kReactionEmojis`) y `notifyTyping(bool)`. Escuchan `message_reactions` (reemplaza las reacciones de ese mensaje) y `user_typing`. Reaccionar no cuenta como mensaje no leído.
+
+**Tema:** `themeProvider` guarda solo el `ThemeMode`; `toggle(isDark:)` recibe el brillo efectivo en pantalla (no el guardado), así el botón es un interruptor de dos estados aunque el usuario aún siguiera al sistema. La elección se persiste en `SharedPreferences` (`theme_mode`). `main.dart` lee la preferencia **antes** de `runApp` para que el primer frame ya salga con el tema correcto (sin destello claro).
 
 **Task State extra:** `_pendingLocalAdd` (bool, privado en Notifier) + `consumeNewTask()`. Permite distinguir tareas agregadas por el usuario local vs remotas, para no mostrar notificación en tareas propias.
 
@@ -230,20 +257,35 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 
 | Modelo | Campos | Notas |
 |--------|--------|-------|
-| `User` | `id: String`, `name: String` | Factory `generateLocal(name)` genera ID con timestamp + random |
+| `User` | `id: String`, `name: String`, `avatarSeed: String?` | Factory `generateLocal(name)` genera ID con timestamp + random. `avatarSeed` lo pone el servidor (nula con un servidor viejo: `RoomAvatar` cae a las iniciales) |
 | `Room` | `roomId: String`, `name: String`, `hostId: String` | |
-| `Message` | `id: String`, `roomId: String`, `senderId: String`, `senderName: String`, `text: String`, `timestamp: DateTime` | `.toLocal()` en factory. `isOwn(userId)` helper |
+| `Message` | `id: String`, `roomId: String`, `senderId: String`, `senderName: String`, `text: String`, `timestamp: DateTime`, `reactions: Map<String, List<String>>` | `.toLocal()` en factory. `isOwn(userId)` helper. `reactionsFromJson` tolera servidores sin el campo. `copyWith(reactions:)` |
 | `Task` | `taskId: String`, `title: String`, `stateCode: String`, `stateLabel: String`, `createdAt: DateTime?` | |
 
 #### 8. DISEÑO VISUAL (THEME)
 
-**Paleta:** "Organic Minimal" definida en `core/theme.dart`. Los tokens de colores se usan como `kColorInk`, `kColorPaper`, `kColorSage`, `kColorDeepSage`, `kColorSageSoft`, `kColorGold`, `kColorGoldSoft`, `kColorCard`, `kColorTintedShadow`, `kColorTextSecondary`, `kColorError`, `kColorErrorBorder`.
+**Paleta y modo oscuro:** definidos en `core/theme.dart` como `AppColors`, una `ThemeExtension` con dos instancias constantes: `AppColors.light` y `AppColors.dark`. `buildTheme(Brightness)` construye el `ThemeData` de cada una y `main.dart` los pasa como `theme` / `darkTheme` con el `themeMode` de `themeProvider`.
+
+- **Regla:** la UI nunca usa `Color(0x...)` ni `Colors.*` sueltos para superficies, texto o acentos. Pide el token al contexto: `final c = context.colors;` (un solo `context.colors` por método `build`). Ya no existen los `kColor*` ni los `kRoom*`.
+- **Métodos auxiliares sin contexto** (en un `State`): getter `AppColors get c => context.colors;`. En un `CustomPainter`, el color se pasa por parámetro.
+- **Tokens:** neutros `bg`, `surface`, `ink`, `muted`, `line`, `track`, `ringTrack`, `disabled`; modos del reloj `study` / `studySoft`, `rest` / `restSoft` / `restInk`, `longRest` / `longRestSoft`; errores `error` / `errorSoft` / `errorLine`; `sageMid`; `onAccent` (texto e iconos SOBRE `study`, `rest` o `longRest`: en oscuro los acentos son claros, así que es un verde casi negro; nunca usar `Colors.white` ahí); `snackBg` / `snackText`; `shadow`; `brand` (panel de marca del inicio). `modeColor(mode)` y `modeSoft(mode)` resuelven el color según la fase.
+- **Excepciones legítimas:** el QR va en blanco fijo (debe poder escanearse), el texto del panel de marca es blanco sobre `brand` (verde profundo en ambos modos) y la pantalla de error global de `main.dart` usa `AppColors.light` porque se dibuja cuando el árbol ya falló.
+- **Al añadir un color:** agregarlo al constructor, `light`, `dark`, `copyWith` y `lerp` de `AppColors`. Los dos valores deben tener contraste suficiente (texto normal 4.5:1) contra su fondo.
+- **Botón de tema:** `ThemeToggleIconButton` (superficies del tema; header de la sala, barra de "Crear o unirse" y panel del formulario en laptop), `ThemeTogglePillButton` (sobre el panel de marca del inicio en celular) y `ThemeToggleRow` (con etiqueta, hoja de miembros en celular). El icono muestra el DESTINO: luna en claro, sol en oscuro. Solo hacen `ref.read`; el color lo toman del tema, no se suscriben al provider.
+- **Avatares:** `RoomAvatar(name, index, seed?)` dibuja el SVG de `avatarSvg(seed)` dentro de un círculo cuyo fondo sale de los tokens (`paletteOf(c)[index % 4]`), por eso se ve bien en claro y oscuro. El SVG se genera SIN fondo propio (`backgroundColor: []`; DiceBear trae uno saturado distinto por seed que chocaría con la paleta) y sin `<metadata>` (flutter_svg avisa por consola). Sin `seed` muestra las iniciales. Tiene `Semantics(label: name)`.
+- **Barra de estado:** `MaterialApp.builder` envuelve la app en `AnnotatedRegion<SystemUiOverlayStyle>` según el brillo activo.
+- Nuevos componentes de UI (reacciones, indicador de escritura, papelera de tareas, mascota) siguen la misma regla y tienen pruebas en claro y oscuro.
 
 **Tokens de tamaño de fuente (`AppType`):**
+- `sizeMicro`: 10
 - `sizeCaption`: 12
-- `sizeBodyMedium`: 14
-- `sizeBody`: 16
+- `sizeLabel`: 13
+- `sizeBody`: 14
+- `sizeBodyMedium`: 15
+- `sizeBodyLarge`: 16
 - `sizeTitle`: 20
+- `sizeHeadline`: 22
+- `sizeDisplay`: 28
 - `sizeHero`: 40
 - `sizeGiant`: 48
 - `sizeTimerCompact`: 38
@@ -253,8 +295,8 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 **Weights:** `weightRegular` (400), `weightMedium` (500), `weightSemiBold` (600), `weightBold` (700).
 
 **Métodos de estilo:**
-- `AppType.secondaryItalic({size, color})` - Texto secundario cursiva
-- `AppType.monoTimer({fontSize, color})` - Fuente monoespaciada para timers (acepta `fontSize` opcional)
+- `AppType.secondaryItalic({required context, size, color})` - Texto secundario cursiva; el `color` por defecto sale del tema (`muted`)
+- `AppType.monoTimer({required context, fontSize, color})` - Fuente monoespaciada para timers; `color` por defecto `ink` del tema
 
 **Fuentes:** `Recursive` (variable, 100-900) como fuente principal, `Cascadia Code` como monoespaciada.
 
@@ -287,7 +329,7 @@ ref.listen<XState>(provider, (previous, next) {
 2. `runZonedGuarded` - catches Dart async errors
 3. `ErrorWidget.builder` override en `MaterialApp.builder` - UI de error con "Volver al inicio"
 
-**Notificación de tareas nuevas:** Banner animado (`AnimatedSize`) en `_buildWorkspace`, debajo del header de usuarios. Muestra "Nueva tarea: [nombre]" con fondo `kColorSageSoft`. Auto-dismiss después de 3 segundos.
+**Notificación de tareas nuevas:** Banner animado (`AnimatedSize`) en `_buildWorkspace`, debajo del header de usuarios. Muestra "Nueva tarea: [nombre]" con `showCustomNotification` (fondo `snackBg`, texto `snackText`). Auto-dismiss después de 3 segundos.
 
 **Badge de chat no leído:** `_ChatTabBadge` widget en la tab de Chat. Incrementa `unreadCount` cuando llega `new_message` y el chat no es visible.
 
@@ -327,16 +369,23 @@ ref.listen<XState>(provider, (previous, next) {
 | **Pomodoro bottom sheet (edit)** | `pomodoro_timer.dart` | `_promptCustomDuration` en `showModalBottomSheet` con `AnimatedPadding` (sigue al teclado), sin `SingleChildScrollView`, input numérico (`digitsOnly`, max 3). Fix salto iOS al abrir |
 | **Traspaso de dueño** | `roomHandler.ts`, `room_provider.dart`, `room_model.dart` | Al irse el dueño y quedar 1+ usuario, el 1ro que se queda pasa a ser dueño (Mongo + evento `host_transferred`) |
 | **Eliminar sala vacía** | `roomHandler.ts` | Al quedar 0 usuarios conectados se borra `Room` + `Message` del chat |
+| **Modo oscuro** | `theme.dart`, `theme_provider.dart`, `theme_toggle.dart`, `main.dart` | `AppColors` claro/oscuro, `themeProvider` persistido, lectura previa a `runApp`, botón en header de sala, inicio (celular y laptop), "Crear o unirse" y hoja de miembros. Ver sección 8 |
+| **Reacciones rápidas** | `chat_box.dart`, `chat_provider.dart`, `message_model.dart`, `chatHandler.ts`, `Message.ts` | Tocar un mensaje abre un selector con 🚀 🔥 🍅; chips con cuenta bajo el mensaje (resaltado si es tuya, tocar alterna). Alternar atómico en Mongo y `message_reactions` a la sala |
+| **Indicador "escribiendo"** | `chat_box.dart`, `chat_provider.dart`, `chatHandler.ts` | "Ana está escribiendo" / "Ana y Marco..." / "Varios..." con puntos animados sobre el campo; eventos `typing` / `user_typing`, caduca a los 5 s |
+| **Avatares por defecto** | `avatars.dart`, `room_widgets.dart`, `user_model.dart`, `avatarSeeds.ts`, `roomHandler.ts` | Macetas "Sprouts" de DiceBear asignadas por el servidor, únicas por sala y estables al reconectar; render local sin red (`dicebear_core` + `flutter_svg`), caché por seed y precalentamiento tras el primer cuadro. Ver sección 5 |
+| **Papelera de tareas** | `task_list.dart` | Al arrastrar una tarea aparece una papelera; soltarla encima pide confirmación y elimina (no reordena) |
+| **Mascota reactiva** | `pomodoro_mascot.dart`, `pomodoro_timer.dart` | El cangrejo del dial cambia según `moodFor(PomodoroState)`: quieto en pausa, rebote en foco, lento con "zzz" en descanso, salto al terminar. `kMascotAssets` permite dar un Lottie propio a cada ánimo |
 
 #### 12. REGLAS DE CODIFICACIÓN
 
-- **Flutter:** `flutter analyze` debe pasar con 0 errores siempre.
+- **Flutter:** `flutter analyze` debe pasar con 0 errores siempre, y `flutter test` con todo en verde.
 - **Backend:** `tsc --noEmit` debe pasar con 0 errores siempre.
 - **Sin comentarios** en el código a menos que el usuario lo pida explícitamente.
-- **Sin emojis** en archivos a menos que el usuario lo pida.
+- **Sin emojis** en archivos a menos que el usuario lo pida. Excepción pedida: los emojis de reacción (🚀 🔥 🍅) en `kReactionEmojis` y `ALLOWED_REACTIONS`, y sus pruebas.
+- **Colores:** nunca hardcodeados en la UI; siempre `context.colors.<token>` (ver sección 8). Toda pantalla o widget nuevo debe verse bien en claro y oscuro.
 - **Naming:** `snake_case` para archivos, `camelCase` para variables/métodos, `PascalCase` para clases.
 - **Variables privadas:** Prefijo `_` (e.g. `_socketService`, `_pendingLocalAdd`).
-- **Constants:** Prefijo `k` (e.g. `kColorPaper`, `kDefaultPomodoroSeconds`).
+- **Constants:** Prefijo `k` (e.g. `kDefaultPomodoroSeconds`, `kReactionEmojis`). Los colores NO son constantes `k*`: son tokens de `AppColors`.
 - **IDs de usuario local:** Se generan con `User.generateLocal(name)` usando timestamp + random.
 - **Código de sala:** 6 caracteres de `'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'` (sin I/0/O).
 - **Room host:** `hostId` se guarda en MongoDB Room model y se usa para permisos de kick. Si el dueño sale y quedan usuarios, el cargo se transfiere al 1ro que se queda (`host_transferred`).

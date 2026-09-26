@@ -19,6 +19,7 @@ import '../room/room_workspace.dart';
 import '../widgets/landing_hero.dart';
 import '../widgets/mascot/onboarding_tour.dart';
 import '../widgets/qr_scanner.dart';
+import '../widgets/theme_toggle.dart';
 
 enum _FormMode { create, join }
 
@@ -37,6 +38,9 @@ class CreateRoomScreen extends ConsumerStatefulWidget {
 
 class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   _FormMode _mode = _FormMode.create;
+
+  /// Paleta del tema activo, para los métodos auxiliares que no reciben contexto.
+  AppColors get c => context.colors;
 
   final _roomNameController = TextEditingController();
   final _roomCodeController = TextEditingController();
@@ -213,7 +217,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   void _showNotFoundSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: kColorPaper,
+      backgroundColor: c.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
@@ -224,21 +228,21 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           children: [
             Lottie.asset('assets/Lottie/404.json', height: 180, repeat: true),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Código no válido',
               style: TextStyle(
                 fontSize: AppType.sizeTitle,
                 fontWeight: AppType.weightSemiBold,
-                color: kColorInk,
+                color: c.ink,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'No se encontró una sala con ese código. Verifica que esté bien escrito e intenta de nuevo.',
               textAlign: TextAlign.center,
-              style: AppType.secondaryItalic(
+              style: AppType.secondaryItalic(context: context,
                 size: AppType.sizeBodyMedium,
-                color: kColorTextSecondary,
+                color: c.muted,
               ),
             ),
             const SizedBox(height: 24),
@@ -259,28 +263,28 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: kColorPaper,
+        backgroundColor: c.bg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           '¿Expulsar a ${user.name}?',
-          style: const TextStyle(
-            color: kColorInk,
+          style: TextStyle(
+            color: c.ink,
             fontWeight: AppType.weightSemiBold,
           ),
         ),
         content: Text(
           '${user.name} será removido de la sala. Podrá volver a unirse con el mismo código.',
-          style: AppType.secondaryItalic(color: kColorInk),
+          style: AppType.secondaryItalic(context: context, color: c.ink),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            style: TextButton.styleFrom(foregroundColor: kColorTextSecondary),
+            style: TextButton.styleFrom(foregroundColor: c.muted),
             child: const Text('Cancelar'),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: kColorError),
+            style: TextButton.styleFrom(foregroundColor: c.error),
             child: const Text(
               'Expulsar',
               style: TextStyle(fontWeight: AppType.weightSemiBold),
@@ -299,28 +303,28 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: kColorPaper,
+        backgroundColor: c.bg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
+        title: Text(
           '¿Salir de la sala?',
           style: TextStyle(
-            color: kColorInk,
+            color: c.ink,
             fontWeight: AppType.weightSemiBold,
           ),
         ),
         content: Text(
           'Puedes volver a entrar con el código. Pero ojo: si eres el último en irte, la sala desaparecerá.',
-          style: AppType.secondaryItalic(color: kColorInk),
+          style: AppType.secondaryItalic(context: context, color: c.ink),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            style: TextButton.styleFrom(foregroundColor: kColorTextSecondary),
+            style: TextButton.styleFrom(foregroundColor: c.muted),
             child: const Text('Cancelar'),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: kColorError),
+            style: TextButton.styleFrom(foregroundColor: c.error),
             child: const Text(
               'Salir',
               style: TextStyle(fontWeight: AppType.weightSemiBold),
@@ -337,6 +341,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final roomState = ref.watch(roomProvider);
     final bool inRoom = roomState.room != null;
     final bool showLanding = widget.landing && !inRoom;
@@ -392,7 +397,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             context,
             title: '$titlePrefix ${next.lastAddedTaskTitle ?? 'Agregada'}',
             icon: AppIcons.listPlus,
-            iconColor: kRoomStudy,
+            iconColor: c.study,
           );
           ref.read(taskProvider.notifier).consumeNewTask();
         });
@@ -411,7 +416,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 ? 'Descanso terminado. ¡De vuelta al estudio!'
                 : '¡Tiempo completado! Tu descanso está listo.',
             icon: breakEnded ? AppIcons.bookOpen : AppIcons.coffee,
-            iconColor: breakEnded ? kRoomStudy : kRoomBreak,
+            iconColor: breakEnded ? c.study : c.rest,
           );
         });
       }
@@ -429,7 +434,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 ? 'Descanso iniciado. ¡Relájate!'
                 : 'Pomodoro iniciado. ¡A concentrarse!',
             icon: next.isBreak ? AppIcons.coffee : AppIcons.timer,
-            iconColor: next.isBreak ? kRoomBreak : kRoomStudy,
+            iconColor: next.isBreak ? c.rest : c.study,
           );
         });
       }
@@ -442,13 +447,13 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         _leaveRoom();
       },
       child: Scaffold(
-        backgroundColor: inRoom || showLanding ? kRoomBg : kColorPaper,
+        backgroundColor: inRoom || showLanding ? c.bg : c.bg,
         appBar: inRoom || showLanding
             ? null
             : AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          iconTheme: const IconThemeData(color: kColorInk),
+          iconTheme: IconThemeData(color: c.ink),
           title: const Text(''),
           actions: [
             TextButton.icon(
@@ -459,10 +464,12 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               icon: const Icon(AppIcons.circleHelp, size: 20),
               label: const Text('¿Cómo funciona?'),
               style: TextButton.styleFrom(
-                foregroundColor: kColorTextSecondary,
+                foregroundColor: c.muted,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
               ),
             ),
+            const ThemeToggleIconButton(),
+            const SizedBox(width: 16),
           ],
         ),
         body: SafeArea(
@@ -494,9 +501,9 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         Expanded(
           flex: 9,
           child: Container(
-            decoration: const BoxDecoration(
-              color: kRoomSurface,
-              border: Border(left: BorderSide(color: kRoomLine)),
+            decoration: BoxDecoration(
+              color: c.surface,
+              border: Border(left: BorderSide(color: c.line)),
             ),
             child: Stack(
               children: [
@@ -508,16 +515,23 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 Positioned(
                   top: 16,
                   right: 16,
-                  child: TextButton.icon(
-                    onPressed: () => showOnboardingTour(
-                      context,
-                      ref.read(onboardingProvider.notifier),
-                    ),
-                    icon: const Icon(AppIcons.circleHelp, size: 20),
-                    label: const Text('¿Cómo funciona?'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: kColorTextSecondary,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => showOnboardingTour(
+                          context,
+                          ref.read(onboardingProvider.notifier),
+                        ),
+                        icon: const Icon(AppIcons.circleHelp, size: 20),
+                        label: const Text('¿Cómo funciona?'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: c.muted,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const ThemeToggleIconButton(),
+                    ],
                   ),
                 ),
               ],
@@ -533,8 +547,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: kColorCard,
-        border: Border.all(color: kColorBorder),
+        color: c.surface,
+        border: Border.all(color: c.line),
         borderRadius: BorderRadius.circular(24),
       ),
       child: child,
@@ -552,20 +566,20 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (embedded) ...[
-                const Text(
+                Text(
                   'Empieza ahora',
                   style: TextStyle(
-                    color: kRoomInk,
+                    color: c.ink,
                     fontSize: 28,
                     fontWeight: AppType.weightBold,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Crea una sala nueva o entra a una con su código.',
                   style: TextStyle(
-                    color: kRoomMuted,
+                    color: c.muted,
                     fontSize: AppType.sizeBodyMedium,
                     height: 1.4,
                   ),
@@ -576,7 +590,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                   'StudyHub',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: kColorInk,
+                    color: c.ink,
                     fontWeight: AppType.weightBold,
                     fontSize: AppType.sizeHero,
                   ),
@@ -585,7 +599,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 Text(
                   'Crea tu sala y coordina a tu equipo en tiempo real.',
                   textAlign: TextAlign.center,
-                  style: AppType.secondaryItalic(),
+                  style: AppType.secondaryItalic(context: context),
                 ),
                 const SizedBox(height: 48),
               ],
@@ -670,12 +684,12 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                                       : AppIcons.logIn,
                                 ),
                           label: roomState.isCreating
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 24,
                                   height: 24,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: kColorInk,
+                                    color: c.ink,
                                   ),
                                 )
                               : Text(
@@ -710,7 +724,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         Text(
           'Código de la sala',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: _showCodeError ? kColorError : kColorTextSecondary,
+            color: _showCodeError ? c.error : c.muted,
             fontWeight: AppType.weightSemiBold,
             fontSize: AppType.sizeCaption,
           ),
@@ -744,22 +758,22 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                             fontFamily: kFontFamilyMono,
                             fontWeight: AppType.weightSemiBold,
                             fontSize: fontSize,
-                            color: kColorInk,
+                            color: c.ink,
                           ),
-                          cursorColor: kColorDeepSage,
+                          cursorColor: c.study,
                           decoration: InputDecoration(
                             counterText: '',
                             contentPadding: EdgeInsets.zero,
                             filled: true,
-                            fillColor: kColorPaper,
+                            fillColor: c.bg,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
                               borderSide: BorderSide(
                                 color:
                                     _showCodeError &&
                                         _codeControllers[index].text.isEmpty
-                                    ? kColorErrorBorder
-                                    : kColorBorder,
+                                    ? c.errorLine
+                                    : c.line,
                                 width: 1.5,
                               ),
                             ),
@@ -769,15 +783,15 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                                 color:
                                     _showCodeError &&
                                         _codeControllers[index].text.isEmpty
-                                    ? kColorErrorBorder
-                                    : kColorBorder,
+                                    ? c.errorLine
+                                    : c.line,
                                 width: 1.5,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(
-                                color: kColorDeepSage,
+                              borderSide: BorderSide(
+                                color: c.study,
                                 width: 2,
                               ),
                             ),
@@ -803,7 +817,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           Text(
             'Ingresa los 6 caracteres del código',
             style: TextStyle(
-              color: kColorError,
+              color: c.error,
               fontSize: AppType.sizeCaption,
               fontWeight: AppType.weightMedium,
             ),
@@ -823,7 +837,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               ? AppIcons.info
               : AppIcons.lightbulb,
           size: 16,
-          color: kColorTextSecondary,
+          color: c.muted,
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -831,9 +845,9 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             isCreate
                 ? 'Genera un código único que podrás compartir para invitar a tu equipo.'
                 : 'Ingresa el código que te compartió tu compañero para entrar a su sala de estudio.',
-            style: AppType.secondaryItalic(
+            style: AppType.secondaryItalic(context: context,
               size: AppType.sizeCaption,
-              color: kColorTextSecondary,
+              color: c.muted,
             ),
           ),
         ),
@@ -845,7 +859,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: kColorPaper,
+        color: c.bg,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -887,14 +901,14 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? kColorDeepSage : Colors.transparent,
+            color: selected ? c.study : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: selected ? kColorPaper : kColorTextSecondary,
+              color: selected ? c.bg : c.muted,
               fontWeight: AppType.weightSemiBold,
               fontSize: AppType.sizeBody,
             ),
@@ -939,7 +953,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       autofillHints: keyboardType == TextInputType.visiblePassword
           ? const [AutofillHints.oneTimeCode]
           : null,
-      style: const TextStyle(color: kColorInk),
+      style: TextStyle(color: c.ink),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -947,11 +961,11 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         // Ocultar el contador "0/20" para mantener el diseño limpio
         counterText: '',
 
-        labelStyle: const TextStyle(color: kColorTextSecondary),
-        hintStyle: TextStyle(color: kColorTextSecondary.withValues(alpha: 0.5)),
-        prefixIcon: Icon(icon, color: kColorDeepSage),
+        labelStyle: TextStyle(color: c.muted),
+        hintStyle: TextStyle(color: c.muted.withValues(alpha: 0.5)),
+        prefixIcon: Icon(icon, color: c.study),
         filled: true,
-        fillColor: kColorPaper,
+        fillColor: c.bg,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 24,
           vertical: 20,
@@ -962,11 +976,11 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(24),
-          borderSide: const BorderSide(color: kColorDeepSage, width: 1.5),
+          borderSide: BorderSide(color: c.study, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(24),
-          borderSide: BorderSide(color: kColorErrorBorder, width: 1.5),
+          borderSide: BorderSide(color: c.errorLine, width: 1.5),
         ),
       ),
       validator: (value) {
@@ -987,7 +1001,8 @@ class _RestoringView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final c = context.colors;
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -996,13 +1011,13 @@ class _RestoringView extends StatelessWidget {
             height: 28,
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
-              color: kRoomStudy,
+              color: c.study,
             ),
           ),
           SizedBox(height: 16),
           Text(
             'Restaurando tu sesión anterior...',
-            style: TextStyle(color: kRoomMuted, fontSize: AppType.sizeBody),
+            style: TextStyle(color: c.muted, fontSize: AppType.sizeBody),
           ),
         ],
       ),

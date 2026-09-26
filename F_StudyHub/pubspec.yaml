@@ -39,6 +39,9 @@ dependencies:
   audioplayers: ^6.8.1
   qr_flutter: ^4.1.0
   mobile_scanner: ^5.2.3
+  dicebear_core: ^10.7.0
+  dicebear_styles: ^10.6.0
+  flutter_svg: ^2.3.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
