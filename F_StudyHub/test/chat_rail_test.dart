@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,6 +13,7 @@ import 'package:studyhub/data/services/websocket_service.dart';
 import 'package:studyhub/logic/room_provider.dart';
 import 'package:studyhub/logic/socket_provider.dart';
 import 'package:studyhub/ui/room/room_workspace.dart';
+import 'package:studyhub/ui/widgets/chat_box.dart';
 
 class _FakeWebSocketService extends WebSocketService {
   final Map<String, dynamic Function(dynamic)> handlers = {};
@@ -161,6 +163,36 @@ void main() {
     await tester.pump();
     expect(find.bySemanticsLabel('Mostrar chat'), findsOneWidget);
     handle.dispose();
+  });
+
+  testWidgets('al plegar, el chat se desvanece del todo y no asoma en el riel', (
+    tester,
+  ) async {
+    await pumpRoom(tester, size: wide);
+
+    double chatOpacity() => tester
+        .renderObject<RenderAnimatedOpacity>(
+          find
+              .ancestor(
+                of: find.byType(ChatBox),
+                matching: find.byType(AnimatedOpacity),
+              )
+              .first,
+        )
+        .opacity
+        .value;
+
+    expect(chatOpacity(), 1);
+
+    await tester.tap(find.byTooltip('Ocultar chat'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(chatOpacity(), 0);
+
+    await tester.tap(find.byTooltip('Mostrar chat'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(chatOpacity(), 1);
   });
 
   testWidgets('el borrador sobrevive a plegar y abrir', (tester) async {
