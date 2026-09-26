@@ -191,11 +191,14 @@ class _RoomWorkspaceState extends ConsumerState<RoomWorkspace> {
                     excluding: hidden,
                     child: IgnorePointer(
                       ignoring: hidden,
-                      child: TickerMode(
-                        enabled: !hidden,
-                        child: AnimatedOpacity(
-                          duration: duration,
-                          opacity: hidden ? 0 : 1,
+                      // El TickerMode va DENTRO del AnimatedOpacity: fuera, al
+                      // plegar silenciaba el ticker del propio desvanecido, la
+                      // opacidad se quedaba en 1 y el chat asomaba en el riel.
+                      child: AnimatedOpacity(
+                        duration: duration,
+                        opacity: hidden ? 0 : 1,
+                        child: TickerMode(
+                          enabled: !hidden,
                           child: Padding(
                             padding: const EdgeInsets.all(24),
                             child: ChatBox(onCollapse: _toggleChat),
@@ -607,6 +610,9 @@ class _ChatRail extends ConsumerWidget {
         // aparecería fading dentro del de la barra mientras se cierra.
         child: InkWell(
           onTap: onExpand,
+          customBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Column(
