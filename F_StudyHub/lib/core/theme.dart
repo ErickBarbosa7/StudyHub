@@ -34,6 +34,26 @@ import 'package:flutter/material.dart';
 // ─────────────────────────────────────────────────────────────
 
 // ═════════════════════════════════════════════════════════════
+// PALETA ACTIVA
+// ═════════════════════════════════════════════════════════════
+
+/// Paletas disponibles. Cada una tiene versión clara y oscura en [AppColors].
+enum AppPalette {
+  /// Verde azulado, ámbar e índigo (la original).
+  estudio,
+
+  /// Azules suaves / pastel: concentración y calma.
+  azul,
+
+  /// Azul índigo de foco + ámbar + verde azulado: tres tonos que se distinguen
+  /// de un vistazo (estudio, descanso corto, descanso largo).
+  enfoque,
+}
+
+/// Paleta que usa la app. Cambiar a [AppPalette.estudio] para volver al verde.
+const AppPalette kPalette = AppPalette.estudio;
+
+// ═════════════════════════════════════════════════════════════
 // TOKENS DE COLOR
 // ═════════════════════════════════════════════════════════════
 
@@ -70,6 +90,9 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.snackText,
     required this.shadow,
     required this.brand,
+    required this.brandSoft,
+    required this.brandText,
+    required this.brandAccent,
   });
 
   // ── Neutros ────────────────────────────────────────────────
@@ -164,6 +187,15 @@ class AppColors extends ThemeExtension<AppColors> {
   /// pantalla, pero sigue dando contraste al texto blanco.
   final Color brand;
 
+  /// Texto secundario sobre [brand].
+  final Color brandSoft;
+
+  /// Frase principal sobre [brand].
+  final Color brandText;
+
+  /// Acento sobre [brand] (la palabra "Hub" del nombre).
+  final Color brandAccent;
+
   /// Paleta clara: la que se usó siempre hasta ahora.
   static const light = AppColors(
     bg: Color(0xFFF3F2EE),
@@ -190,6 +222,9 @@ class AppColors extends ThemeExtension<AppColors> {
     snackText: Color(0xFFF3F2EE),
     shadow: Color(0x0F1F6B5C),
     brand: Color(0xFF1F6B5C),
+    brandSoft: Color(0xFFCFE5DF),
+    brandText: Color(0xFFE3F1EC),
+    brandAccent: Color(0xFF9FD3C4),
   );
 
   /// Paleta oscura.
@@ -222,7 +257,150 @@ class AppColors extends ThemeExtension<AppColors> {
     snackText: Color(0xFF14181A),
     shadow: Color(0x8A000000),
     brand: Color(0xFF0F4238),
+    brandSoft: Color(0xFFCFE5DF),
+    brandText: Color(0xFFE3F1EC),
+    brandAccent: Color(0xFF9FD3C4),
   );
+
+  /// Paleta "Azul suave", clara: azules pastel para concentración y calma.
+  ///
+  /// Misma estructura que [light]; solo cambian los tonos. El azul de estudio
+  /// (#3D6FA5) es el más claro que aún da contraste AA con texto claro encima.
+  static const blueLight = AppColors(
+    bg: Color(0xFFF1F5FA),
+    surface: Color(0xFFFFFFFF),
+    ink: Color(0xFF1E2A3A),
+    muted: Color(0xFF5B6B7F),
+    line: Color(0xFFDCE5EF),
+    track: Color(0xFFE8EEF5),
+    ringTrack: Color(0xFFE1E9F2),
+    disabled: Color(0xFFC2CCD8),
+    study: Color(0xFF3D6FA5),
+    studySoft: Color(0xFFE1ECF7),
+    rest: Color(0xFFA8621A),
+    restSoft: Color(0xFFFBEEDC),
+    restInk: Color(0xFF8A4E10),
+    longRest: Color(0xFF6B62B0),
+    longRestSoft: Color(0xFFECEAF7),
+    error: Color(0xFFB3372F),
+    errorSoft: Color(0xFFF9E7E4),
+    errorLine: Color(0xFFE8C6C1),
+    sageMid: Color(0xFF93B4D6),
+    onAccent: Color(0xFFF1F5FA),
+    snackBg: Color(0xFF1E2A3A),
+    snackText: Color(0xFFF1F5FA),
+    shadow: Color(0x0F3D6FA5),
+    brand: Color(0xFF2F5F94),
+    brandSoft: Color(0xFFD2E3F4),
+    brandText: Color(0xFFE6F0FA),
+    brandAccent: Color(0xFFA9CBEA),
+  );
+
+  /// Paleta "Azul suave", oscura: azul pizarra con acentos claros desaturados.
+  static const blueDark = AppColors(
+    bg: Color(0xFF12181F),
+    surface: Color(0xFF1B232C),
+    ink: Color(0xFFE6ECF2),
+    muted: Color(0xFF98A6B5),
+    line: Color(0xFF2A343F),
+    track: Color(0xFF222B35),
+    ringTrack: Color(0xFF28323C),
+    disabled: Color(0xFF58636F),
+    study: Color(0xFF7FB0E0),
+    studySoft: Color(0xFF15283A),
+    rest: Color(0xFFE0912F),
+    restSoft: Color(0xFF33240E),
+    restInk: Color(0xFFF0B36A),
+    longRest: Color(0xFFA9A4EE),
+    longRestSoft: Color(0xFF201F40),
+    error: Color(0xFFE5786F),
+    errorSoft: Color(0xFF33201E),
+    errorLine: Color(0xFF4A2B28),
+    sageMid: Color(0xFF5A82A8),
+    onAccent: Color(0xFF0E1A26),
+    snackBg: Color(0xFFE6ECF2),
+    snackText: Color(0xFF12181F),
+    shadow: Color(0x8A000000),
+    brand: Color(0xFF1D3F63),
+    brandSoft: Color(0xFFC4D9EE),
+    brandText: Color(0xFFDDEBF7),
+    brandAccent: Color(0xFF9CC4EA),
+  );
+
+  /// Paleta "Enfoque", clara: índigo de foco sobre neutros fríos.
+  ///
+  /// Cada modo del reloj tiene su propio tono (índigo, ámbar, verde azulado) y
+  /// los tres dan contraste AA con texto claro encima.
+  static const focusLight = AppColors(
+    bg: Color(0xFFF4F6FB),
+    surface: Color(0xFFFFFFFF),
+    ink: Color(0xFF1A2233),
+    muted: Color(0xFF5A6478),
+    line: Color(0xFFE0E5EF),
+    track: Color(0xFFEBEEF6),
+    ringTrack: Color(0xFFE4E8F1),
+    disabled: Color(0xFFC5CAD6),
+    study: Color(0xFF4361C9),
+    studySoft: Color(0xFFE4EAFA),
+    rest: Color(0xFFA8621A),
+    restSoft: Color(0xFFFBEEDC),
+    restInk: Color(0xFF8A4E10),
+    longRest: Color(0xFF23806F),
+    longRestSoft: Color(0xFFDDF0EB),
+    error: Color(0xFFB3372F),
+    errorSoft: Color(0xFFF9E7E4),
+    errorLine: Color(0xFFE8C6C1),
+    sageMid: Color(0xFF9DB0E8),
+    onAccent: Color(0xFFF4F6FB),
+    snackBg: Color(0xFF1A2233),
+    snackText: Color(0xFFF4F6FB),
+    shadow: Color(0x0F4361C9),
+    brand: Color(0xFF3347A8),
+    brandSoft: Color(0xFFD5DCF6),
+    brandText: Color(0xFFE9EDFA),
+    brandAccent: Color(0xFFAFC2FA),
+  );
+
+  /// Paleta "Enfoque", oscura: fondo azul noche, acentos claros desaturados.
+  static const focusDark = AppColors(
+    bg: Color(0xFF10141F),
+    surface: Color(0xFF181E2C),
+    ink: Color(0xFFE7EBF5),
+    muted: Color(0xFF98A2B8),
+    line: Color(0xFF272F42),
+    track: Color(0xFF1F2637),
+    ringTrack: Color(0xFF262E40),
+    disabled: Color(0xFF545D72),
+    study: Color(0xFF8FA8F5),
+    studySoft: Color(0xFF17203F),
+    rest: Color(0xFFE0912F),
+    restSoft: Color(0xFF33240E),
+    restInk: Color(0xFFF0B36A),
+    longRest: Color(0xFF5CC4B0),
+    longRestSoft: Color(0xFF10302B),
+    error: Color(0xFFE5786F),
+    errorSoft: Color(0xFF33201E),
+    errorLine: Color(0xFF4A2B28),
+    sageMid: Color(0xFF5B70B8),
+    onAccent: Color(0xFF0D1226),
+    snackBg: Color(0xFFE7EBF5),
+    snackText: Color(0xFF10141F),
+    shadow: Color(0x8A000000),
+    brand: Color(0xFF222E6B),
+    brandSoft: Color(0xFFC9D3F5),
+    brandText: Color(0xFFE0E6FA),
+    brandAccent: Color(0xFFA9BCFA),
+  );
+
+  /// Paleta activa (según [kPalette]) para el brillo dado.
+  static AppColors forBrightness(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    return switch (kPalette) {
+      AppPalette.estudio => dark ? AppColors.dark : AppColors.light,
+      AppPalette.azul => dark ? AppColors.blueDark : AppColors.blueLight,
+      AppPalette.enfoque => dark ? AppColors.focusDark : AppColors.focusLight,
+    };
+  }
 
   /// Colores de la sala por modo de reloj. Para pintar el dial según la fase.
   Color modeColor(String mode) {
@@ -264,6 +442,9 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? snackText,
     Color? shadow,
     Color? brand,
+    Color? brandSoft,
+    Color? brandText,
+    Color? brandAccent,
   }) {
     return AppColors(
       bg: bg ?? this.bg,
@@ -290,6 +471,9 @@ class AppColors extends ThemeExtension<AppColors> {
       snackText: snackText ?? this.snackText,
       shadow: shadow ?? this.shadow,
       brand: brand ?? this.brand,
+      brandSoft: brandSoft ?? this.brandSoft,
+      brandText: brandText ?? this.brandText,
+      brandAccent: brandAccent ?? this.brandAccent,
     );
   }
 
@@ -322,6 +506,9 @@ class AppColors extends ThemeExtension<AppColors> {
       snackText: mix(snackText, other.snackText),
       shadow: mix(shadow, other.shadow),
       brand: mix(brand, other.brand),
+      brandSoft: mix(brandSoft, other.brandSoft),
+      brandText: mix(brandText, other.brandText),
+      brandAccent: mix(brandAccent, other.brandAccent),
     );
   }
 }
@@ -331,7 +518,7 @@ class AppColors extends ThemeExtension<AppColors> {
 /// Un `Theme.of(context)` por método `build` y se pasa el resultado a las
 /// propiedades: `[c.ink, c.muted]` en vez de repetir la búsqueda.
 extension AppColorsContext on BuildContext {
-  AppColors get colors => Theme.of(this).extension<AppColors>() ?? AppColors.light;
+  AppColors get colors => Theme.of(this).extension<AppColors>() ?? AppColors.forBrightness(Brightness.light);
 }
 
 
@@ -459,7 +646,7 @@ abstract final class AppType {
 
 ThemeData buildTheme([Brightness brightness = Brightness.light]) {
 
-  final c = brightness == Brightness.dark ? AppColors.dark : AppColors.light;
+  final c = AppColors.forBrightness(brightness);
 
   final ColorScheme colorScheme = ColorScheme(
     brightness: brightness,

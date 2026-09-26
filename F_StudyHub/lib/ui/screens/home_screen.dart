@@ -99,9 +99,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   IconButton(
                                     onPressed: _showHowItWorks,
                                     tooltip: '¿Cómo funciona?',
-                                    icon: const Icon(
+                                    icon: Icon(
                                       AppIcons.circleHelp,
-                                      color: kLandingSoft,
+                                      color: c.brandSoft,
                                     ),
                                   ),
                                 ],
@@ -126,10 +126,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             if (roomState.isRestoring) ...[
-                              const Row(
+                              Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  SizedBox(
+                                  const SizedBox(
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
@@ -137,10 +137,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       color: Colors.white,
                                     ),
                                   ),
-                                  SizedBox(width: 12),
+                                  const SizedBox(width: 12),
                                   Text(
                                     'Restaurando tu sesión anterior...',
-                                    style: TextStyle(color: kLandingSoft),
+                                    style: TextStyle(color: c.brandSoft),
                                   ),
                                 ],
                               ),

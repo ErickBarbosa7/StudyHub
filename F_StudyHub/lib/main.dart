@@ -15,7 +15,7 @@ import 'ui/screens/home_screen.dart';
 Widget _buildErrorWidget(FlutterErrorDetails errorDetails) {
   // Esta pantalla se dibuja cuando el árbol ya está roto, así que no hay
   // MaterialApp del que sacar el tema: se queda en la paleta clara.
-  const c = AppColors.light;
+  final c = AppColors.forBrightness(Brightness.light);
 
   return Builder(
     builder: (context) {
