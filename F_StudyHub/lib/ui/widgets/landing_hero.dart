@@ -11,11 +11,6 @@ import '../../core/theme.dart';
 /// columna con el botón "Crear o unirse a una sala".
 const double kLandingBreakpoint = 960;
 
-// Tonos claros sobre el verde de marca; solo para el inicio.
-const Color kLandingSoft = Color(0xFFCFE5DF); // textos secundarios
-const Color kLandingText = Color(0xFFE3F1EC); // frase
-const Color kLandingAccent = Color(0xFF9FD3C4); // "Hub" del nombre
-
 /// Marca + frase corta, en la parte de arriba.
 class LandingBrandRow extends StatelessWidget {
   const LandingBrandRow({super.key, this.trailing});
@@ -36,13 +31,13 @@ class LandingBrandRow extends StatelessWidget {
           child: const Icon(AppIcons.timer, size: 20, color: Colors.white),
         ),
         const SizedBox(width: 10),
-        const Expanded(
+        Expanded(
           child: Text(
             'SALAS DE ESTUDIO EN TIEMPO REAL',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: kLandingSoft,
+              color: context.colors.brandSoft,
               fontSize: AppType.sizeCaption,
               fontWeight: AppType.weightSemiBold,
               letterSpacing: 1.1,
@@ -81,11 +76,11 @@ class LandingWordmark extends StatelessWidget {
             letterSpacing: -size * 0.05,
             height: 0.95,
           ),
-          children: const [
-            TextSpan(text: 'Study'),
+          children: [
+            const TextSpan(text: 'Study'),
             TextSpan(
               text: 'Hub',
-              style: TextStyle(color: kLandingAccent),
+              style: TextStyle(color: context.colors.brandAccent),
             ),
           ],
         ),
@@ -107,7 +102,7 @@ class LandingTagline extends StatelessWidget {
     return Text(
       'Estudia y concéntrate en equipo.',
       style: TextStyle(
-        color: kLandingText,
+        color: context.colors.brandText,
         fontSize: math.min(30, math.max(20, width / 14)),
         fontWeight: AppType.weightMedium,
         height: 1.25,
