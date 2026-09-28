@@ -155,6 +155,13 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
 
   void pause() => _action('PAUSE');
 
+  /// Cierra la pantalla de "tiempo terminado" sin avisar al servidor: solo
+  /// afecta la vista local, el estado real sigue siendo el del servidor.
+  void dismissFinished() {
+    if (!state.isFinished) return;
+    state = state.copyWith(isFinished: false);
+  }
+
   void reset([int? durationSeconds]) {
     state = state.copyWith(isFinished: false);
     _action('RESET', durationSeconds);

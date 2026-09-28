@@ -18,6 +18,7 @@ import '../widgets/connection_banner.dart';
 import '../room/room_workspace.dart';
 import '../widgets/landing_hero.dart';
 import '../widgets/mascot/onboarding_tour.dart';
+import '../widgets/pomodoro_finished_overlay.dart';
 import '../widgets/qr_scanner.dart';
 import '../widgets/theme_toggle.dart';
 
@@ -405,22 +406,6 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     });
 
     ref.listen<PomodoroState>(pomodoroProvider, (previous, next) {
-      if (next.isFinished && !(previous?.isFinished ?? false)) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          final breakEnded = next.finishedMode != null &&
-              next.finishedMode != kModeFocus;
-          showCustomNotification(
-            context,
-            title: breakEnded
-                ? 'Descanso terminado. ¡De vuelta al estudio!'
-                : '¡Tiempo completado! Tu descanso está listo.',
-            icon: breakEnded ? AppIcons.bookOpen : AppIcons.coffee,
-            iconColor: breakEnded ? c.study : c.rest,
-          );
-        });
-      }
-      
       // También avisa si la flecha cambió de fase con el reloj corriendo.
       final phaseChangedWhileRunning =
           next.isRunning && previous != null && previous.mode != next.mode;
@@ -475,16 +460,26 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         body: SafeArea(
           top: inRoom || showLanding,
           bottom: false,
-          child: Column(
+          child: Stack(
             children: [
-              const ConnectionBanner(),
-              Expanded(
-                child: inRoom
-                    ? _buildWorkspace(roomState)
-                    : showLanding
-                    ? _buildLanding(roomState)
-                    : _buildCreateForm(roomState),
+              Column(
+                children: [
+                  const ConnectionBanner(),
+                  Expanded(
+                    child: inRoom
+                        ? _buildWorkspace(roomState)
+                        : showLanding
+                        ? _buildLanding(roomState)
+                        : _buildCreateForm(roomState),
+                  ),
+                ],
               ),
+              if (inRoom && ref.watch(pomodoroProvider).isFinished)
+                PomodoroFinishedOverlay(
+                  finishedMode: ref.watch(pomodoroProvider).finishedMode,
+                  onDismiss: () =>
+                      ref.read(pomodoroProvider.notifier).dismissFinished(),
+                ),
             ],
           ),
         ),
