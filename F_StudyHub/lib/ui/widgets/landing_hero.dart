@@ -16,45 +16,6 @@ const Color kLandingSoft = Color(0xFFCFE5DF); // textos secundarios
 const Color kLandingText = Color(0xFFE3F1EC); // frase
 const Color kLandingAccent = Color(0xFF9FD3C4); // "Hub" del nombre
 
-/// Marca + frase corta, en la parte de arriba.
-class LandingBrandRow extends StatelessWidget {
-  const LandingBrandRow({super.key, this.trailing});
-
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: const Color(0x24FFFFFF),
-            borderRadius: BorderRadius.circular(11),
-          ),
-          child: const Icon(AppIcons.timer, size: 20, color: Colors.white),
-        ),
-        const SizedBox(width: 10),
-        const Expanded(
-          child: Text(
-            'SALAS DE ESTUDIO EN TIEMPO REAL',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: kLandingSoft,
-              fontSize: AppType.sizeCaption,
-              fontWeight: AppType.weightSemiBold,
-              letterSpacing: 1.1,
-            ),
-          ),
-        ),
-        ?trailing,
-      ],
-    );
-  }
-}
-
 /// "StudyHub" en grande: "Study" en blanco y "Hub" en verde claro. Toma todo
 /// el ancho disponible (hasta 150 px de fuente) y escala si no cabe.
 class LandingWordmark extends StatelessWidget {
@@ -239,8 +200,6 @@ class LandingHero extends StatelessWidget {
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const LandingBrandRow(),
-                        const SizedBox(height: 36),
                         middle,
                         // Abajo: la ilustración, centrada, usando el alto que sobre.
                         Expanded(
@@ -254,11 +213,7 @@ class LandingHero extends StatelessWidget {
                   : SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const LandingBrandRow(),
-                          const SizedBox(height: 32),
-                          middle,
-                        ],
+                        children: [middle],
                       ),
                     ),
             );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math' as math;
 
 import '../../core/theme.dart';
 import '../../data/models/user_model.dart';
@@ -43,7 +44,12 @@ class _RoomWorkspaceState extends ConsumerState<RoomWorkspace> {
   static const _chatWidth = 360.0;
   static const _railWidth = 56.0;
 
+  static const _timerWidthKey = 'timer_width';
+  static const _timerWidthDefault = 440.0;
+  static const _timerWidthMin = 360.0;
+
   bool _chatHidden = false;
+  double _timerWidth = _timerWidthDefault;
 
   /// Falso hasta aplicar la preferencia guardada: así un chat plegado no se
   /// anima al abrir la sala.
@@ -60,10 +66,27 @@ class _RoomWorkspaceState extends ConsumerState<RoomWorkspace> {
   Future<void> _loadChatHidden() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
-    setState(() => _chatHidden = prefs.getBool(_chatHiddenKey) ?? false);
+    setState(() {
+      _chatHidden = prefs.getBool(_chatHiddenKey) ?? false;
+      _timerWidth = prefs.getDouble(_timerWidthKey) ?? _timerWidthDefault;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() => _animateChat = true);
     });
+  }
+
+  /// Cambia el ancho del panel del reloj mientras se arrastra el separador,
+  /// entre un mínimo legible y la mitad del espacio disponible.
+  void _resizeTimer(double dx, double maxWidth) {
+    final maxTimerWidth = math.max(_timerWidthMin, maxWidth / 2);
+    setState(() {
+      _timerWidth = (_timerWidth + dx).clamp(_timerWidthMin, maxTimerWidth);
+    });
+  }
+
+  Future<void> _persistTimerWidth() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_timerWidthKey, _timerWidth);
   }
 
   Future<void> _toggleChat() async {
@@ -135,15 +158,29 @@ class _RoomWorkspaceState extends ConsumerState<RoomWorkspace> {
         _animateChat && !MediaQuery.disableAnimationsOf(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(width: 440, child: RoomCard(child: PomodoroTimer())),
-          const SizedBox(width: 20),
-          const Expanded(child: RoomCard(child: TaskList())),
-          const SizedBox(width: 20),
-          _buildChatColumn(animate),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxTimerWidth =
+              math.max(_timerWidthMin, constraints.maxWidth / 2);
+          final timerWidth =
+              _timerWidth.clamp(_timerWidthMin, maxTimerWidth);
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: timerWidth,
+                child: const RoomCard(child: PomodoroTimer()),
+              ),
+              _ResizeHandle(
+                onDrag: (dx) => _resizeTimer(dx, constraints.maxWidth),
+                onDragEnd: _persistTimerWidth,
+              ),
+              const Expanded(child: RoomCard(child: TaskList())),
+              const SizedBox(width: 20),
+              _buildChatColumn(animate),
+            ],
+          );
+        },
       ),
     );
   }
@@ -588,6 +625,41 @@ class _BottomNav extends ConsumerWidget {
 
 /// Lo que queda del chat en laptop cuando está plegado: un riel con el botón
 /// para abrirlo y los mensajes sin leer.
+/// Separador arrastrable entre el reloj y las tareas: cambia el ancho del
+/// reloj sin límite fijo (lo clampa quien llama a [onDrag]).
+class _ResizeHandle extends StatelessWidget {
+  const _ResizeHandle({required this.onDrag, required this.onDragEnd});
+
+  final ValueChanged<double> onDrag;
+  final VoidCallback onDragEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return MouseRegion(
+      cursor: SystemMouseCursors.resizeLeftRight,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragUpdate: (details) => onDrag(details.delta.dx),
+        onHorizontalDragEnd: (_) => onDragEnd(),
+        child: SizedBox(
+          width: 20,
+          child: Center(
+            child: Container(
+              width: 4,
+              height: 40,
+              decoration: BoxDecoration(
+                color: c.line,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ChatRail extends ConsumerWidget {
   const _ChatRail({required this.onExpand});
 
