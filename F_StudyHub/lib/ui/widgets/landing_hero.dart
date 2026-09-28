@@ -213,11 +213,7 @@ class LandingHero extends StatelessWidget {
                   : SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const LandingBrandRow(),
-                          const SizedBox(height: 32),
-                          middle,
-                        ],
+                        children: [middle],
                       ),
                     ),
             );
