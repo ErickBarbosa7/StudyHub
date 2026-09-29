@@ -13,6 +13,12 @@ interface PomodoroSession {
   focusSeconds: number;
   // Rondas de estudio completadas; cada FOCUS_ROUNDS_BEFORE_LONG toca descanso largo.
   completedFocus: number;
+  // Fases terminadas de forma natural. Viaja en cada tick para que un cliente
+  // que perdió el evento `pomodoro_finished` (app en segundo plano, reconexión)
+  // igual pueda anunciar el fin de la fase.
+  phaseSeq: number;
+  lastFinishedMode: PomodoroMode | null;
+  lastFinishedAt: number | null;
   timeout: NodeJS.Timeout | null;
 }
 
@@ -62,6 +68,9 @@ function getSession(roomId: string): PomodoroSession {
       mode: 'FOCUS',
       focusSeconds: DEFAULT_POMODORO_SECONDS,
       completedFocus: 0,
+      phaseSeq: 0,
+      lastFinishedMode: null,
+      lastFinishedAt: null,
       timeout: null,
     };
     sessions.set(roomId, session);
@@ -113,6 +122,10 @@ function tickPayload(roomId: string, session: PomodoroSession) {
     status: session.status,
     mode: session.mode,
     completedFocus: session.completedFocus,
+    phaseSeq: session.phaseSeq,
+    finishedMode: session.lastFinishedMode,
+    finishedAgoMs:
+      session.lastFinishedAt === null ? null : Date.now() - session.lastFinishedAt,
   };
 }
 
@@ -150,10 +163,14 @@ function startTimer(io: Server, roomId: string, duration?: number): void {
     if (current.timeRemaining <= 0) {
       clearSessionTimer(roomId);
       current.status = 'PAUSED';
+      current.phaseSeq += 1;
+      current.lastFinishedMode = current.mode;
+      current.lastFinishedAt = Date.now();
       io.to(roomId).emit('pomodoro_finished', {
         roomId,
         totalSeconds: current.totalSeconds,
         mode: current.mode,
+        phaseSeq: current.phaseSeq,
       });
       // Deja preparada la siguiente fase, en pausa hasta que alguien inicie.
       nextPhase(current);
