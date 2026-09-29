@@ -11,7 +11,7 @@ import '../../logic/pomodoro_provider.dart';
 import '../room/room_widgets.dart';
 import 'mascot/pomodoro_mascot.dart';
 
-const _durationPresets = [5 * 60, 15 * 60, 30 * 60];
+const _durationPresets = [25 * 60, 5 * 60, 15 * 60];
 
 const _kMinCustomMinutes = 1;
 const _kMaxCustomMinutes = 180;

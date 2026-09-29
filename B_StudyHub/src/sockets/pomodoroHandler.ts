@@ -27,7 +27,7 @@ interface JoinRoomPayload {
   roomId?: string;
 }
 
-export const DEFAULT_POMODORO_SECONDS = 30 * 60;
+export const DEFAULT_POMODORO_SECONDS = 25 * 60;
 export const SHORT_BREAK_SECONDS = 5 * 60;
 export const LONG_BREAK_SECONDS = 15 * 60;
 export const FOCUS_ROUNDS_BEFORE_LONG = 4;

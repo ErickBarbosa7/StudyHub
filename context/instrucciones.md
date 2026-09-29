@@ -177,7 +177,7 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 ##### Dominio: Pomodoro (Regla: El Servidor es la Fuente Única de Verdad)
 
 - *(Emite Cliente)* `pomodoro_action`: `{ roomId, action: 'START' | 'PAUSE' | 'RESET' | 'SKIP' | 'SET_MODE', duration?: number, mode?: 'FOCUS' | 'SHORT_BREAK' | 'LONG_BREAK' }`.
-- *(Backend Logic)* El servidor gestiona un mapa en memoria `Map<roomId, PomodoroSession>`. Maneja el `setInterval` de 1000ms. `duration` es opcional (default 30 min = 1800s) y solo aplica en modo `FOCUS`; los descansos son fijos (corto 5 min, largo 15 min).
+- *(Backend Logic)* El servidor gestiona un mapa en memoria `Map<roomId, PomodoroSession>`. Maneja el `setInterval` de 1000ms. `duration` es opcional (default 25 min = 1500s) y solo aplica en modo `FOCUS`; los descansos son fijos (corto 5 min, largo 15 min).
 - *(Modos / Descansos)* Al terminar una fase el servidor prepara la siguiente **en pausa**: estudio -> descanso corto (cada 4 rondas, descanso largo); descanso -> estudio. `SKIP` (flecha ⏭) adelanta a la siguiente fase y, si el reloj corría, la inicia de inmediato. `SET_MODE` cambia de modo manualmente (pausa el reloj).
 - *(Emite Servidor)* `timer_tick`: `{ roomId, timeRemaining: number, totalSeconds: number, status: string, mode: string, completedFocus: number }`. Flutter **solo** dibuja este `timeRemaining`.
 - *(Emite Servidor)* `pomodoro_finished`: `{ roomId, totalSeconds: number, mode: string }` -> Emite cuando el timer llega a 0 (`mode` = fase que terminó).
@@ -242,7 +242,7 @@ Todos los eventos deben estar tipados mediante Interfaces en TypeScript en el ba
 | `roomProvider` | `RoomNotifier` | `room: Room?`, `localUser: User?`, `users: List<User>`, `isCreating: bool`, `isRestoring: bool`, `error: String?` | `room_provider.dart` |
 | `chatProvider` | `ChatNotifier` | `messages: List<Message>`, `isLoadingHistory: bool`, `error: String?`, `unreadCount: int`, `typingUsers: Map<String, String>` | `chat_provider.dart` |
 | `taskProvider` | `TaskNotifier` | `tasks: List<Task>`, `error: String?`, `newTaskCount: int`, `lastAddedTaskTitle: String?` | `task_provider.dart` |
-| `pomodoroProvider` | `PomodoroNotifier` | `timeRemaining: int` (1800), `totalSeconds: int` (1800), `status: String` ('PAUSED'), `isFinished: bool`, `mode: String` ('FOCUS'), `completedFocus: int` (0), `finishedMode: String?` | `pomodoro_provider.dart` |
+| `pomodoroProvider` | `PomodoroNotifier` | `timeRemaining: int` (1500), `totalSeconds: int` (1500), `status: String` ('PAUSED'), `isFinished: bool`, `mode: String` ('FOCUS'), `completedFocus: int` (0), `finishedMode: String?` | `pomodoro_provider.dart` |
 | `socketServiceProvider` | -- (Provider) | `WebSocketService` | `socket_provider.dart` |
 | `soundProvider` | `SoundNotifier` | `isEnabled: bool` (true) | `sound_service.dart` |
 | `themeProvider` | `ThemeNotifier` | `ThemeMode` (`system` por defecto; `light` / `dark` tras elegir) | `theme_provider.dart` |
@@ -359,7 +359,7 @@ ref.listen<XState>(provider, (previous, next) {
 | **QR integración** | `create_room_screen.dart` | Icono QR en pill de código (host), botón "Escanear QR" (join) |
 | **Timezone fix** | `message_model.dart`, `task_model.dart` | `.toLocal()` en factories |
 | **Tareas edit/delete** | `task_handler.ts`, `task_provider.dart`, `task_list.dart` | Backend + frontend completo |
-| **Default Pomodoro 30min** | `pomodoro_provider.dart` | `kDefaultPomodoroSeconds = 30 * 60` |
+| **Default Pomodoro 25min** | `pomodoro_provider.dart` | `kDefaultPomodoroSeconds = 25 * 60` |
 | **Input código 6 cajas** | `create_room_screen.dart` | Auto-advance, auto-backspace, paste, validación inline |
 | **Fix iOS audio** | `sound_service.dart` | `AVAudioSessionCategory.playback` via `AudioContext` |
 | **Tokens de tema** | `theme.dart` + screens | `sizeHero`, `sizeGiant`, `sizeTimerCompact`, `sizeTimerLarge` + `monoTimer(fontSize:)` |

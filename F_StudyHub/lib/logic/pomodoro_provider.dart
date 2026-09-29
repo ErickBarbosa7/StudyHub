@@ -8,7 +8,7 @@ import '../data/services/websocket_service.dart';
 import 'room_provider.dart';
 import 'socket_provider.dart';
 
-const int kDefaultPomodoroSeconds = 30 * 60;
+const int kDefaultPomodoroSeconds = 25 * 60;
 const int kShortBreakSeconds = 5 * 60;
 const int kLongBreakSeconds = 15 * 60;
 const int kFocusRoundsBeforeLong = 4;
