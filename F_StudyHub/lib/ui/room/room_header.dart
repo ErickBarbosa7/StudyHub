@@ -52,9 +52,7 @@ class RoomHeader extends ConsumerWidget {
       clipBehavior: Clip.none,
       children: [
         RoomIconButton(
-          icon: chatHidden
-              ? AppIcons.messageSquareOff
-              : AppIcons.messageSquare,
+          icon: chatHidden ? AppIcons.messageSquareOff : AppIcons.messageSquare,
           tooltip: chatHidden ? 'Mostrar chat' : 'Ocultar chat',
           foreground: chatHidden ? c.muted : c.ink,
           onPressed: onToggleChat,
@@ -128,11 +126,7 @@ class RoomHeader extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Icon(
-                              AppIcons.copy,
-                              size: 13,
-                              color: c.muted,
-                            ),
+                            Icon(AppIcons.copy, size: 13, color: c.muted),
                           ],
                         ),
                     ],
@@ -358,10 +352,7 @@ class _AvatarStack extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   label,
-                  style: TextStyle(
-                    color: c.muted,
-                    fontSize: AppType.sizeBody,
-                  ),
+                  style: TextStyle(color: c.muted, fontSize: AppType.sizeBody),
                 ),
               ],
             ],
@@ -427,12 +418,11 @@ Future<void> showRoomMembersSheet(
 }) {
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: context.colors.surface,
+    // Transparente: el fondo lo pinta _MembersSheet con el tema vigente,
+    // así cambia al alternar claro/oscuro con la hoja abierta.
+    backgroundColor: Colors.transparent,
     isScrollControlled: true,
     constraints: const BoxConstraints(maxWidth: 520),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
     builder: (sheetContext) => _MembersSheet(
       layout: layout,
       onKick: (user) {
@@ -457,76 +447,84 @@ class _MembersSheet extends ConsumerWidget {
     final users = roomState.users;
     final bool iAmHost = room?.hostId == roomState.localUser?.id;
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Invita a tu equipo',
-              style: TextStyle(
-                color: c.ink,
-                fontSize: AppType.sizeTitle - 2,
-                fontWeight: AppType.weightBold,
+    return Material(
+      color: c.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Invita a tu equipo',
+                style: TextStyle(
+                  color: c.ink,
+                  fontSize: AppType.sizeTitle - 2,
+                  fontWeight: AppType.weightBold,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Comparte el código o el QR para que entren a esta sala.',
-              style: TextStyle(color: c.muted, fontSize: AppType.sizeBody),
-            ),
-            if (room != null) ...[
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: _CodeChip(roomId: room.roomId, showLabel: true),
-                  ),
-                  const SizedBox(width: 10),
-                  RoomIconButton(
-                    icon: AppIcons.qrCode,
-                    tooltip: 'Mostrar código QR',
-                    onPressed: () => QrDisplaySheet.show(context, room.roomId),
-                  ),
-                ],
+              const SizedBox(height: 4),
+              Text(
+                'Comparte el código o el QR para que entren a esta sala.',
+                style: TextStyle(color: c.muted, fontSize: AppType.sizeBody),
               ),
+              if (room != null) ...[
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _CodeChip(roomId: room.roomId, showLabel: true),
+                    ),
+                    const SizedBox(width: 10),
+                    RoomIconButton(
+                      icon: AppIcons.qrCode,
+                      tooltip: 'Mostrar código QR',
+                      onPressed: () =>
+                          QrDisplaySheet.show(context, room.roomId),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 24),
+              Text(
+                users.length == 1
+                    ? 'En la sala · 1 persona'
+                    : 'En la sala · ${users.length} personas',
+                style: TextStyle(
+                  color: c.ink,
+                  fontSize: AppType.sizeBodyLarge,
+                  fontWeight: AppType.weightBold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (var i = 0; i < users.length; i++)
+                _MemberRow(
+                  user: users[i],
+                  index: i,
+                  isHost: room?.hostId == users[i].id,
+                  isMe: roomState.localUser?.id == users[i].id,
+                  canKick:
+                      iAmHost &&
+                      room?.hostId != users[i].id &&
+                      roomState.localUser?.id != users[i].id,
+                  onKick: () => onKick(users[i]),
+                  onPickAvatar: roomState.localUser?.id == users[i].id
+                      ? () => showAvatarPicker(context)
+                      : null,
+                ),
+              // En celular la barra del header no cabe un cuarto botón sin dejar el
+              // nombre de la sala ilegible, así que el cambio de tema vive aquí.
+              if (layout == RoomLayout.phone) ...[
+                const SizedBox(height: 18),
+                const ThemeToggleRow(),
+              ],
             ],
-            const SizedBox(height: 24),
-            Text(
-              users.length == 1
-                  ? 'En la sala · 1 persona'
-                  : 'En la sala · ${users.length} personas',
-              style: TextStyle(
-                color: c.ink,
-                fontSize: AppType.sizeBodyLarge,
-                fontWeight: AppType.weightBold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            for (var i = 0; i < users.length; i++)
-              _MemberRow(
-                user: users[i],
-                index: i,
-                isHost: room?.hostId == users[i].id,
-                isMe: roomState.localUser?.id == users[i].id,
-                canKick:
-                    iAmHost &&
-                    room?.hostId != users[i].id &&
-                    roomState.localUser?.id != users[i].id,
-                onKick: () => onKick(users[i]),
-                onPickAvatar: roomState.localUser?.id == users[i].id
-                    ? () => showAvatarPicker(context)
-                    : null,
-              ),
-            // En celular la barra del header no cabe un cuarto botón sin dejar el
-            // nombre de la sala ilegible, así que el cambio de tema vive aquí.
-            if (layout == RoomLayout.phone) ...[
-              const SizedBox(height: 18),
-              const ThemeToggleRow(),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -591,11 +589,7 @@ class _MemberRow extends StatelessWidget {
           ],
           if (isMe) ...[
             const SizedBox(width: 8),
-            RoomChip(
-              label: 'Tú',
-              background: c.studySoft,
-              foreground: c.study,
-            ),
+            RoomChip(label: 'Tú', background: c.studySoft, foreground: c.study),
           ],
           if (canKick) ...[
             const SizedBox(width: 8),
