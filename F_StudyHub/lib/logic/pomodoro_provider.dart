@@ -12,6 +12,8 @@ const int kDefaultPomodoroSeconds = 25 * 60;
 const int kShortBreakSeconds = 5 * 60;
 const int kLongBreakSeconds = 15 * 60;
 const int kFocusRoundsBeforeLong = 4;
+// Un fin de fase anterior a esto no se anuncia al unirse o reconectar.
+const int _kRecentFinishMs = 60 * 1000;
 
 const String kModeFocus = 'FOCUS';
 const String kModeShortBreak = 'SHORT_BREAK';
@@ -64,7 +66,7 @@ class PomodoroState {
 
 class PomodoroNotifier extends StateNotifier<PomodoroState> {
   PomodoroNotifier(this._socketService, this._roomProvider)
-      : super(const PomodoroState()) {
+    : super(const PomodoroState()) {
     _roomProvider.listen<RoomState>(roomProvider, (previous, next) {
       final prevRoomId = previous?.room?.roomId;
       final nextRoomId = next.room?.roomId;
@@ -73,6 +75,7 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
         // arrastrar el tiempo de una sala anterior. El servidor (fuente única
         // de verdad) sobrescribirá estos valores con el timer_tick real.
         state = const PomodoroState();
+        _seenPhaseSeq = null;
       }
     });
 
@@ -80,8 +83,9 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
       final map = data as Map<String, dynamic>;
       final timeRemaining = (map['timeRemaining'] as num).round();
       final status = map['status'] as String;
-      final totalSeconds =
-          map.containsKey('totalSeconds') ? (map['totalSeconds'] as num).round() : null;
+      final totalSeconds = map.containsKey('totalSeconds')
+          ? (map['totalSeconds'] as num).round()
+          : null;
       final mode = map['mode'] as String? ?? state.mode;
       final completedFocus = map.containsKey('completedFocus')
           ? (map['completedFocus'] as num).round()
@@ -89,9 +93,9 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
       final wasRunning = state.isRunning;
       final finishedAtZero = timeRemaining == 0 && wasRunning;
       if (finishedAtZero && !state.isFinished) {
-        _roomProvider.read(soundProvider.notifier).playPomodoroFinishedSound(
-              focusFinished: state.mode == kModeFocus,
-            );
+        _roomProvider
+            .read(soundProvider.notifier)
+            .playPomodoroFinishedSound(focusFinished: state.mode == kModeFocus);
       }
       // Si el modo cambia por algo distinto a terminar la fase actual
       // (flecha o selector), el 'completado' previo ya no aplica.
@@ -108,27 +112,55 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
             ? false
             : (finishedAtZero || state.isFinished),
       );
+
+      // Respaldo por si se perdió `pomodoro_finished` (app en segundo plano o
+      // reconexión): el tick trae la fase terminada y su número.
+      final seq = map['phaseSeq'] as num?;
+      final ago = map['finishedAgoMs'] as num?;
+      final tickFinishedMode = map['finishedMode'] as String?;
+      if (seq != null && tickFinishedMode != null) {
+        // Primer tick tras entrar: solo anuncia si el fin fue muy reciente.
+        final recent = ago != null && ago < _kRecentFinishMs;
+        _announceFinished(
+          seq.round(),
+          tickFinishedMode,
+          allow: _seenPhaseSeq != null || recent,
+        );
+      }
     });
 
     _socketService.on('pomodoro_finished', (data) {
       final map = data as Map<String, dynamic>;
-      final totalSeconds =
-          map.containsKey('totalSeconds') ? (map['totalSeconds'] as num).round() : null;
+      final totalSeconds = map.containsKey('totalSeconds')
+          ? (map['totalSeconds'] as num).round()
+          : null;
       final finishedMode = map['mode'] as String? ?? state.mode;
+      final seq = (map['phaseSeq'] as num?)?.round();
       debugPrint('[pomodoro] Fase $finishedMode completada');
-      if (!state.isFinished) {
-        _roomProvider.read(soundProvider.notifier).playPomodoroFinishedSound(
-              focusFinished: finishedMode == kModeFocus,
-            );
-      }
+      _announceFinished(seq, finishedMode);
       state = state.copyWith(
         timeRemaining: 0,
         status: 'PAUSED',
-        isFinished: true,
-        finishedMode: finishedMode,
         totalSeconds: totalSeconds ?? state.totalSeconds,
       );
     });
+  }
+
+  // Último `phaseSeq` anunciado; evita anunciar dos veces la misma fase (evento
+  // + tick) y sirve de línea base al entrar a una sala.
+  int? _seenPhaseSeq;
+
+  void _announceFinished(int? seq, String finishedMode, {bool allow = true}) {
+    if (seq != null) {
+      final seen = _seenPhaseSeq;
+      if (seen != null && seq <= seen) return;
+      _seenPhaseSeq = seq;
+      if (!allow) return;
+    }
+    _roomProvider
+        .read(soundProvider.notifier)
+        .playPomodoroFinishedSound(focusFinished: finishedMode == kModeFocus);
+    state = state.copyWith(isFinished: true, finishedMode: finishedMode);
   }
 
   final WebSocketService _socketService;
@@ -180,10 +212,8 @@ class PomodoroNotifier extends StateNotifier<PomodoroState> {
   }
 }
 
-final pomodoroProvider =
-    StateNotifierProvider<PomodoroNotifier, PomodoroState>((ref) {
-  return PomodoroNotifier(
-    ref.watch(socketServiceProvider),
-    ref,
-  );
-});
+final pomodoroProvider = StateNotifierProvider<PomodoroNotifier, PomodoroState>(
+  (ref) {
+    return PomodoroNotifier(ref.watch(socketServiceProvider), ref);
+  },
+);
