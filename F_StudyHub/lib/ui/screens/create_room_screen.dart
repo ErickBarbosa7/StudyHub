@@ -1,3 +1,4 @@
+import '../../core/join_link.dart';
 import "../widgets/custom_snackbar.dart";
 import 'dart:async';
 
@@ -66,6 +67,15 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       (_) => TextEditingController(),
     );
     _codeFocusNodes = List.generate(_codeLength, (_) => FocusNode());
+
+    // Entró desde un enlace/QR de invitación: directo a "Unirse" con el código.
+    final invited = codeFromCurrentUrl();
+    if (invited != null) {
+      _mode = _FormMode.join;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fillCode(invited);
+      });
+    }
   }
 
   @override
@@ -449,8 +459,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               icon: const Icon(AppIcons.circleHelp, size: 20),
               label: const Text('¿Cómo funciona?'),
               style: TextButton.styleFrom(
-                foregroundColor: c.muted,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                foregroundColor: c.helpFg,
+                backgroundColor: c.helpSoft,
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
               ),
             ),
             const ThemeToggleIconButton(),
@@ -643,7 +655,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                                 context,
                               );
                               if (scannedCode != null && mounted) {
-                                _fillCode(scannedCode);
+                                _fillCode(codeFromScan(scannedCode) ?? scannedCode);
                               }
                             },
                             icon: const Icon(
@@ -684,7 +696,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                                   height: 24,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: c.ink,
+                                    color: c.onAccent,
                                   ),
                                 )
                               : Text(

@@ -75,17 +75,17 @@ flutter:
   # Solo se declaran los pesos que la app usa: cada entrada es una descarga y una
   # copia en memoria en web, aunque apunte al mismo archivo.
   fonts:
-    - family: Recursive
+    - family: Nunito
       fonts:
-        - asset: assets/fonts/Recursive-VF.ttf
+        - asset: assets/fonts/Nunito-VF.ttf
           weight: 400
-        - asset: assets/fonts/Recursive-VF.ttf
+        - asset: assets/fonts/Nunito-VF.ttf
           weight: 500
-        - asset: assets/fonts/Recursive-VF.ttf
+        - asset: assets/fonts/Nunito-VF.ttf
           weight: 600
-        - asset: assets/fonts/Recursive-VF.ttf
+        - asset: assets/fonts/Nunito-VF.ttf
           weight: 700
-        - asset: assets/fonts/Recursive-VF.ttf
+        - asset: assets/fonts/Nunito-VF.ttf
           weight: 800
     - family: Cascadia Code
       fonts:

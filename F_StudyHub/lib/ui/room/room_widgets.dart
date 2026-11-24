@@ -10,10 +10,14 @@ class RoomCard extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(24),
+    this.accent,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
+
+  /// Color de identidad de la sección: dibuja una franja fina arriba.
+  final Color Function(AppColors)? accent;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +29,12 @@ class RoomCard extends StatelessWidget {
         border: Border.all(color: c.line),
         borderRadius: BorderRadius.circular(20),
       ),
+      foregroundDecoration: accent == null
+          ? null
+          : BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border(top: BorderSide(color: accent!(c), width: 4)),
+            ),
       child: child,
     );
   }
@@ -175,9 +185,9 @@ class RoomAvatar extends StatelessWidget {
   /// Pares (fondo, texto) por posición. Se resuelven con la paleta activa para
   /// que los cuatro tonos se lean también en oscuro.
   static List<(Color, Color)> paletteOf(AppColors c) => [
-    (c.studySoft, c.study),
     (c.restSoft, c.restInk),
-    (c.longRestSoft, c.longRest),
+    (c.helpSoft, c.helpFg),
+    (c.themeSoft, c.themeFg),
     (c.track, c.muted),
   ];
 

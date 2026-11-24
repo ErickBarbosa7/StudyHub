@@ -17,7 +17,7 @@ import 'package:flutter/material.dart';
 // Paleta anterior — filosofía:
 // Filosofía:
 // • Neutros cálidos como base → reducen ruido visual.
-// • Verde profundo → foco, acciones e interacción.
+// • Violeta profundo → foco, acciones e interacción.
 // • Verde suave → estados secundarios y superficies.
 // • Dorado → recompensa y progreso, no acciones.
 // • Rojo → errores exclusivamente.
@@ -70,6 +70,18 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.snackText,
     required this.shadow,
     required this.brand,
+    required this.taskFg,
+    required this.taskSoft,
+    required this.taskLine,
+    required this.chatFg,
+    required this.chatSoft,
+    required this.chatLine,
+    required this.helpFg,
+    required this.helpSoft,
+    required this.helpLine,
+    required this.themeFg,
+    required this.themeSoft,
+    required this.themeLine,
   });
 
   // ── Neutros ────────────────────────────────────────────────
@@ -129,14 +141,14 @@ class AppColors extends ThemeExtension<AppColors> {
 
   // ── Acento decorativo ──────────────────────────────────────
 
-  /// Tono medio del verde azulado.
+  /// Tono medio del violeta.
   final Color sageMid;
 
   // ── Sobre acento ───────────────────────────────────────────
 
   /// Texto e iconos colocados sobre [study] o [bg] (botón principal, avisos).
   ///
-  /// En oscuro se invierte a un verde muy oscuro: el acento es claro y necesita
+  /// En oscuro se invierte a un violeta muy oscuro: el acento es claro y necesita
   /// texto oscuro encima para mantener el contraste.
   final Color onAccent;
 
@@ -159,69 +171,106 @@ class AppColors extends ThemeExtension<AppColors> {
 
   // ── Marca ──────────────────────────────────────────────────
 
-  /// Fondo del panel de marca del inicio (blanco encima). Verde profundo en
+  /// Fondo del panel de marca del inicio (blanco encima). Violeta profundo en
   /// ambos modos: en oscuro se hunde para no ser el bloque más brillante de la
   /// pantalla, pero sigue dando contraste al texto blanco.
   final Color brand;
 
+  // ── Identidad por sección: tareas (violeta) y chat (rosa) ──
+  final Color taskFg;
+  final Color taskSoft;
+  final Color taskLine;
+  final Color chatFg;
+  final Color chatSoft;
+  final Color chatLine;
+
+  // ── Botones de acción con identidad propia ────────────────
+  /// Ayuda (azul) y modo claro/oscuro (índigo): cada control con su color.
+  final Color helpFg;
+  final Color helpSoft;
+  final Color helpLine;
+  final Color themeFg;
+  final Color themeSoft;
+  final Color themeLine;
+
   /// Paleta clara: la que se usó siempre hasta ahora.
   static const light = AppColors(
-    bg: Color(0xFFFAF8F3),
+    bg: Color(0xFFFAF8F4),
     surface: Color(0xFFFFFFFF),
-    ink: Color(0xFF1C2321),
-    muted: Color(0xFF5D6763),
-    line: Color(0xFFE6E2D8),
-    track: Color(0xFFF0EDE4),
-    ringTrack: Color(0xFFE8E4D9),
-    disabled: Color(0xFFC9C6BC),
-    study: Color(0xFF0E8A73),
-    studySoft: Color(0xFFD6F1E8),
-    rest: Color(0xFFE8710A),
-    restSoft: Color(0xFFFFE8CC),
-    restInk: Color(0xFFA04A00),
-    longRest: Color(0xFF5457E0),
-    longRestSoft: Color(0xFFE4E5FF),
-    error: Color(0xFFB3372F),
-    errorSoft: Color(0xFFF9E7E4),
-    errorLine: Color(0xFFE8C6C1),
-    sageMid: Color(0xFF6FCDB8),
+    ink: Color(0xFF24282A),
+    muted: Color(0xFF6F7678),
+    line: Color(0xFFE7E4DC),
+    track: Color(0xFFF1EEE7),
+    ringTrack: Color(0xFFE8E5DC),
+    disabled: Color(0xFFCFCDC5),
+    study: Color(0xFF0A87A3),
+    studySoft: Color(0xFFD9F2F7),
+    rest: Color(0xFF16A34A),
+    restSoft: Color(0xFFDCF7E4),
+    restInk: Color(0xFF0F7A36),
+    longRest: Color(0xFF0EA5E9),
+    longRestSoft: Color(0xFFDCF2FD),
+    error: Color(0xFFDC2F3F),
+    errorSoft: Color(0xFFFDE4E6),
+    errorLine: Color(0xFFF4B6BC),
+    sageMid: Color(0xFF3FB6CC),
     onAccent: Color(0xFFFFFFFF),
-    snackBg: Color(0xFF1C2321),
-    snackText: Color(0xFFF3F2EE),
-    shadow: Color(0x0F0E8A73),
-    brand: Color(0xFF0E7A66),
+    snackBg: Color(0xFF24282A),
+    snackText: Color(0xFFF4F3EE),
+    shadow: Color(0x260A87A3),
+    helpFg: Color(0xFFD97706),
+    helpSoft: Color(0xFFFFEFD0),
+    helpLine: Color(0xFFF8D68E),
+    themeFg: Color(0xFF6D3BE8),
+    themeSoft: Color(0xFFEDE7FF),
+    themeLine: Color(0xFFD8CCFB),
+    taskFg: Color(0xFF0A87A3),
+    taskSoft: Color(0xFFD9F2F7),
+    taskLine: Color(0xFFB3E1EB),
+    chatFg: Color(0xFF0A87A3),
+    chatSoft: Color(0xFFD9F2F7),
+    chatLine: Color(0xFFB3E1EB),
+    brand: Color(0xFFF5F1EA),
   );
 
-  /// Paleta oscura.
-  ///
-  /// Mantiene la identidad "Estudio" (verde azulado, ámbar, índigo) aclarando y
-  /// desaturando los acentos para que tengan contraste sobre fondo oscuro, y
-  /// respetando la regla del diseño: ni negro ni blanco puros.
+  /// Paleta oscura (rojo coral aclarado para contraste).
   static const dark = AppColors(
-    bg: Color(0xFF14181A),
-    surface: Color(0xFF1D2224),
-    ink: Color(0xFFE8EDEB),
-    muted: Color(0xFF9BA6A3),
-    line: Color(0xFF2C3234),
-    track: Color(0xFF242A2C),
-    ringTrack: Color(0xFF2A3134),
-    disabled: Color(0xFF5A625F),
-    study: Color(0xFF3DDBB8),
-    studySoft: Color(0xFF0F3A31),
-    rest: Color(0xFFFFA13D),
-    restSoft: Color(0xFF3D2610),
-    restInk: Color(0xFFFFC47A),
-    longRest: Color(0xFFA5A9FF),
-    longRestSoft: Color(0xFF23265A),
-    error: Color(0xFFE5786F),
-    errorSoft: Color(0xFF33201E),
-    errorLine: Color(0xFF4A2B28),
-    sageMid: Color(0xFF4FA896),
-    onAccent: Color(0xFF06231C),
-    snackBg: Color(0xFFE8EDEB),
-    snackText: Color(0xFF14181A),
+    bg: Color(0xFF161A1C),
+    surface: Color(0xFF1F2528),
+    ink: Color(0xFFECEFEF),
+    muted: Color(0xFFA3ACAE),
+    line: Color(0xFF2E3538),
+    track: Color(0xFF262C2F),
+    ringTrack: Color(0xFF2C3336),
+    disabled: Color(0xFF5E6669),
+    study: Color(0xFF38D0E8),
+    studySoft: Color(0xFF0F3A44),
+    rest: Color(0xFF4ADE80),
+    restSoft: Color(0xFF12301F),
+    restInk: Color(0xFFA6EBC3),
+    longRest: Color(0xFF7DD3FC),
+    longRestSoft: Color(0xFF12344A),
+    error: Color(0xFFFF6B78),
+    errorSoft: Color(0xFF3A1F22),
+    errorLine: Color(0xFF5A2C31),
+    sageMid: Color(0xFF22A9C2),
+    onAccent: Color(0xFF04262D),
+    snackBg: Color(0xFFECEFEF),
+    snackText: Color(0xFF161A1C),
     shadow: Color(0x8A000000),
-    brand: Color(0xFF0B4A3D),
+    helpFg: Color(0xFFFFB84D),
+    helpSoft: Color(0xFF3D2E0C),
+    helpLine: Color(0xFF5A4415),
+    themeFg: Color(0xFFB79BFF),
+    themeSoft: Color(0xFF2A2050),
+    themeLine: Color(0xFF42367A),
+    taskFg: Color(0xFF38D0E8),
+    taskSoft: Color(0xFF0F3A44),
+    taskLine: Color(0xFF1D5565),
+    chatFg: Color(0xFF38D0E8),
+    chatSoft: Color(0xFF0F3A44),
+    chatLine: Color(0xFF1D5565),
+    brand: Color(0xFF1B2124),
   );
 
   /// Colores de la sala por modo de reloj. Para pintar el dial según la fase.
@@ -264,6 +313,18 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? snackText,
     Color? shadow,
     Color? brand,
+    Color? taskFg,
+    Color? taskSoft,
+    Color? taskLine,
+    Color? chatFg,
+    Color? chatSoft,
+    Color? chatLine,
+    Color? helpFg,
+    Color? helpSoft,
+    Color? helpLine,
+    Color? themeFg,
+    Color? themeSoft,
+    Color? themeLine,
   }) {
     return AppColors(
       bg: bg ?? this.bg,
@@ -290,6 +351,18 @@ class AppColors extends ThemeExtension<AppColors> {
       snackText: snackText ?? this.snackText,
       shadow: shadow ?? this.shadow,
       brand: brand ?? this.brand,
+      taskFg: taskFg ?? this.taskFg,
+      taskSoft: taskSoft ?? this.taskSoft,
+      taskLine: taskLine ?? this.taskLine,
+      chatFg: chatFg ?? this.chatFg,
+      chatSoft: chatSoft ?? this.chatSoft,
+      chatLine: chatLine ?? this.chatLine,
+      helpFg: helpFg ?? this.helpFg,
+      helpSoft: helpSoft ?? this.helpSoft,
+      helpLine: helpLine ?? this.helpLine,
+      themeFg: themeFg ?? this.themeFg,
+      themeSoft: themeSoft ?? this.themeSoft,
+      themeLine: themeLine ?? this.themeLine,
     );
   }
 
@@ -322,6 +395,18 @@ class AppColors extends ThemeExtension<AppColors> {
       snackText: mix(snackText, other.snackText),
       shadow: mix(shadow, other.shadow),
       brand: mix(brand, other.brand),
+      taskFg: mix(taskFg, other.taskFg),
+      taskSoft: mix(taskSoft, other.taskSoft),
+      taskLine: mix(taskLine, other.taskLine),
+      chatFg: mix(chatFg, other.chatFg),
+      chatSoft: mix(chatSoft, other.chatSoft),
+      chatLine: mix(chatLine, other.chatLine),
+      helpFg: mix(helpFg, other.helpFg),
+      helpSoft: mix(helpSoft, other.helpSoft),
+      helpLine: mix(helpLine, other.helpLine),
+      themeFg: mix(themeFg, other.themeFg),
+      themeSoft: mix(themeSoft, other.themeSoft),
+      themeLine: mix(themeLine, other.themeLine),
     );
   }
 }
@@ -335,7 +420,7 @@ extension AppColorsContext on BuildContext {
 }
 
 
-const String kFontFamily = 'Recursive';
+const String kFontFamily = 'Nunito';
 
 const String kFontFamilyMono = 'Cascadia Code';
 
@@ -540,6 +625,22 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
 
     scaffoldBackgroundColor: c.bg,
 
+    // Transiciones suaves entre pantallas en todas las plataformas.
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.iOS: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+      },
+    ),
+
+    // Feedback al tocar: onda suave del color primario.
+    splashFactory: InkSparkle.splashFactory,
+    splashColor: c.studySoft,
+    highlightColor: Colors.transparent,
+
     fontFamily: kFontFamily,
 
 
@@ -634,7 +735,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
 
       style: ElevatedButton.styleFrom(
 
-        // Verde azulado = acción principal.
+        // Violeta = acción principal.
         backgroundColor: c.study,
 
         // Texto de alto contraste sobre ese verde.
@@ -645,12 +746,10 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
 
         minimumSize: const Size.fromHeight(56),
 
-        // Sin sombra para mantener la interfaz tranquila.
         elevation: 0,
+        shadowColor: c.shadow,
 
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: const StadiumBorder(),
 
         padding: const EdgeInsets.symmetric(
           horizontal: 24,
@@ -683,9 +782,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
 
         minimumSize: const Size.fromHeight(56),
 
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: const StadiumBorder(),
 
         padding: const EdgeInsets.symmetric(
           horizontal: 24,
@@ -755,7 +852,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
       // ─────────────────────────────────────────────────────
 
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide.none,
       ),
 
@@ -765,7 +862,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
       // ─────────────────────────────────────────────────────
 
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide.none,
       ),
 
@@ -775,7 +872,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
       // ─────────────────────────────────────────────────────
 
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
 
         borderSide: BorderSide(
           color: c.study,
@@ -789,7 +886,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
       // ─────────────────────────────────────────────────────
 
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
 
         borderSide: BorderSide(
           color: c.errorLine,
@@ -799,7 +896,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
 
 
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
 
         borderSide: BorderSide(
           color: c.error,
@@ -824,7 +921,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
       ),
 
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(28),
       ),
     ),
 
@@ -845,9 +942,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
         fontWeight: AppType.weightMedium,
       ),
 
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: const StadiumBorder(),
     ),
 
 
@@ -865,7 +960,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
 
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.all(
-          Radius.circular(16),
+          Radius.circular(20),
         ),
       ),
     ),
@@ -880,7 +975,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
       backgroundColor: c.bg,
 
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
       ),
     ),
 

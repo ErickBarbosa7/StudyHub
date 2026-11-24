@@ -254,7 +254,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                   .editTask(task.taskId, controller.text);
               Navigator.of(dialogContext).pop();
             },
-            style: TextButton.styleFrom(foregroundColor: c.study),
+            style: TextButton.styleFrom(foregroundColor: c.taskFg),
             child: const Text(
               'Guardar',
               style: TextStyle(fontWeight: AppType.weightSemiBold),
@@ -384,7 +384,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                   Icon(
                     AppIcons.listChecks,
                     size: 20,
-                    color: c.study,
+                    color: c.taskFg,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -444,7 +444,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                         ),
                         border: _fieldBorder(c.line),
                         enabledBorder: _fieldBorder(c.line),
-                        focusedBorder: _fieldBorder(c.study, width: 1.5),
+                        focusedBorder: _fieldBorder(c.taskFg, width: 1.5),
                         errorBorder: _fieldBorder(c.error),
                         focusedErrorBorder: _fieldBorder(
                           c.error,
@@ -468,8 +468,8 @@ class _TaskListState extends ConsumerState<TaskList> {
                     iconSize: 22,
                     icon: AppIcons.plus,
                     tooltip: 'Agregar tarea',
-                    foreground: c.study,
-                    background: c.studySoft,
+                    foreground: c.taskFg,
+                    background: c.taskSoft,
                     bordered: false,
                     iconOffset: const Offset(0, 3),
                     onPressed: _addTask,
@@ -574,7 +574,7 @@ class _ProgressBar extends StatelessWidget {
           value: v,
           minHeight: 6,
           backgroundColor: c.track,
-          valueColor: AlwaysStoppedAnimation(c.study),
+          valueColor: AlwaysStoppedAnimation(c.taskFg),
         ),
       ),
     );
@@ -602,13 +602,13 @@ class _EmptyTasks extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: c.studySoft,
+                  color: c.taskSoft,
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Icon(
                   AppIcons.listChecks,
                   size: 26,
-                  color: c.study,
+                  color: c.taskFg,
                 ),
               ),
               const SizedBox(height: 14),
@@ -711,10 +711,10 @@ class _TaskTile extends StatelessWidget {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: done ? c.study : c.surface,
+                        color: done ? c.taskFg : c.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: done ? c.study : c.disabled,
+                          color: done ? c.taskFg : c.disabled,
                           width: 2,
                         ),
                       ),
@@ -795,9 +795,9 @@ class _TaskTile extends StatelessWidget {
 ({Color background, Color foreground}) _chipColors(String code, AppColors c) {
   switch (code) {
     case 'IN_PROGRESS':
-      return (background: c.restSoft, foreground: c.restInk);
+      return (background: c.helpSoft, foreground: c.helpFg);
     case 'COMPLETED':
-      return (background: c.studySoft, foreground: c.study);
+      return (background: c.restSoft, foreground: c.rest);
     case 'PENDING':
     default:
       return (background: c.track, foreground: c.muted);
