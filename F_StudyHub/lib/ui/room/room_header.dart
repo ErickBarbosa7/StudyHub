@@ -208,6 +208,9 @@ class RoomHeader extends ConsumerWidget {
             RoomIconButton(
               icon: AppIcons.circleHelp,
               tooltip: '¿Cómo funciona?',
+              foreground: c.helpFg,
+              background: c.helpSoft,
+              borderColor: c.helpLine,
               onPressed: onHelp,
             ),
           ],

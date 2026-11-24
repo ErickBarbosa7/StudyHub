@@ -11,12 +11,9 @@ import '../../core/theme.dart';
 /// columna con el botón "Crear o unirse a una sala".
 const double kLandingBreakpoint = 960;
 
-// Tonos claros sobre el verde de marca; solo para el inicio.
-const Color kLandingSoft = Color(0xFFCFE5DF); // textos secundarios
-const Color kLandingText = Color(0xFFE3F1EC); // frase
-const Color kLandingAccent = Color(0xFF9FD3C4); // "Hub" del nombre
+// Tonos claros sobre el rojo de marca; solo para el inicio.
 
-/// "StudyHub" en grande: "Study" en blanco y "Hub" en verde claro. Toma todo
+/// "StudyHub" en grande: "Study" en blanco y "Hub" en coral. Toma todo
 /// el ancho disponible (hasta 150 px de fuente) y escala si no cabe.
 class LandingWordmark extends StatelessWidget {
   const LandingWordmark({super.key, required this.maxWidth});
@@ -36,17 +33,17 @@ class LandingWordmark extends StatelessWidget {
       child: Text.rich(
         TextSpan(
           style: TextStyle(
-            color: Colors.white,
+            color: context.colors.ink,
             fontSize: size,
             fontWeight: FontWeight.w800,
             letterSpacing: -size * 0.05,
             height: 0.95,
           ),
-          children: const [
-            TextSpan(text: 'Study'),
+          children: [
+            const TextSpan(text: 'Study'),
             TextSpan(
               text: 'Hub',
-              style: TextStyle(color: kLandingAccent),
+              style: TextStyle(color: context.colors.study),
             ),
           ],
         ),
@@ -68,7 +65,7 @@ class LandingTagline extends StatelessWidget {
     return Text(
       'Estudia y concéntrate en equipo.',
       style: TextStyle(
-        color: kLandingText,
+        color: context.colors.muted,
         fontSize: math.min(30, math.max(20, width / 14)),
         fontWeight: AppType.weightMedium,
         height: 1.25,
@@ -108,21 +105,21 @@ class _Feature extends StatelessWidget {
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0x47FFFFFF)),
+        border: Border.all(color: context.colors.line),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: Colors.white),
+          Icon(icon, size: 18, color: context.colors.study),
           const SizedBox(width: 10),
           Flexible(
             child: Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: context.colors.ink,
                 fontSize: AppType.sizeBody,
                 fontWeight: AppType.weightSemiBold,
               ),
@@ -134,7 +131,7 @@ class _Feature extends StatelessWidget {
   }
 }
 
-/// La animación del chico estudiando, directo sobre el verde de marca (sin
+/// La animación del chico estudiando, directo sobre el rojo de marca (sin
 /// tarjeta): el amarillo resalta y los grises claros se funden con el fondo.
 class LandingIllustration extends StatelessWidget {
   const LandingIllustration({super.key, required this.height});

@@ -27,9 +27,13 @@ class ThemeToggleIconButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final c = context.colors;
     return RoomIconButton(
       icon: _destinationIcon(isDark),
       iconSize: 20,
+      foreground: c.themeFg,
+      background: c.themeSoft,
+      borderColor: c.themeLine,
       tooltip: _label(isDark),
       onPressed: () => ref.read(themeProvider.notifier).toggle(isDark: isDark),
     );
@@ -58,10 +62,10 @@ class ThemeTogglePillButton extends ConsumerWidget {
         label: label,
         excludeSemantics: true,
         child: Material(
-          color: const Color(0x24FFFFFF),
+          color: context.colors.themeSoft,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: const BorderSide(color: Color(0x47FFFFFF)),
+            borderRadius: BorderRadius.circular(999),
+            side: BorderSide(color: context.colors.themeLine),
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -74,7 +78,7 @@ class ThemeTogglePillButton extends ConsumerWidget {
                   isDark: isDark,
                   icon: icon,
                   iconSize: iconSize,
-                  color: Colors.white,
+                  color: context.colors.themeFg,
                 ),
               ),
             ),

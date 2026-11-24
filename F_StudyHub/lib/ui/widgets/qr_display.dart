@@ -1,3 +1,4 @@
+import '../../core/join_link.dart';
 import 'package:flutter/material.dart';
 import '../../core/app_icons.dart';
 import 'package:flutter/services.dart';
@@ -69,7 +70,7 @@ class QrDisplaySheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: QrImageView(
-                  data: roomId,
+                  data: joinUrl(roomId),
                   version: QrVersions.auto,
                   size: 200,
                   backgroundColor: Colors.white,

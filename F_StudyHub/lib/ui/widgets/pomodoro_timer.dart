@@ -139,7 +139,16 @@ class PomodoroTimer extends ConsumerWidget {
         final dialSize = math.min(bounded ? 280.0 : 240.0, width);
 
         final List<Widget> top = [
-          if (showTitle) ...[_Title(style: style), const SizedBox(height: 16)],
+          if (showTitle) ...[
+            _Title(style: style),
+            const SizedBox(height: 16),
+          ] else ...[
+            const Align(
+              alignment: Alignment.centerRight,
+              child: _PomodoroHelpButton(),
+            ),
+            const SizedBox(height: 8),
+          ],
           _ModeSelector(
             selectedMode: state.mode,
             enabled: !state.isRunning,
@@ -213,6 +222,95 @@ class PomodoroTimer extends ConsumerWidget {
   }
 }
 
+/// Botón "?" del reloj: explica en tres líneas qué es un Pomodoro.
+class _PomodoroHelpButton extends StatelessWidget {
+  const _PomodoroHelpButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Tooltip(
+      message: '¿Qué es un Pomodoro?',
+      child: Material(
+        color: c.helpSoft,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () => showDialog<void>(
+            context: context,
+            builder: (_) => const _PomodoroHelpDialog(),
+          ),
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(AppIcons.circleHelp, size: 20, color: c.helpFg),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PomodoroHelpDialog extends StatelessWidget {
+  const _PomodoroHelpDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    Widget step(String n, String text) => Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: c.studySoft,
+                child: Text(
+                  n,
+                  style: TextStyle(
+                    color: c.study,
+                    fontSize: AppType.sizeCaption,
+                    fontWeight: AppType.weightBold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  text,
+                  style: TextStyle(color: c.ink, fontSize: AppType.sizeBodyMedium),
+                ),
+              ),
+            ],
+          ),
+        );
+
+    return AlertDialog(
+      title: const Text('¿Qué es un Pomodoro?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Un reloj para estudiar sin distraerte.',
+            style: TextStyle(color: c.muted, fontSize: AppType.sizeBodyMedium),
+          ),
+          step('1', 'Estudia 25 minutos sin parar.'),
+          step('2', 'Descansa 5 minutos.'),
+          step('3', 'Repite. Cada 4 rondas, descansa más.'),
+          step('✓', 'Todos en la sala ven el mismo reloj.'),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Entendido'),
+        ),
+      ],
+    );
+  }
+}
+
 class _Title extends StatelessWidget {
   const _Title({required this.style});
 
@@ -235,6 +333,7 @@ class _Title extends StatelessWidget {
             ),
           ),
         ),
+        const _PomodoroHelpButton(),
       ],
     );
   }

@@ -132,6 +132,11 @@ class StudyHubApp extends ConsumerWidget {
           );
         },
         home: const HomeScreen(),
+        // El enlace de invitación es `/?sala=CODIGO`: Flutter lo leería como una
+        // ruta desconocida. Siempre se arranca en el inicio y la pantalla lee el código.
+        onGenerateInitialRoutes: (_) => [
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        ],
         routes: {
           CreateRoomScreen.routeName: (_) => const CreateRoomScreen(),
         },

@@ -145,7 +145,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
               height: 28,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: c.study,
+                color: c.chatFg,
               ),
             ),
           )
@@ -189,7 +189,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
             if (widget.showTitle) ...[
               Row(
                 children: [
-                  Icon(AppIcons.messageSquare, size: 20, color: c.study),
+                  Icon(AppIcons.messageSquare, size: 20, color: c.chatFg),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -244,7 +244,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                         ),
                         border: _fieldBorder(c.line),
                         enabledBorder: _fieldBorder(c.line),
-                        focusedBorder: _fieldBorder(c.study, width: 1.5),
+                        focusedBorder: _fieldBorder(c.chatFg, width: 1.5),
                         errorBorder: _fieldBorder(c.error),
                         focusedErrorBorder: _fieldBorder(
                           c.error,
@@ -267,7 +267,7 @@ class _ChatBoxState extends ConsumerState<ChatBox> {
                     icon: AppIcons.send,
                     tooltip: 'Enviar',
                     foreground: c.onAccent,
-                    background: c.study,
+                    background: c.chatFg,
                     bordered: false,
                     onPressed: _send,
                   ),
@@ -539,7 +539,7 @@ class _EmojiButton extends StatelessWidget {
       label: active ? 'Quitar reacción $emoji' : 'Reaccionar con $emoji',
       excludeSemantics: true,
       child: Material(
-        color: active ? c.studySoft : Colors.transparent,
+        color: active ? c.chatSoft : Colors.transparent,
         shape: const CircleBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -619,9 +619,9 @@ class _ReactionChip extends StatelessWidget {
       label: '$emoji, $label${mine ? ', incluida la tuya' : ''}',
       excludeSemantics: true,
       child: Material(
-        color: mine ? c.studySoft : c.track,
+        color: mine ? c.chatSoft : c.track,
         shape: StadiumBorder(
-          side: BorderSide(color: mine ? c.study : c.line),
+          side: BorderSide(color: mine ? c.chatFg : c.line),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -639,7 +639,7 @@ class _ReactionChip extends StatelessWidget {
                   Text(
                     '$count',
                     style: TextStyle(
-                      color: mine ? c.study : c.muted,
+                      color: mine ? c.chatFg : c.muted,
                       fontSize: AppType.sizeCaption,
                       fontWeight: AppType.weightSemiBold,
                       fontFamily: kFontFamilyMono,
@@ -800,7 +800,7 @@ class _MessageBubble extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
         constraints: const BoxConstraints(maxWidth: 320),
         decoration: BoxDecoration(
-          color: isOwn ? c.study : c.track,
+          color: isOwn ? c.chatFg : c.track,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),

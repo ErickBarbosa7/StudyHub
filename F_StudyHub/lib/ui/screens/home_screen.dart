@@ -1,3 +1,4 @@
+import '../../core/join_link.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -32,7 +33,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           .read(roomProvider.notifier)
           .restoreSavedSession();
       // En pantallas anchas el inicio ya muestra la sala restaurada.
-      if (restored &&
+      if ((restored || codeFromCurrentUrl() != null) &&
           mounted &&
           MediaQuery.sizeOf(context).width < kLandingBreakpoint) {
         Navigator.of(context).pushNamed(CreateRoomScreen.routeName);
@@ -99,9 +100,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   IconButton(
                                     onPressed: _showHowItWorks,
                                     tooltip: '¿Cómo funciona?',
-                                    icon: const Icon(
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: c.helpSoft,
+                                      side: BorderSide(color: c.helpLine),
+                                      minimumSize: const Size(44, 44),
+                                    ),
+                                    icon: Icon(
                                       AppIcons.circleHelp,
-                                      color: kLandingSoft,
+                                      color: c.helpFg,
                                     ),
                                   ),
                                 ],
@@ -126,7 +132,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             if (roomState.isRestoring) ...[
-                              const Row(
+                              Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   SizedBox(
@@ -134,13 +140,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.5,
-                                      color: Colors.white,
+                                      color: c.study,
                                     ),
                                   ),
-                                  SizedBox(width: 12),
+                                  const SizedBox(width: 12),
                                   Text(
                                     'Restaurando tu sesión anterior...',
-                                    style: TextStyle(color: kLandingSoft),
+                                    style: TextStyle(color: c.muted),
                                   ),
                                 ],
                               ),
@@ -162,15 +168,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 icon: const Icon(AppIcons.plus),
                                 label: const Text('Crear o unirse a una sala'),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: c.brand,
-                                  disabledBackgroundColor: const Color(
-                                    0x80FFFFFF,
-                                  ),
+                                  backgroundColor: c.study,
+                                  foregroundColor: c.onAccent,
                                   elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
+                                  shape: const StadiumBorder(),
                                 ),
                               ),
                             ),
@@ -185,14 +186,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   icon: const Icon(AppIcons.arrowLeft),
                                   label: const Text('Volver a la sala'),
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    side: const BorderSide(
-                                      color: Color(0x80FFFFFF),
+                                    foregroundColor: c.ink,
+                                    side: BorderSide(
+                                      color: c.line,
                                       width: 1.5,
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
+                                    shape: const StadiumBorder(),
                                   ),
                                 ),
                               ),
